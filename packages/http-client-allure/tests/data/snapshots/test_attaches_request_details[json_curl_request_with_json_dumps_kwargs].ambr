@@ -1,0 +1,28 @@
+# serializer version: 1
+# name: test_attaches_request_details[json_curl_request_with_json_dumps_kwargs]
+  '''
+  curl -X POST \
+    -H 'host: example.com' \
+    -H 'accept: */*' \
+    -H 'accept-encoding: gzip, deflate' \
+    -H 'connection: keep-alive' \
+    -H 'user-agent: python-httpx/0.28.1' \
+    -H 'content-length: 124' \
+    -H 'content-type: application/json' \
+    --json '{
+      "data": [
+        {
+          "address": null,
+          "age": 30,
+          "name": "Alexandr"
+        },
+        {
+          "address": "Санкт-Петербург",
+          "age": 25,
+          "name": "Aleksey"
+        }
+      ]
+    }' \
+    https://example.com/api/v2/users
+  '''
+# ---

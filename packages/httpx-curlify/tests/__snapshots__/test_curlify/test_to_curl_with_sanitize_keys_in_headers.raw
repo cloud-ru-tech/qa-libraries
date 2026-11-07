@@ -1,0 +1,5 @@
+curl -X GET \
+  -H 'host: example.com' \
+  -H 'authorization: ****' \
+  -H 'x-api-key: ****' \
+  https://example.com/api/data

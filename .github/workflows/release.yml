@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  push:
+    tags: ['*/v*']
+
+permissions:
+  contents: read
+
+env:
+  UV_NO_PROGRESS: '1'
+  UV_PYTHON_DOWNLOADS: never
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - name: Validate tag and require a commit on the default branch
+        env:
+          TAG: ${{ github.ref_name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          python -m scripts.release "$TAG" --output "$GITHUB_OUTPUT"
+          git merge-base --is-ancestor HEAD "origin/$DEFAULT_BRANCH"
+
+  checks:
+    needs: validate
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    uses: ./.github/workflows/ci.yml
+
+  prepare:
+    needs: checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          version: '0.11.14'
+          enable-cache: false
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: distributions
+          path: dist
+      - name: Select exactly one distribution
+        env:
+          TAG: ${{ github.ref_name }}
+        run: python -m scripts.release "$TAG" --output "$GITHUB_OUTPUT" --artifacts dist --destination release
+      - name: Require published runtime dependencies
+        run: |
+          uv venv "$RUNNER_TEMP/release" --python "$(command -v python)"
+          uv pip install --python "$RUNNER_TEMP/release/bin/python" --index-url https://pypi.org/simple release/*.whl
+          uv pip check --python "$RUNNER_TEMP/release/bin/python"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: release-distribution
+          path: release/*
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: release-distribution
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1
+        with:
+          packages-dir: dist
+          skip-existing: false
+          attestations: true

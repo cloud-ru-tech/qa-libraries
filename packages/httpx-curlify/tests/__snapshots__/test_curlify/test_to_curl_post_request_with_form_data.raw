@@ -1,0 +1,6 @@
+curl -X POST \
+  -H 'host: example.com' \
+  -H 'content-length: 27' \
+  -H 'content-type: application/x-www-form-urlencoded' \
+  --data 'field1=value1&field2=value2' \
+  https://example.com/api/form

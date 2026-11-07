@@ -1,0 +1,6 @@
+curl -X PUT \
+  -H 'host: example.com' \
+  -H 'content-length: 23' \
+  -H 'content-type: application/json' \
+  --json '{"name": "Updated Name"}' \
+  https://example.com/api/users/123

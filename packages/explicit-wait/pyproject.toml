@@ -1,0 +1,84 @@
+[project]
+name = "cloudru-qa-explicit-wait"
+version = "1.0.0"
+description = "Явные ожидания для автотестов"
+authors = [
+    { name = "Алексей Кирютин", email = "ayukiryutin@cloud.ru" },
+]
+readme = "README.md"
+requires-python = ">=3.13"
+license = "Apache-2.0"
+license-files = [
+    "LICENSE",
+]
+keywords = [
+    "wait",
+    "polling",
+    "retry",
+    "testing",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Testing",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/cloud-ru-tech/qa-libraries"
+Issues = "https://github.com/cloud-ru-tech/qa-libraries/issues"
+
+[build-system]
+requires = [
+    "hatchling>=1.31.0,<2",
+]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "explicit_wait",
+]
+
+[tool.hatch.build.targets.wheel.force-include]
+".agents/skills" = "explicit_wait/.agents/skills"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/explicit_wait",
+    "/tests",
+    "/README.md",
+    "/LICENSE",
+    "/pyproject.toml",
+]
+
+[tool.hatch.build.targets.sdist.force-include]
+".agents/skills" = ".agents/skills"
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+testpaths = [
+    "tests",
+]
+addopts = "--strict-markers --strict-config"
+filterwarnings = [
+    "error",
+]
+
+[tool.coverage.run]
+source = [
+    "explicit_wait",
+]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 100
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]

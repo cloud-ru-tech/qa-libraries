@@ -1,0 +1,31 @@
+[project]
+name = "logging-context-structlog-example"
+version = "1.0.0"
+description = "Демонстрационный проект для плагина logging-context со structlog"
+requires-python = ">=3.13"
+dependencies = [
+    "allure-pytest>=2.16.0",
+    "cloudru-qa-logging-context>=1.0.0,<2",
+    "pytest-rerunfailures>=16.0",
+    "pytest-xdist>=3.8.0",
+    "structlog>=25.5.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources.cloudru-qa-logging-context]
+path = "../.."
+editable = true
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
+pythonpath = [
+    ".",
+]
+addopts = "--allure-no-capture"
+logging_context_dir = "logs"
+logging_context_level = "DEBUG"
+logging_context_log_test_header = false

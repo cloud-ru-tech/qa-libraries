@@ -1,0 +1,16 @@
+# serializer version: 1
+# name: test_attaches_request_details[json_curl_request_with_sanitize_keys]
+  '''
+  curl -X GET \
+    -H 'host: example.com' \
+    -H 'accept: */*' \
+    -H 'accept-encoding: gzip, deflate' \
+    -H 'connection: keep-alive' \
+    -H 'user-agent: python-httpx/0.28.1' \
+    -H 'content-length: 46' \
+    -H 'content-type: application/json' \
+    -H 'authorization: ****' \
+    --json '{"data": {"login": "admin", "password": "****"}}' \
+    https://example.com/api/users/me
+  '''
+# ---

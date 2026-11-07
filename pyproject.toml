@@ -1,0 +1,134 @@
+[project]
+name = "cloudru-qa-libraries"
+version = "1.0.0"
+requires-python = ">=3.13"
+dependencies = []
+
+[tool.uv]
+package = false
+required-version = ">=0.11.14"
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+cloudru-qa-explicit-wait = { workspace = true }
+cloudru-qa-grpc-client = { workspace = true }
+cloudru-qa-grpc-client-auth = { workspace = true }
+cloudru-qa-grpc-client-structlog = { workspace = true }
+cloudru-qa-http-client = { workspace = true }
+cloudru-qa-http-client-allure = { workspace = true }
+cloudru-qa-http-client-auth = { workspace = true }
+cloudru-qa-http-client-responses = { workspace = true }
+cloudru-qa-http-client-retries = { workspace = true }
+cloudru-qa-http-client-structlog = { workspace = true }
+cloudru-qa-httpx-curlify = { workspace = true }
+cloudru-qa-logging-context = { workspace = true }
+cloudru-qa-mcp-client = { workspace = true }
+cloudru-qa-pydantic-extensions = { workspace = true }
+cloudru-qa-pytest-notifier = { workspace = true }
+cloudru-qa-ssh-client = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "assertpy>=1.1,<2",
+    "faker>=37.1.0,<38",
+    "grpc-stubs",
+    "grpcio-tools>=1.84.0,<2",
+    "hypothesis>=6.100.0,<7",
+    "mypy>=2.3.0,<3",
+    "pre-commit>=4.5.1,<5",
+    "pytest>=9.0.3,<10",
+    "pytest-asyncio>=1.4.0,<2",
+    "pytest-cases>=3.10.1,<4",
+    "pytest-cov>=7.1.0,<8",
+    "pytest-docker>=3.0.0,<4",
+    "pytest-faker>=2.0.0,<3",
+    "pytest-httpx>=0.36.2,<0.37",
+    "pytest-mock>=3.15.1,<4",
+    "pytest-rerunfailures>=16.0,<17",
+    "pytest-timeout>=2.3.0,<3",
+    "pytest-xdist>=3.8.0,<4",
+    "pyyaml>=6.0.2,<7",
+    "ruff>=0.17.3,<0.18",
+    "syrupy>=5.5.3,<6",
+    "toml>=0.10.2,<0.11",
+    "types-assertpy>=1.1.0.20260518",
+    "types-paramiko>=5.1.0.20261030,<6",
+    "types-protobuf",
+    "types-pyyaml>=6.0.12.20250516",
+    "types-toml>=0.10.8.20240310",
+]
+security = ["pip-audit>=2.9,<3"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+extend-exclude = ["docs/plans", "**/api", "**/*_pb2.py", "**/*_pb2_grpc.py"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    # Конфликтует с ruff format: форматтер сам решает, где нужна висящая запятая.
+    "COM812",
+    # Взаимоисключающие пары: выбраны D211 и D212.
+    "D203",
+    "D213",
+    # Срабатывают на кириллицу в строках, docstring и комментариях.
+    "RUF001",
+    "RUF002",
+    "RUF003",
+    # Не требуем docstring модулей и пакетов и строку копирайта в каждом файле.
+    "CPY001",
+    "D100",
+    "D104",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["D101", "D102", "D103", "D105"]
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+mypy_path = "$MYPY_CONFIG_FILE_DIR/typings"
+plugins = ["pydantic.mypy"]
+python_version = "3.13"
+strict = true
+disallow_any_decorated = true
+disallow_any_explicit = true
+disallow_any_expr = true
+disallow_any_unimported = true
+warn_unreachable = true
+warn_unused_ignores = true
+warn_unused_configs = true
+strict_equality_for_none = true
+extra_checks = true
+show_error_codes = true
+show_column_numbers = true
+namespace_packages = true
+explicit_package_bases = true
+exclude = ["docs/plans", "(^|/)api/", "_pb2(_grpc)?\\.py$"]
+
+# googleapis-common-protos поставляет .pyi без маркера py.typed: читаем их вместо своего стаба.
+# Решение согласовано с владельцем репозитория, не заменять стабом в typings/.
+# Заметка mypy "unused section" в пакетах без google.rpc ожидаема и не является ошибкой.
+[[tool.mypy.overrides]]
+module = ["google.rpc.*"]
+follow_untyped_imports = true
+
+[tool.pydantic-mypy]
+init_typed = true
+init_forbid_extra = true
+warn_required_dynamic_aliases = true
+
+[tool.pytest.ini_options]
+testpaths = ["scripts"]
+addopts = "--strict-markers --strict-config"
+filterwarnings = ["error"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

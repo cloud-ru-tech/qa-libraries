@@ -1,0 +1,6 @@
+services:
+  grpcbin:
+    image: docker.io/moul/grpcbin@sha256:bd8f2ffdd02d0849fad2d1c754eff4402c867e7a3e0552b8992f4590f5687d20
+    ports:
+      - "9000"
+      - "9001"

@@ -1,0 +1,77 @@
+[project]
+name = "cloudru-qa-grpc-client-auth"
+version = "1.0.0"
+description = "Авторизация для gRPC-клиента"
+authors = [
+    { name = "Алексей Кирютин", email = "ayukiryutin@cloud.ru" },
+]
+readme = "README.md"
+license = "Apache-2.0"
+license-files = [
+    "LICENSE",
+]
+requires-python = ">=3.13"
+keywords = [
+    "grpc",
+    "grpcio",
+    "client",
+    "auth",
+    "iam",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Testing",
+    "Typing :: Typed",
+]
+dependencies = [
+    "cloudru-qa-grpc-client>=1.0.0,<2",
+    "cloudru-qa-http-client-auth>=1.0.0,<2",
+    "cloudru-qa-http-client>=1.0.0,<2",
+]
+
+[project.urls]
+Repository = "https://github.com/cloud-ru-tech/qa-libraries"
+Issues = "https://github.com/cloud-ru-tech/qa-libraries/issues"
+
+[build-system]
+requires = [
+    "hatchling>=1.31.0,<2",
+]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "grpc_client_auth",
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/grpc_client_auth",
+    "/tests",
+    "/README.md",
+    "/LICENSE",
+    "/pyproject.toml",
+    "/proto",
+    "/gen-test-api.sh",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+timeout = 120
+testpaths = [
+    "tests",
+]
+addopts = "--strict-markers --strict-config"
+filterwarnings = [
+    "error",
+]
+pythonpath = [
+    "api",
+]

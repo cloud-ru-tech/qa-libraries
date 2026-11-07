@@ -1,0 +1,6 @@
+curl -X POST \
+  -H 'host: example.com' \
+  -H 'content-type: application/octet-stream' \
+  -H 'content-length: 4' \
+  --data '<binary data 4 bytes>' \
+  https://example.com/api/upload

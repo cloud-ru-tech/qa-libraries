@@ -1,0 +1,4 @@
+# serializer version: 1
+# name: test_attaches_request_details[multipart_binary_request]
+  '{"method": "POST", "url": "https://example.com/api/v1/upload", "headers": {"host": "example.com", "accept": "*/*", "accept-encoding": "gzip, deflate", "connection": "keep-alive", "user-agent": "python-httpx/0.28.1", "content-length": "262328", "content-type": "multipart/form-data; boundary=<boundary>"}, "body": "<binary data 262328 bytes>"}'
+# ---

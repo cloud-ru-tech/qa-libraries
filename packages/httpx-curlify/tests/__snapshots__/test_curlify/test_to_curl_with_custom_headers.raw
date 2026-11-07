@@ -1,0 +1,5 @@
+curl -X GET \
+  -H 'host: example.com' \
+  -H 'authorization: Bearer token123' \
+  -H 'x-custom-header: custom-value' \
+  https://example.com/api/data

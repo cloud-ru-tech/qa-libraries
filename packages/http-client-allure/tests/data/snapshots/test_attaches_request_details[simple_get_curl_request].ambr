@@ -1,0 +1,12 @@
+# serializer version: 1
+# name: test_attaches_request_details[simple_get_curl_request]
+  '''
+  curl -X GET \
+    -H 'host: example.com' \
+    -H 'accept: */*' \
+    -H 'accept-encoding: gzip, deflate' \
+    -H 'connection: keep-alive' \
+    -H 'user-agent: python-httpx/0.28.1' \
+    'https://example.com/api/v2/get?name=Alexandr&is_active=true&age=30'
+  '''
+# ---

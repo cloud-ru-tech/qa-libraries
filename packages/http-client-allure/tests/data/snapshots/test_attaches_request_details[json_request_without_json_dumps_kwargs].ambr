@@ -1,0 +1,4 @@
+# serializer version: 1
+# name: test_attaches_request_details[json_request_without_json_dumps_kwargs]
+  '{"method": "POST", "url": "https://example.com/api/v2/users", "headers": {"host": "example.com", "accept": "*/*", "accept-encoding": "gzip, deflate", "connection": "keep-alive", "user-agent": "python-httpx/0.28.1", "content-length": "124", "content-type": "application/json"}, "body": {"data": [{"name": "Alexandr", "age": 30, "address": null}, {"name": "Aleksey", "age": 25, "address": "Санкт-Петербург"}]}}'
+# ---

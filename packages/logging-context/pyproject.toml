@@ -1,0 +1,67 @@
+[project]
+name = "cloudru-qa-logging-context"
+version = "1.0.0"
+description = "Разделение контекста логов при параллельном запуске автотестов"
+authors = [
+    { name = "Алексей Кирютин", email = "ayukiryutin@cloud.ru" },
+]
+readme = "README.md"
+requires-python = ">=3.13"
+keywords = [
+    "pytest",
+    "logging",
+    "allure",
+    "testing",
+]
+classifiers = [
+    "Framework :: Pytest",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Testing",
+    "Typing :: Typed",
+]
+dependencies = [
+    "pytest>=8.4.0,<10",
+]
+license = "Apache-2.0"
+license-files = [
+    "LICENSE",
+]
+
+[project.urls]
+Repository = "https://github.com/cloud-ru-tech/qa-libraries"
+Issues = "https://github.com/cloud-ru-tech/qa-libraries/issues"
+
+[project.entry-points.pytest11]
+logging_context = "logging_context.plugin"
+
+[build-system]
+requires = [
+    "hatchling>=1.31.0,<2",
+]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "logging_context",
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/logging_context",
+    "/tests",
+    "/README.md",
+    "/LICENSE",
+    "/pyproject.toml",
+]
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+testpaths = [
+    "tests",
+]
+addopts = "--strict-markers --strict-config"
+filterwarnings = [
+    "error",
+]

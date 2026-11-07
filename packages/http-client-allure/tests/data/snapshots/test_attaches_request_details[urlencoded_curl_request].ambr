@@ -1,0 +1,15 @@
+# serializer version: 1
+# name: test_attaches_request_details[urlencoded_curl_request]
+  '''
+  curl -X PATCH \
+    -H 'host: example.com' \
+    -H 'accept: */*' \
+    -H 'accept-encoding: gzip, deflate' \
+    -H 'connection: keep-alive' \
+    -H 'user-agent: python-httpx/0.28.1' \
+    -H 'content-length: 68' \
+    -H 'content-type: application/x-www-form-urlencoded' \
+    --data 'name=%D0%92%D0%B0%D1%81%D0%B8%D0%BB%D0%B8%D0%B9&profession=developer' \
+    https://example.com/api/v3/patch
+  '''
+# ---
