@@ -1,0 +1,7 @@
+curl -X POST \
+  -H 'host: example.com' \
+  -H 'authorization: Bearer token' \
+  -H 'content-length: 15' \
+  -H 'content-type: application/json' \
+  --json '{"key": "value"}' \
+  https://example.com/api/data

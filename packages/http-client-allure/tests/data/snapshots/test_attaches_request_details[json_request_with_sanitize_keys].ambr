@@ -1,0 +1,4 @@
+# serializer version: 1
+# name: test_attaches_request_details[json_request_with_sanitize_keys]
+  '{"method": "GET", "url": "https://example.com/api/users/me", "headers": {"host": "example.com", "accept": "*/*", "accept-encoding": "gzip, deflate", "connection": "keep-alive", "user-agent": "python-httpx/0.28.1", "content-length": "46", "content-type": "application/json", "authorization": "****"}, "body": {"data": {"login": "admin", "password": "****"}}}'
+# ---

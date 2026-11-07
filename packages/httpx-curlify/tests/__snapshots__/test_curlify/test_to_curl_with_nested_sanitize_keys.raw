@@ -1,0 +1,6 @@
+curl -X POST \
+  -H 'host: example.com' \
+  -H 'content-length: 44' \
+  -H 'content-type: application/json' \
+  --json '{"user": {"name": "John", "password": "****"}}' \
+  https://example.com/api/data

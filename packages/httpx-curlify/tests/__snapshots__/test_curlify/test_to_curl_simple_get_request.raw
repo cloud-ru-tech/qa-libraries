@@ -1,0 +1,3 @@
+curl -X GET \
+  -H 'host: example.com' \
+  https://example.com/api/users

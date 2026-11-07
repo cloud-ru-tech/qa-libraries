@@ -1,0 +1,4 @@
+curl -X GET \
+  -H 'host: example.com' \
+  -H 'x-empty;' \
+  https://example.com/api/data

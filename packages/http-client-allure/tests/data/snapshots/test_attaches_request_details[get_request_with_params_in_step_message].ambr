@@ -1,0 +1,4 @@
+# serializer version: 1
+# name: test_attaches_request_details[get_request_with_params_in_step_message]
+  '{"method": "GET", "url": "https://example.com/api/v2/get", "query_params": {"name": "Alexandr", "is_active": "true", "age": "30"}, "headers": {"host": "example.com", "accept": "*/*", "accept-encoding": "gzip, deflate", "connection": "keep-alive", "user-agent": "python-httpx/0.28.1"}, "body": ""}'
+# ---

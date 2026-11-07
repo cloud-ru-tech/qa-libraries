@@ -1,0 +1,23 @@
+# serializer version: 1
+# name: test_attaches_response_body[response_with_formatted_json_body]
+  '''
+  {
+    "data": [
+      {
+        "id": "0f75c97f-1926-4bf3-8c0d-98a1e5beb40f",
+        "name": "Alexandr",
+        "age": 30,
+        "address": null,
+        "password": "****"
+      },
+      {
+        "id": "1c14009c-1384-496f-b3dc-6d34d28de3bd",
+        "name": "Aleksey",
+        "age": 25,
+        "address": "\u0421\u0430\u043d\u043a\u0442-\u041f\u0435\u0442\u0435\u0440\u0431\u0443\u0440\u0433",
+        "password": "****"
+      }
+    ]
+  }
+  '''
+# ---

@@ -1,0 +1,71 @@
+[project]
+name = "cloudru-qa-http-client-allure"
+version = "1.0.0"
+description = "Интеграция HTTP-клиента с Allure"
+authors = [
+    { name = "Алексей Кирютин", email = "ayukiryutin@cloud.ru" },
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "allure-pytest>=2.16.0,<3",
+    "attrs>=26.1.0",
+    "cloudru-qa-http-client>=1.0.0,<2",
+    "cloudru-qa-httpx-curlify>=1.0.0,<2",
+]
+license = "Apache-2.0"
+license-files = [
+    "LICENSE",
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Framework :: Pytest",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Testing",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Repository = "https://github.com/cloud-ru-tech/qa-libraries"
+Issues = "https://github.com/cloud-ru-tech/qa-libraries/issues"
+
+[build-system]
+requires = [
+    "hatchling>=1.31.0,<2",
+]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "http_client_allure",
+]
+
+[tool.hatch.build.targets.wheel.force-include]
+".agents/skills" = "http_client_allure/.agents/skills"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/http_client_allure",
+    "/tests",
+    "/README.md",
+    "/LICENSE",
+    "/pyproject.toml",
+]
+
+[tool.hatch.build.targets.sdist.force-include]
+".agents/skills" = ".agents/skills"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = [
+    "tests",
+]
+addopts = "--strict-markers --strict-config"
+filterwarnings = [
+    "error",
+]

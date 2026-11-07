@@ -1,0 +1,73 @@
+[project]
+name = "cloudru-qa-pydantic-extensions"
+version = "1.0.0"
+description = "Расширения для Pydantic"
+authors = [
+    { name = "Алексей Кирютин", email = "ayukiryutin@cloud.ru" },
+]
+maintainers = [
+    { name = "Алексей Гапонов", email = "avgaponov@cloud.ru" },
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic>=2.11.5,<3",
+    "pydantic-settings>=2.9.1,<3",
+    "pyhumps>=3.8.0,<4",
+]
+license = "Apache-2.0"
+license-files = [
+    "LICENSE",
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Framework :: Pydantic :: 2",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Repository = "https://github.com/cloud-ru-tech/qa-libraries"
+Issues = "https://github.com/cloud-ru-tech/qa-libraries/issues"
+
+[project.optional-dependencies]
+yaml = [
+    "pydantic-settings[yaml]>=2.9.1,<3",
+]
+toml = [
+    "pydantic-settings[toml]>=2.9.1,<3",
+]
+
+[build-system]
+requires = [
+    "hatchling>=1.31.0,<2",
+]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "pydantic_extensions",
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/pydantic_extensions",
+    "/tests",
+    "/README.md",
+    "/LICENSE",
+    "/pyproject.toml",
+]
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+testpaths = [
+    "tests",
+]
+addopts = "--strict-markers --strict-config"
+filterwarnings = [
+    "error",
+]

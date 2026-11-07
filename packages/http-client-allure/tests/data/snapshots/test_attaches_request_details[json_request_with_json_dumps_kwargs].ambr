@@ -1,0 +1,32 @@
+# serializer version: 1
+# name: test_attaches_request_details[json_request_with_json_dumps_kwargs]
+  '''
+  {
+    "body": {
+      "data": [
+        {
+          "address": null,
+          "age": 30,
+          "name": "Alexandr"
+        },
+        {
+          "address": "Санкт-Петербург",
+          "age": 25,
+          "name": "Aleksey"
+        }
+      ]
+    },
+    "headers": {
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate",
+      "connection": "keep-alive",
+      "content-length": "124",
+      "content-type": "application/json",
+      "host": "example.com",
+      "user-agent": "python-httpx/0.28.1"
+    },
+    "method": "POST",
+    "url": "https://example.com/api/v2/users"
+  }
+  '''
+# ---

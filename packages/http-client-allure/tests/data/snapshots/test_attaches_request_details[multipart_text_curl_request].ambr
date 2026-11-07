@@ -1,0 +1,40 @@
+# serializer version: 1
+# name: test_attaches_request_details[multipart_text_curl_request]
+  '''
+  curl -X POST \
+    -H 'host: example.com' \
+    -H 'accept: */*' \
+    -H 'accept-encoding: gzip, deflate' \
+    -H 'connection: keep-alive' \
+    -H 'user-agent: python-httpx/0.28.1' \
+    -H 'content-length: 1363' \
+    -H 'content-type: multipart/form-data; boundary=<boundary>' \
+    --data '--<boundary>
+  Content-Disposition: form-data; name="file"; filename="poem.txt"
+  Content-Type: text/plain
+  
+  Тот лес как в сказке был дремуч и страшен,
+  Но как-то обитатели его
+  Взошли на небо по ступеням башен
+  И в небе сотворили волшебство.
+  Прекрасный город — в бесподобном стиле,
+  Какого мы не видели вовек:
+  Взлетали ввысь величественно шпили
+  И купола сверкали, словно снег.
+  А в залах пели трубы и валторны —
+  Разгул, веселье, пьянка и гульба.
+  Никто ещё не знал, что смерти чёрной
+  Тот город обрекла уже судьба.
+  Однажды, опьянён вином столовым,
+  Поэт стихи фривольные родил
+  И в них неосторожным грубым словом
+  Старинное проклятье разбудил.
+  Вот так из-за какого-то поэта
+  Чудесный город навсегда исчез,
+  И в сумерках дрожащего рассвета
+  Стоял, как прежде, страшный тёмный лес. 
+  --<boundary>--
+  ' \
+    https://example.com/api/v1/upload
+  '''
+# ---
