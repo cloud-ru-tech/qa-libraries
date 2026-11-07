@@ -84,9 +84,8 @@ def scenario_masking(client: HttpbinClient, log: Logger) -> None:
     response = client.post_json(SECRET_PAYLOAD)
     echoed = cast("JsonEcho", response.json())["json"]
     log.info(
-        "Сервис получил настоящие значения, маскирование только в логе: password=%s, token=%s",
-        echoed["user"]["password"],
-        echoed["items"][0]["token"],
+        "Сервис получил исходное тело без маскирования: %s",
+        echoed == SECRET_PAYLOAD,
     )
 
 

@@ -6,12 +6,11 @@ PYTEST_ARGS ?=
 # Дополнительные флаги pip-audit, например формат отчёта для CI.
 AUDIT_ARGS ?=
 # Окружение уже синхронизировано целью sync: проверки не должны менять его на ходу.
-RUN := $(UV) run --no-sync
+RUN := PYTHONWARNINGS=error $(UV) run --no-sync
 
 # Даже вложенный pytest не должен отправлять уведомления из .env разработчика.
 export PYTEST_NOTIFIER_DESTINATIONS := 1
 export PYTEST_DISABLE_PLUGIN_AUTOLOAD := 1
-export PYTHONWARNINGS := error
 PYTEST_PLUGINS := -p pytest_asyncio.plugin -p pytest_httpx -p pytest_mock -p pytest_timeout \
 	-p faker.contrib.pytest.plugin -p pytest_cases.plugin -p syrupy -p _hypothesis_pytestplugin \
 	-p xdist.plugin -p pytest_rerunfailures -p allure_pytest.plugin -p anyio.pytest_plugin \

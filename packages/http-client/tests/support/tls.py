@@ -64,6 +64,7 @@ def generate_certificate(directory: Path) -> tuple[Path, Path]:
 def serve_tls(certificate: Path, key: Path) -> ThreadingHTTPServer:
     """Создать HTTPS-сервер с временным доверенным только тесту сертификатом."""
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
     context.load_cert_chain(certificate, key)
     server = ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
     server.socket = context.wrap_socket(server.socket, server_side=True)
