@@ -38,7 +38,7 @@ pytest_notifier = "pytest_notifier.plugin"
 
 [build-system]
 requires = [
-    "hatchling>=1.31.0,<2",
+    "hatchling>=1.33.0,<2",
 ]
 build-backend = "hatchling.build"
 
