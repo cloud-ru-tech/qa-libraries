@@ -39,7 +39,7 @@ yaml = [
     "pydantic-settings[yaml]>=2.9.1,<3",
 ]
 toml = [
-    "pydantic-settings[toml]>=2.9.1,<3",
+    "pydantic-settings[toml]>=2.16.2,<3",
 ]
 
 [build-system]
