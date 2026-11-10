@@ -35,7 +35,7 @@ jobs:
         env:
           PYTHON_VERSION: ${{ matrix.python }}
           AUDIT_ARGS: --cache-dir ${{ runner.temp }}/pip-audit --format json --output pip-audit.json
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: pip-audit-${{ matrix.python }}
@@ -71,7 +71,7 @@ jobs:
         if: always() && hashFiles('sarif/*.sarif') != '' && (github.event_name == 'pull_request' || github.actor != 'dependabot[bot]')
         with:
           sarif_file: sarif
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: codeql-sarif
