@@ -819,7 +819,7 @@ yaml = [
 requires-dist = [
     { name = "pydantic", specifier = ">=2.11.5,<3" },
     { name = "pydantic-settings", specifier = ">=2.9.1,<3" },
-    { name = "pydantic-settings", extras = ["toml"], marker = "extra == 'toml'", specifier = ">=2.9.1,<3" },
+    { name = "pydantic-settings", extras = ["toml"], marker = "extra == 'toml'", specifier = ">=2.16.2,<3" },
     { name = "pydantic-settings", extras = ["yaml"], marker = "extra == 'yaml'", specifier = ">=2.9.1,<3" },
     { name = "pyhumps", specifier = ">=3.8.0,<4" },
 ]
