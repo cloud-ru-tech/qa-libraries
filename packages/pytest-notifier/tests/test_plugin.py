@@ -23,7 +23,7 @@ def test_extracts_test_identity_and_failure_details() -> None:
     report = pytest.TestReport(
         nodeid="suite/test_api.py::test_fetch",
         location=("suite/test_api.py", 18, "test_fetch"),
-        keywords=dict[str, object](),
+        keywords={},
         outcome="failed",
         longrepr="unexpected response",
         when="call",
@@ -38,17 +38,13 @@ def test_extracts_test_identity_and_failure_details() -> None:
 
 
 def test_limits_short_failure_message() -> None:
-    report = pytest.TestReport(
-        "test.py::test_big", ("test.py", 0, "test_big"), dict[str, object](), "failed", "x" * 321, "call"
-    )
+    report = pytest.TestReport("test.py::test_big", ("test.py", 0, "test_big"), {}, "failed", "x" * 321, "call")
 
     assert_that(get_short_error_message(report)).is_equal_to("x" * 200)
 
 
 def test_reports_unknown_error_when_representation_is_missing() -> None:
-    report = pytest.TestReport(
-        "test.py::test_empty", ("test.py", 0, "test_empty"), dict[str, object](), "failed", None, "call"
-    )
+    report = pytest.TestReport("test.py::test_empty", ("test.py", 0, "test_empty"), {}, "failed", None, "call")
 
     assert_that(get_short_error_message(report)).is_equal_to("Unknown error")
 
