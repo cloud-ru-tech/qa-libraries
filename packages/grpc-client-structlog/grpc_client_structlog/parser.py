@@ -11,24 +11,24 @@ from grpc_client.utils.sanitizer import sanitize, sanitize_metadata
 
 _logger = logging.getLogger(__name__)
 
-# Значение поля `body`, когда телом запроса является поток сообщений.
+# `body` field value when the request body is a message stream.
 STREAMED_CONTENT = "<streamed content>"
 
-# В `status_code` идет имя кода, а не его номер: по имени статус читается без справочника,
-# и по нему же удобно фильтровать записи. Номер добавил бы в поле второе значение,
-# а искать по строке `2 (UNKNOWN)` пришлось бы подстрокой.
+# `status_code` contains the code name rather than its number: names need no reference lookup,
+# and make filtering convenient. A number would add a second value to the field,
+# whereas searching for `2 (UNKNOWN)` would require substring matching.
 
-# `trace_id` во всех записях дописывается последним, а не задается вместе с остальными полями:
-# рендереры, сохраняющие порядок добавления (например `structlog.processors.JSONRenderer`),
-# выводят поля в этом же порядке, и служебный идентификатор не должен разрывать данные вызова.
+# `trace_id` is appended last to every record rather than set with the other fields:
+# renderers that preserve insertion order (such as `structlog.processors.JSONRenderer`)
+# output fields in this order, and the internal identifier must not split the call data.
 
 
 def parse_request(record: RequestRecord, log_format: LogFormat) -> dict[str, object]:
-    """Собрать поля структурированного лога отправленного gRPC-запроса.
+    """Build structured log fields for a sent gRPC request.
 
-    :param record: данные запроса
-    :param log_format: правила оформления лога
-    :returns: поля структурированного лога запроса
+    :param record: request data
+    :param log_format: log formatting rules
+    :returns: structured request log fields
     """
     properties: dict[str, object] = {
         "method": record.method,
@@ -42,11 +42,11 @@ def parse_request(record: RequestRecord, log_format: LogFormat) -> dict[str, obj
 
 
 def parse_response(record: ResponseRecord, log_format: LogFormat) -> dict[str, object]:
-    """Собрать поля структурированного лога полученного gRPC-ответа.
+    """Build structured log fields for a received gRPC response.
 
-    :param record: данные завершившегося вызова
-    :param log_format: правила оформления лога
-    :returns: поля структурированного лога ответа
+    :param record: completed call data
+    :param log_format: log formatting rules
+    :returns: structured response log fields
     """
     properties: dict[str, object] = {"method": record.method, "status_code": record.status_code.name}
     if record.message is not None:
@@ -59,14 +59,14 @@ def parse_response(record: ResponseRecord, log_format: LogFormat) -> dict[str, o
 
 
 def parse_stream_response(record: ResponseRecord, log_format: LogFormat) -> dict[str, object]:
-    """Собрать поля структурированного лога завершившегося потока ответных сообщений.
+    """Build structured log fields for a completed response message stream.
 
-    Сами сообщения в лог не попадают: поток может быть сколь угодно длинным, а его вычитывание
-    ради лога изменило бы поведение вызова.
+    Messages themselves are not logged: a stream may be arbitrarily long, and reading it
+    for logging would change call behavior.
 
-    :param record: данные завершившегося потока
-    :param log_format: правила оформления лога
-    :returns: поля структурированного лога завершившегося потока
+    :param record: completed stream data
+    :param log_format: log formatting rules
+    :returns: structured log fields for the completed stream
     """
     properties: dict[str, object] = {
         "method": record.method,
@@ -81,11 +81,11 @@ def parse_stream_response(record: ResponseRecord, log_format: LogFormat) -> dict
 
 
 def parse_error(record: ResponseRecord, log_format: LogFormat) -> dict[str, object]:
-    """Собрать поля структурированного лога вызова, завершившегося ошибкой.
+    """Build structured log fields for a failed call.
 
-    :param record: данные завершившегося вызова
-    :param log_format: правила оформления лога
-    :returns: поля структурированного лога ошибки
+    :param record: completed call data
+    :param log_format: log formatting rules
+    :returns: structured error log fields
     """
     properties: dict[str, object] = {
         "method": record.method,
@@ -102,14 +102,14 @@ def parse_error(record: ResponseRecord, log_format: LogFormat) -> dict[str, obje
 
 
 def _parse_metadata(metadata: MetadataType | None, log_format: LogFormat) -> str | None:
-    """Собрать значение поля с метаданными.
+    """Build the metadata field value.
 
-    Значения повторяющегося ключа собираются в список: обычный словарь оставил бы
-    только последнее из них, и лог перестал бы соответствовать отправленным метаданным.
+    Repeated key values are collected in a list: a regular dictionary would retain
+    only the last value and make the log differ from the sent metadata.
 
-    :param metadata: метаданные запроса или ответа
-    :param log_format: правила оформления лога
-    :returns: метаданные в виде JSON либо None, если их нет
+    :param metadata: request or response metadata
+    :param log_format: log formatting rules
+    :returns: metadata as JSON, or None if absent
     """
     items = sanitize_metadata(metadata, log_format.sanitize_keys)
     if not items:
@@ -128,14 +128,14 @@ def _parse_metadata(metadata: MetadataType | None, log_format: LogFormat) -> str
 
 
 def _parse_body(message: Message, log_format: LogFormat) -> str:
-    """Собрать значение поля с телом сообщения.
+    """Build the message body field value.
 
-    Ошибка подготовки лога не должна мешать запросу: лог собирается до отправки, и падение
-    здесь — например, на предельно вложенном сообщении — сорвало бы сам вызов.
+    A log preparation error must not block requests: logs are built before sending, and a failure
+    here, for example on a deeply nested message, would break the call itself.
 
-    :param message: сообщение запроса или ответа
-    :param log_format: правила оформления лога
-    :returns: тело сообщения в виде JSON либо маркер недоступного тела
+    :param message: request or response message
+    :param log_format: log formatting rules
+    :returns: message body as JSON or a marker for an unavailable body
     """
     try:
         payload = cast("dict[str, object]", MessageToDict(message, always_print_fields_with_no_presence=True))

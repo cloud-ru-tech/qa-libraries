@@ -1,14 +1,14 @@
-"""Проверка того, можно ли переотправить тело запроса при повторе.
+"""Check whether a request body can be resent on retry.
 
-Повтор переиспользует тот же объект `Request`. Тело в памяти читается сколько угодно раз,
-а одноразовый поток после первой попытки вычерпан:
+A retry reuses the same `Request`. An in-memory body can be read repeatedly,
+while a one-shot stream is exhausted after the first attempt:
 
-- генератор на второй попытке отдаёт `httpx.StreamConsumed`;
-- файловый объект молча отправляет пустое тело, и сервер отвечает 200 — тихая потеря данных.
+- a generator raises `httpx.StreamConsumed` on the second attempt;
+- a file object silently sends an empty body and the server returns 200: silent data loss.
 
-Поэтому перед повтором тело либо перематывается, либо повторы запрещаются вовсе.
-Распознаются только те виды потоков, которые библиотека знает поимённо; всё остальное
-считается непроигрываемым — лучше отказаться от повтора, чем отправить обрезанные данные.
+Therefore rewind the body before a retry or disable retries entirely.
+Recognize only stream types explicitly known to the library; treat everything else
+as non-replayable: skipping a retry is preferable to sending truncated data.
 """
 
 from collections.abc import Callable, Mapping, Sequence
@@ -18,13 +18,13 @@ from httpx import Request, RequestNotRead
 
 from ._types import is_http_request
 
-try:  # приватные классы httpx: иначе одноразовый поток не отличить от воспроизводимого
+try:  # Private httpx classes are needed to distinguish one-shot streams from replayable streams
     from httpx._content import AsyncIteratorByteStream, IteratorByteStream
     from httpx._multipart import MultipartStream
 
     ITERATOR_STREAMS: tuple[type[object], ...] = (IteratorByteStream, AsyncIteratorByteStream)
     MULTIPART_STREAMS: tuple[type[object], ...] = (MultipartStream,)
-except ImportError:  # pragma: no cover - httpx переставил внутренности
+except ImportError:  # pragma: no cover - httpx internals have changed
     ITERATOR_STREAMS = ()
     MULTIPART_STREAMS = ()
 
@@ -43,14 +43,14 @@ Rewinder = Callable[[], None]
 
 
 def no_rewind() -> None:
-    """Тело переотправляется само по себе, готовить его не нужно."""
+    """Leave the body unchanged because it can be resent without preparation."""
 
 
 def body_rewinder(args: Sequence[object], kwargs: Mapping[str, object] | None = None) -> Rewinder | None:
-    """Подготовить тело запроса к повторным отправкам.
+    """Prepare the request body for resending.
 
-    Возвращает функцию, которую нужно вызвать перед каждой попыткой, либо `None`,
-    если тело переотправить нельзя и повторы недопустимы.
+    Return a function to call before each attempt, or `None`
+    if the body cannot be resent and retries are forbidden.
     """
     request = _find_request(args, kwargs or {})
     if request is None or _is_buffered(request):
@@ -68,12 +68,12 @@ def body_rewinder(args: Sequence[object], kwargs: Mapping[str, object] | None = 
 
 
 def _find_request(args: Sequence[object], kwargs: Mapping[str, object]) -> Request | None:
-    """Найти запрос среди аргументов вызова: имя параметра может быть любым."""
+    """Find the request in call arguments regardless of the parameter name."""
     return next((arg for arg in (*args, *kwargs.values()) if is_http_request(arg)), None)
 
 
 def _rewinder_for(source: object) -> Rewinder | None:
-    # Последовательность (bytes, str, list, tuple) перечитывается сама по себе.
+    # A sequence (bytes, str, list, tuple) can be reread without preparation.
     if isinstance(source, Sequence):
         return no_rewind
 
@@ -89,9 +89,9 @@ def _rewinder_for(source: object) -> Rewinder | None:
 
 
 def _multipart_rewinder(stream: _Multipart) -> Rewinder | None:
-    """Multipart httpx перечитывает сам, но только пока каждая часть воспроизводима.
+    """Let httpx reread multipart bodies, provided every part is replayable.
 
-    Неперематываемый файл даёт на повторе тело без его содержимого — одни заголовки частей.
+    A non-seekable file produces a retry body with only part headers and no file contents.
     """
     files = [file for field in stream.fields if (file := cast("object", getattr(field, "file", None))) is not None]
     replayable = (isinstance(file, Sequence) or _is_seekable(file) for file in files)

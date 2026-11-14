@@ -1,12 +1,12 @@
-"""Декораторы транспорта: метрики send и трассировка stream_request.
+"""Transport decorators: send metrics and stream_request tracing.
 
-Декораторы оборачивают send/stream_request, поэтому видят запрос на выходе
-и ответ на входе. Один вызов send — это одна попытка транспорта: редиректы
-httpx проходит внутри неё, так что счётчик покажет один вызов, а лог — все
-запросы цепочки.
+Decorators wrap send/stream_request, so they see the outgoing request
+and incoming response. One send call is one transport attempt: httpx follows
+redirects within it, so the counter shows one call while the log shows every
+request in the chain.
 
-Для AsyncHttpClient декоратор обязан быть асинхронным: автоматической обёртки,
-как у хуков, здесь нет — отсюда пары sync/async.
+AsyncHttpClient requires asynchronous decorators: there is no automatic wrapping
+as there is for hooks, hence the sync/async pairs.
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class TransportMetrics:
-    """Счётчики, которые набивают декораторы send."""
+    """Counters updated by send decorators."""
 
     by_method: Counter[str] = field(default_factory=Counter)
     by_status: Counter[int] = field(default_factory=Counter)
@@ -48,22 +48,22 @@ class TransportMetrics:
 
     @property
     def calls(self) -> int:
-        """Сколько раз был вызван транспорт."""
+        """Return the number of transport calls."""
         return sum(self.by_method.values())
 
     def record_success(self, method: str, status_code: int, elapsed_ms: float) -> None:
-        """Учесть успешную попытку транспорта."""
+        """Record a successful transport attempt."""
         self.by_method[method] += 1
         self.by_status[status_code] += 1
         self.total_elapsed_ms += elapsed_ms
 
     def record_failure(self, method: str) -> None:
-        """Учесть попытку транспорта, завершившуюся исключением."""
+        """Record a transport attempt that raised an exception."""
         self.by_method[method] += 1
         self.failures += 1
 
     def summary(self) -> str:
-        """Собрать итоговую строку метрик."""
+        """Build a metrics summary string."""
         average_ms = self.total_elapsed_ms / self.calls if self.calls else 0.0
         by_method = ", ".join(f"{method}={count}" for method, count in sorted(self.by_method.items()))
         by_status = ", ".join(f"{status}={count}" for status, count in sorted(self.by_status.items()))
@@ -74,11 +74,11 @@ class TransportMetrics:
 
 
 def metrics_decorator(metrics: TransportMetrics, logger: Logger) -> SyncSendDecorator:
-    """Собрать синхронный декоратор send, снимающий метрики.
+    """Build a synchronous send decorator that collects metrics.
 
-    :param metrics: счётчики, которые нужно наполнять
-    :param logger: логгер для строки метрики на каждый вызов
-    :returns: декоратор метода send
+    :param metrics: Counters to update
+    :param logger: Logger for a metrics line on each call
+    :returns: Send method decorator
     """
 
     def decorator(func: SyncSendMethod) -> SyncSendMethod:
@@ -127,11 +127,11 @@ def metrics_decorator(metrics: TransportMetrics, logger: Logger) -> SyncSendDeco
 
 
 def async_metrics_decorator(metrics: TransportMetrics, logger: Logger) -> AsyncSendDecorator:
-    """Собрать асинхронный декоратор send, снимающий метрики.
+    """Build an asynchronous send decorator that collects metrics.
 
-    :param metrics: счётчики, которые нужно наполнять
-    :param logger: логгер для строки метрики на каждый вызов
-    :returns: декоратор асинхронного метода send
+    :param metrics: Counters to update
+    :param logger: Logger for a metrics line on each call
+    :returns: Asynchronous send method decorator
     """
 
     def decorator(func: AsyncSendMethod) -> AsyncSendMethod:
@@ -180,18 +180,18 @@ def async_metrics_decorator(metrics: TransportMetrics, logger: Logger) -> AsyncS
 
 
 def stream_trace_decorator(logger: Logger) -> SyncStreamRequestDecorator:
-    """Собрать синхронный декоратор stream_request, отмечающий время жизни потока.
+    """Build a synchronous stream_request decorator that measures the stream lifetime.
 
-    Тело потокового ответа в лог не попадает — на момент хука оно ещё не прочитано,
-    поэтому длительность чтения видно только отсюда.
+    A streaming response body is not logged because it has not been read when the hook runs,
+    so its read duration can only be measured here.
 
-    :param logger: логгер для отметок открытия и закрытия потока
-    :returns: декоратор метода stream_request
+    :param logger: Logger for stream open and close events
+    :returns: Stream_request method decorator
     """
 
     def decorator(func: SyncStreamRequestMethod) -> SyncStreamRequestMethod:
-        # @contextmanager обязан быть ниже @wraps: декоратор stream_request
-        # должен вернуть контекстный менеджер, а не генератор.
+        # @contextmanager must be below @wraps: a stream_request decorator
+        # must return a context manager rather than a generator.
         @wraps(func)
         @contextmanager
         def wrapper(
@@ -221,10 +221,10 @@ def stream_trace_decorator(logger: Logger) -> SyncStreamRequestDecorator:
 
 
 def async_stream_trace_decorator(logger: Logger) -> AsyncStreamRequestDecorator:
-    """Собрать асинхронный декоратор stream_request, отмечающий время жизни потока.
+    """Build an asynchronous stream_request decorator that measures the stream lifetime.
 
-    :param logger: логгер для отметок открытия и закрытия потока
-    :returns: декоратор асинхронного метода stream_request
+    :param logger: Logger for stream open and close events
+    :returns: Asynchronous stream_request method decorator
     """
 
     def decorator(func: AsyncStreamRequestMethod) -> AsyncStreamRequestMethod:

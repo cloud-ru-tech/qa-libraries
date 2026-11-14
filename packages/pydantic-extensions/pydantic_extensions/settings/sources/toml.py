@@ -11,12 +11,12 @@ if TYPE_CHECKING:
 
 
 class TomlBaseSettings(FileTypeBaseSettings):
-    """Базовый класс для настроек, загружаемых из toml файлов.
+    """Base class for settings loaded from toml files.
 
-    Необходимо передать путь до файла или последовательность путей в свойство ``toml_file``
+    Supply a file path or sequence of paths in the ``toml_file`` property
 
     >>> class MySettings(TomlBaseSettings):
-    >>>     ...  # настройки
+    >>>     ...  # settings
     >>>     model_config = SettingsConfigDict(toml_file="config.toml")
     """
 
@@ -37,11 +37,11 @@ class TomlBaseSettings(FileTypeBaseSettings):
 
 
 class StrictTomlConfigSettingsSource(UnknownKeysFilteringMixin, TomlConfigSettingsSource):
-    """TOML-источник с поддержкой фильтрации неизвестных ключей."""
+    """TOML source that supports filtering unknown keys."""
 
     def __call__(self) -> dict[str, object]:
-        """Вернуть значения настроек с применённым фильтром.
+        """Return settings values with the filter applied.
 
-        :return: значения файлового источника.
+        :return: file source values.
         """
         return self.apply_unknown_keys_filter(cast("dict[str, object]", super().__call__()))

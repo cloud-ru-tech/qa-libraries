@@ -33,7 +33,7 @@ logger = structlog.stdlib.get_logger("tests")
 
 
 def pytest_logging_context_configure(handler: LoggingContextHandler) -> None:
-    """Плагин зовёт этот хук один раз за прогон — здесь задаётся формат файлов логов."""
+    """Set the log file format in this hook called once per run."""
     handler.setFormatter(
         structlog.stdlib.ProcessorFormatter(
             processor=structlog.processors.JSONRenderer(ensure_ascii=False),

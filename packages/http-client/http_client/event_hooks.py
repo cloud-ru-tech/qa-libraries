@@ -11,8 +11,8 @@ from .utils import logutils, traceparent
 REQUEST_ID_HEADER = "X-Request-ID"
 TRACEPARENT_HEADER = "Traceparent"
 
-# Маскируется всегда: цена одного пропущенного секрета в логах несопоставима
-# с неудобством от лишней звёздочки.
+# Always mask these: leaking a single secret in logs is far worse
+# than an unnecessary asterisk.
 DEFAULT_SANITIZE_KEYS: tuple[str, ...] = (
     "authorization",
     "proxy-authorization",
@@ -37,14 +37,14 @@ def request_logger_hook(
     use_line_breaks: bool | None = None,
     log_level: int | None = None,
 ) -> RequestHook:
-    """Создать хук безопасного логирования HTTP-запроса.
+    """Create a hook for safe HTTP request logging.
 
-    :param logger: получатель записей
-    :param sanitize_keys: скрываемые поля
-    :param json_indent: отступ JSON
-    :param use_line_breaks: форматирование нескольких строк
-    :param log_level: уровень записей
-    :returns: хук запроса
+    :param logger: Log record recipient
+    :param sanitize_keys: Fields to mask
+    :param json_indent: JSON indentation
+    :param use_line_breaks: Multiline formatting
+    :param log_level: Log level
+    :returns: Request hook
     """
 
     def log_request_hook(request: Request) -> None:
@@ -67,14 +67,14 @@ def response_logger_hook(
     use_line_breaks: bool | None = None,
     log_level: int | None = None,
 ) -> ResponseHook:
-    """Создать хук безопасного логирования HTTP-ответа.
+    """Create a hook for safe HTTP response logging.
 
-    :param logger: получатель записей
-    :param sanitize_keys: скрываемые поля
-    :param json_indent: отступ JSON
-    :param use_line_breaks: форматирование нескольких строк
-    :param log_level: уровень записей
-    :returns: хук ответа
+    :param logger: Log record recipient
+    :param sanitize_keys: Fields to mask
+    :param json_indent: JSON indentation
+    :param use_line_breaks: Multiline formatting
+    :param log_level: Log level
+    :returns: Response hook
     """
 
     def log_response_hook(response: Response) -> None:
@@ -97,10 +97,10 @@ def async_response_logger_hook(
     use_line_breaks: bool | None = None,
     log_level: int | None = None,
 ) -> ResponseHook:
-    """Собрать хук логирования ответа для асинхронного клиента.
+    """Build a response logging hook for an asynchronous client.
 
-    Нужна отдельная реализация: на момент срабатывания хука тело асинхронного
-    ответа ещё не прочитано, а его поток доступен только через await.
+    A separate implementation is needed: when the hook runs, the asynchronous
+    response body has not been read and its stream is only accessible through await.
     """
 
     async def log_response_hook(response: Response) -> None:
@@ -116,26 +116,26 @@ def async_response_logger_hook(
 
 
 def request_id_hook(request: Request) -> None:
-    """Проставить идентификатор запроса, если его ещё нет.
+    """Set a request ID if it is missing.
 
-    Существующее значение намеренно не перезаписывается. Хук срабатывает на каждой отправке
-    объекта запроса, а повторная попытка отправляет тот же объект: перезапись выдавала бы
-    каждой попытке новый идентификатор, и связать их в логах было бы нельзя. По той же причине
-    сохраняется идентификатор, который проставил вызывающий код.
+    Preserve the existing value deliberately. The hook runs every time a request object
+    is sent, and retries send the same object: overwriting the ID would give
+    each attempt a new ID, preventing correlation in logs. For the same reason,
+    preserve the ID supplied by the caller.
     """
     request.headers.setdefault(REQUEST_ID_HEADER, str(uuid4()))
 
 
 def traceparent_hook(request: Request) -> None:
-    """Проставить traceparent, если его ещё нет. Подробности — в :func:`request_id_hook`."""
+    """Set traceparent if it is missing. See :func:`request_id_hook` for details."""
     request.headers.setdefault(TRACEPARENT_HEADER, traceparent.generate())
 
 
 def add_default_headers_hook(headers: dict[str, str]) -> RequestHook:
-    """Создать хук добавления отсутствующих заголовков запроса.
+    """Create a hook to add missing request headers.
 
-    :param headers: заголовки по умолчанию
-    :returns: хук запроса
+    :param headers: Default headers
+    :returns: Request hook
     """
     defaults = dict(headers)
 

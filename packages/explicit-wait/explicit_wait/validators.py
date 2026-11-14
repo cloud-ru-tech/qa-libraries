@@ -10,12 +10,12 @@ logger = logging.getLogger(__name__)
 
 
 def validate_timeout_seconds(timeout_seconds: float) -> float:
-    """Проверить максимальное время ожидания.
+    """Validate the maximum wait time.
 
-    :param timeout_seconds: проверяемое значение; ``math.inf`` допустим.
-    :return: то же значение.
-    :raises TypeError: если передано не число.
-    :raises ValueError: если число не является положительным.
+    :param timeout_seconds: value to check; ``math.inf`` is allowed.
+    :return: the same value.
+    :raises TypeError: if the value is not a number.
+    :raises ValueError: if the number is not positive.
     """
     if isinstance(timeout_seconds, bool) or not isinstance(timeout_seconds, int | float):
         message = f"timeout_seconds must be a number, got {type(timeout_seconds).__name__}"
@@ -31,12 +31,12 @@ def validate_timeout_seconds(timeout_seconds: float) -> float:
 
 
 def validate_max_attempts(max_attempts: int | None) -> int | None:
-    """Проверить ограничение по числу попыток.
+    """Validate the attempt count limit.
 
-    :param max_attempts: проверяемое значение; None означает отсутствие ограничения.
-    :return: то же значение.
-    :raises TypeError: если передано не целое число.
-    :raises ValueError: если число не больше нуля.
+    :param max_attempts: value to check; None means no limit.
+    :return: the same value.
+    :raises TypeError: if the value is not an integer.
+    :raises ValueError: if the number is not greater than zero.
     """
     if max_attempts is None:
         return None
@@ -54,15 +54,15 @@ def validate_max_attempts(max_attempts: int | None) -> int | None:
 
 
 def reject_awaitable(value: object, *, alternative: str) -> object:
-    """Отвергнуть awaitable-результат синхронного предиката.
+    """Reject an awaitable result from a synchronous predicate.
 
-    Awaitable-объект всегда truthy, поэтому незамеченным он превратил бы ложное условие
-    в успешное и дал бы ложно проходящий автотест.
+    An awaitable is always truthy, so accepting it would turn a false condition
+    into a success and make an automated test pass incorrectly.
 
-    :param value: результат синхронного предиката.
-    :param alternative: что использовать вместо синхронного ожидания.
-    :return: то же значение, если оно не awaitable.
-    :raises InvalidPredicateError: если значение является awaitable.
+    :param value: synchronous predicate result.
+    :param alternative: what to use instead of the synchronous wait.
+    :return: the same value if it is not awaitable.
+    :raises InvalidPredicateError: if the value is awaitable.
     """
     if not inspect.isawaitable(value):
         return value
@@ -77,12 +77,12 @@ def reject_awaitable(value: object, *, alternative: str) -> object:
 
 
 def close_quietly(value: object) -> None:
-    """Закрыть неожиданный awaitable, не позволяя очистке подменить итоговую ошибку.
+    """Close an unexpected awaitable without letting cleanup replace the final error.
 
-    Закрываются только корутины и генераторы: у них ``close`` синхронный и предсказуемый.
-    Для произвольного объекта с ``__await__`` пользовательский ``close`` не вызывается.
+    Only coroutines and generators are closed: their ``close`` is synchronous and predictable.
+    A custom ``close`` is not called on arbitrary objects with ``__await__``.
 
-    :param value: awaitable-объект, который не будет ожидаться.
+    :param value: awaitable that will not be awaited.
     """
     if not isinstance(value, types.CoroutineType | types.GeneratorType):
         return

@@ -14,10 +14,10 @@ if TYPE_CHECKING:
 
 
 class FakeAuth:
-    """Источник токенов для тестов, запоминающий все выданные значения."""
+    """Test token provider that remembers all issued values."""
 
     def __init__(self, prefix: str = "token") -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._prefix = prefix
         self._counter = count(1)
         self._current: str | None = None
@@ -25,13 +25,13 @@ class FakeAuth:
         self.rejected: list[str] = []
 
     def token(self) -> str:
-        """Выдать текущий токен, выпустив его при первом обращении."""
+        """Return the current token, issuing it on first access."""
         if self._current is None:
             self._current = self._issue()
         return self._current
 
     def refresh(self, rejected_token: str) -> str:
-        """Выпустить новый токен взамен отвергнутого."""
+        """Issue a new token to replace the rejected one."""
         self.rejected.append(rejected_token)
         if self._current is not None and self._current != rejected_token:
             return self._current
@@ -46,10 +46,10 @@ class FakeAuth:
 
 
 class FakeAsyncAuth:
-    """Асинхронный источник токенов для тестов."""
+    """Asynchronous token provider for tests."""
 
     def __init__(self, prefix: str = "async-token") -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._prefix = prefix
         self._counter = count(1)
         self._current: str | None = None
@@ -57,13 +57,13 @@ class FakeAsyncAuth:
         self.rejected: list[str] = []
 
     async def token(self) -> str:
-        """Выдать текущий токен, выпустив его при первом обращении."""
+        """Return the current token, issuing it on first access."""
         if self._current is None:
             self._current = self._issue()
         return self._current
 
     async def refresh(self, rejected_token: str) -> str:
-        """Выпустить новый токен взамен отвергнутого."""
+        """Issue a new token to replace the rejected one."""
         self.rejected.append(rejected_token)
         if self._current is not None and self._current != rejected_token:
             return self._current
@@ -78,7 +78,7 @@ class FakeAsyncAuth:
 
 
 class FakeCallDetails(NamedTuple):
-    """Параметры вызова для проверки интерцепторов без обращения к сети."""
+    """Call options for testing interceptors without network access."""
 
     method: str = "/example.Service/Method"
     timeout: float | None = None
@@ -89,28 +89,28 @@ class FakeCallDetails(NamedTuple):
 
 
 def fake_call_details(metadata: MetadataItems | None = None) -> grpc.ClientCallDetails:
-    """Создать параметры синхронного вызова для проверки интерцепторов.
+    """Create synchronous call options for testing interceptors.
 
-    :param metadata: метаданные запроса
-    :return: параметры вызова в том виде, в каком их ждет интерцептор
+    :param metadata: request metadata
+    :return: call options in the form expected by the interceptor
     """
     return cast("grpc.ClientCallDetails", FakeCallDetails(metadata=metadata))
 
 
 def fake_aio_call_details(metadata: MetadataItems | None = None) -> grpc.aio.ClientCallDetails:
-    """Создать параметры асинхронного вызова для проверки интерцепторов.
+    """Create asynchronous call options for testing interceptors.
 
-    :param metadata: метаданные запроса
-    :return: параметры вызова в том виде, в каком их ждет интерцептор
+    :param metadata: request metadata
+    :return: call options in the form expected by the interceptor
     """
     return cast("grpc.aio.ClientCallDetails", FakeCallDetails(metadata=metadata))
 
 
 class FakeOutcome:
-    """Результат вызова, сообщающий заданный код статуса."""
+    """Call result reporting the specified status code."""
 
     def __init__(self, code: grpc.StatusCode, message: object = None) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._code = code
         self._message = message
 
@@ -128,23 +128,23 @@ class FakeOutcome:
 
 
 class _ContinuationRecorder:
-    """Продолжение цепочки интерцепторов, принимающее запросы только с заданным токеном.
+    """Interceptor chain continuation that accepts requests only with the specified token.
 
-    Запоминает параметры каждого вызова, чтобы тест мог проверить не только итоговый статус,
-    но и то, какие метаданные ушли в каждой попытке.
+    Remember each call's options so tests can check not only the final status,
+    but also which metadata was sent on each attempt.
     """
 
     def __init__(self, accepted_token: str | None = None, auth_key: str = "authorization") -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._accepted_token = accepted_token
         self._auth_key = auth_key
         self.calls: list[object] = []
 
     def sent_token(self, call_index: int) -> str | None:
-        """Получить токен, отправленный в вызове с указанным номером.
+        """Get the token sent in the call with the specified index.
 
-        :param call_index: порядковый номер вызова, начиная с нуля
-        :return: значение токена без схемы либо None, если заголовка не было
+        :param call_index: zero-based call index
+        :return: token value without the scheme, or None if no header was present
         """
         metadata = dict(call_detail(self.calls[call_index], "metadata", None) or ())
         value = metadata.get(self._auth_key)
@@ -154,7 +154,7 @@ class _ContinuationRecorder:
 
 
 class FakeContinuation(_ContinuationRecorder):
-    """Синхронное продолжение цепочки вызовов."""
+    """Synchronous call chain continuation."""
 
     def __call__(self, call_details: object, request: object) -> FakeOutcome:
         self.calls.append(call_details)
@@ -165,7 +165,7 @@ class FakeContinuation(_ContinuationRecorder):
 
 
 class FakeAsyncContinuation(_ContinuationRecorder):
-    """Асинхронное продолжение цепочки интерцепторов."""
+    """Asynchronous continuation of the interceptor chain."""
 
     async def __call__(self, call_details: object, request: object) -> FakeAsyncOutcome:
         self.calls.append(call_details)
@@ -175,7 +175,7 @@ class FakeAsyncContinuation(_ContinuationRecorder):
         return FakeAsyncOutcome(grpc.StatusCode.UNAUTHENTICATED)
 
     def sent_token(self, call_index: int) -> str | None:
-        """Получить токен, отправленный в вызове с указанным номером."""
+        """Get the token sent in the call with the specified index."""
         metadata = dict(call_detail(self.calls[call_index], "metadata", None) or ())
         value = metadata.get(self._auth_key)
         if not isinstance(value, str):
@@ -184,10 +184,10 @@ class FakeAsyncContinuation(_ContinuationRecorder):
 
 
 class FakeAsyncOutcome:
-    """Результат асинхронного вызова, сообщающий заданный код статуса."""
+    """Asynchronous call result reporting the specified status code."""
 
     def __init__(self, code: grpc.StatusCode, message: object = None) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._code = code
         self._message = message
 
@@ -202,10 +202,10 @@ class FakeAsyncOutcome:
 
 
 class FakeAsyncStreamCall:
-    """Поддельный потоковый вызов, считающий обращения за сообщениями."""
+    """Fake streaming call that counts message reads."""
 
     def __init__(self, messages_count: int = 0) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._messages = [object() for _ in range(messages_count)]
         self.reads = 0
         self.cancelled = False
@@ -237,10 +237,10 @@ class FakeAsyncStreamCall:
 
 
 class FakeStreamCall:
-    """Поддельный синхронный потоковый вызов, считающий обращения за сообщениями."""
+    """Fake synchronous streaming call that counts message reads."""
 
     def __init__(self, messages_count: int = 0) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._messages = [object() for _ in range(messages_count)]
         self.reads = 0
         self.cancelled = False
@@ -272,10 +272,10 @@ class FakeStreamCall:
 
 
 class FakeRpcError(grpc.RpcError):
-    """Ошибка gRPC, повторяющая публичный интерфейс `grpc.Call`."""
+    """gRPC error that mirrors the public `grpc.Call` interface."""
 
     def __init__(self, code: grpc.StatusCode = grpc.StatusCode.INTERNAL, details: str = "сломалось") -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         super().__init__(details)
         self._code = code
         self._details = details
@@ -294,10 +294,10 @@ class FakeRpcError(grpc.RpcError):
 
 
 class FakeFailingStreamCall:
-    """Синхронный поток, отдающий сообщения и затем завершающийся ошибкой."""
+    """Synchronous stream that yields messages and then fails."""
 
     def __init__(self, messages: list[object], error: FakeRpcError) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._messages = list(messages)
         self._error = error
         self.cancelled = False
@@ -328,14 +328,14 @@ class FakeFailingStreamCall:
 
 
 class FakeCallbackStreamCall:
-    """Поток, вызывающий callback завершения прямо во время чтения сообщения.
+    """Stream that invokes its completion callback while a message is being read.
 
-    Так воспроизводится гонка между служебным потоком grpcio и читателем: callback приходит
-    после того, как сообщение уже получено, но счетчик еще не увеличен.
+    Reproduce the race between the internal grpcio thread and the reader: the callback arrives
+    after a message is received but before the counter is incremented.
     """
 
     def __init__(self, messages_count: int = 1) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._messages = [object() for _ in range(messages_count)]
         self._callbacks: list[Callable[[object], None]] = []
         self.cancelled = False
@@ -353,7 +353,7 @@ class FakeCallbackStreamCall:
 
         message = self._messages.pop(0)
         if not self._messages:
-            # Вызов завершился ровно в момент выдачи последнего сообщения.
+            # The call finished exactly while yielding the last message.
             self._fire_callbacks()
         return message
 
@@ -380,10 +380,10 @@ class FakeCallbackStreamCall:
 
 
 class FakeFailingAsyncStreamCall:
-    """Асинхронный поток, отдающий сообщения и затем завершающийся ошибкой."""
+    """Asynchronous stream that yields messages and then fails."""
 
     def __init__(self, messages: list[object], error: BaseException) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._messages = list(messages)
         self._error = error
         self.cancelled = False
@@ -414,14 +414,14 @@ class FakeFailingAsyncStreamCall:
 
 
 class FakeLogSink:
-    """Приемник записей о вызовах, складывающий все полученное в списки.
+    """Call record sink that stores all received records in lists.
 
-    Уровни хранятся отдельными списками, чтобы тест мог проверить выбор уровня,
-    не разбирая при этом саму запись.
+    Levels are stored in separate lists so tests can check level selection
+    without parsing the record itself.
     """
 
     def __init__(self, enabled_levels: Collection[int] | None = None) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._enabled_levels = enabled_levels
         self.requests: list[RequestRecord] = []
         self.responses: list[ResponseRecord] = []
@@ -441,13 +441,13 @@ class FakeLogSink:
 
 
 class FailingLogSink:
-    """Приемник, срывающийся при каждом обращении.
+    """Sink that fails on every call.
 
-    Так проверяется, что сбой чужого приемника не мешает самому вызову.
+    Verify that an external sink failure does not prevent the call itself.
     """
 
     def __init__(self, *, fail_on_check: bool = False) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._fail_on_check = fail_on_check
 
     def is_enabled_for(self, level: int) -> bool:
@@ -466,10 +466,10 @@ class FailingLogSink:
 
 
 class FakeAsyncCallbackStreamCall:
-    """Асинхронный поток, вызывающий callback завершения в момент выдачи сообщения."""
+    """Asynchronous stream that invokes its completion callback while yielding a message."""
 
     def __init__(self, messages_count: int = 1) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._messages = [object() for _ in range(messages_count)]
         self._callbacks: list[Callable[[object], None]] = []
         self.cancelled = False

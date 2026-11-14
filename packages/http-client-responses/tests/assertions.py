@@ -15,7 +15,7 @@ else:
 
 
 class ResponseAssertions(_Assertions):
-    """Проверки для разобранных моделей ответа и для ошибок разбора."""
+    """Assertions for parsed response models and parsing errors."""
 
     def has_user_names(self, expected: list[str]) -> Self:
         actual = [user.name for user in cast("ExampleResponse", self.val).users]

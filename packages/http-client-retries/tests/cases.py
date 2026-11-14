@@ -1,6 +1,6 @@
-"""Наборы сетевых ошибок, при которых запрос должен повторяться.
+"""Network error cases for which the request should be retried.
 
-Каждый кейс возвращает пару (ошибка, сколько раз она повторится до успешного ответа).
+Each case returns a pair: the error and its occurrence count before a successful response.
 """
 
 from typing import Protocol, cast
@@ -46,23 +46,23 @@ def case_httpcore_pool_timeout() -> tuple[Exception, int]:
 
 @cast("_TypedDecorator", case(id="too_many_redirects"))
 def deterministic_too_many_redirects() -> Exception:
-    """Повтор пойдёт по той же цепочке редиректов и упрётся в тот же предел."""
+    """Represent retries following the same redirect chain and reaching the same limit."""
     return httpx.TooManyRedirects("redirect loop", request=httpx.Request("GET", "https://loop.test/a"))
 
 
 @cast("_TypedDecorator", case(id="unsupported_protocol"))
 def deterministic_unsupported_protocol() -> Exception:
-    """Схема URL не изменится от повтора."""
+    """Retrying does not change the URL scheme."""
     return httpx.UnsupportedProtocol("scheme not supported", request=httpx.Request("GET", "https://odd.test/a"))
 
 
 @cast("_TypedDecorator", case(id="decoding_error"))
 def deterministic_decoding_error() -> Exception:
-    """Сервер вернёт то же нечитаемое тело."""
+    """Represent a server returning the same unreadable body on retries."""
     return httpx.DecodingError("broken encoding", request=httpx.Request("GET", "https://codec.test/a"))
 
 
 @cast("_TypedDecorator", case(id="local_protocol_error"))
 def deterministic_local_protocol_error() -> Exception:
-    """Запрос неверно собран на нашей стороне — повтор соберёт его так же."""
+    """Represent an incorrectly built request that retries would build the same way."""
     return httpx.LocalProtocolError("malformed request")

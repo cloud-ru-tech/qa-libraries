@@ -11,13 +11,13 @@ logger = logging.getLogger("tests")
 
 _SUCCESSFUL_ATTEMPT: Final = 3
 
-# Счётчик живёт в модуле, поэтому продолжается между повторными попытками одного прогона.
+# The module-level counter continues across retries within the same run.
 _attempts = count(1)
 
 
 @pytest.mark.flaky(reruns=2)
 def test_checkout_survives_flaky_payment_gateway(shop: ShopClient) -> None:
-    """Первые две попытки падают, третья проходит: у каждой попытки будет свой файл логов."""
+    """The first two attempts fail and the third passes; each has its own log file."""
     attempt = next(_attempts)
     logger.info("попытка оплаты №%s из %s", attempt, _SUCCESSFUL_ATTEMPT)
     shop.add_to_cart("SKU-CUP", 1)
@@ -28,7 +28,7 @@ def test_checkout_survives_flaky_payment_gateway(shop: ShopClient) -> None:
 
 
 def test_checkout_applies_promo_code(shop: ShopClient) -> None:
-    """Падает специально: из логов теста видно, что промокод просрочен и скидки не было."""
+    """Fail intentionally: test logs show an expired promo code and no discount."""
     logger.info("оформляем заказ с промокодом")
     shop.add_to_cart("SKU-COFFEE", 2)
     assert_that(shop.apply_promo("SALE10")).is_equal_to(1080)

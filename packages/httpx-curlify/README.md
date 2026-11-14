@@ -4,44 +4,46 @@
 [![Python](https://img.shields.io/pypi/pyversions/cloudru-qa-httpx-curlify)](https://pypi.org/project/cloudru-qa-httpx-curlify/)
 [![License](https://img.shields.io/pypi/l/cloudru-qa-httpx-curlify)](https://github.com/cloud-ru-tech/qa-libraries/blob/master/LICENSE)
 
-Библиотека для преобразования HTTP-запросов из `httpx.Request` в формат curl-команд. Удобна для отладки, логирования и документирования API-запросов.
+English | [Русский](README.ru.md)
+
+Convert HTTP requests from `httpx.Request` to curl commands. Useful for debugging, logging, and documenting API requests.
 
 - [httpx-curlify](#httpx-curlify)
-  - [Установка](#установка)
-  - [Скиллы для AI-агентов](#скиллы-для-ai-агентов)
-  - [Использование](#использование)
-    - [Базовое использование](#базовое-использование)
-    - [Скрытие чувствительных данных](#скрытие-чувствительных-данных)
-    - [Форматирование JSON](#форматирование-json)
-  - [Разработка](#разработка)
+  - [Installation](#installation)
+  - [Skills for AI agents](#skills-for-ai-agents)
+  - [Usage](#usage)
+    - [Basic usage](#basic-usage)
+    - [Masking sensitive data](#masking-sensitive-data)
+    - [JSON formatting](#json-formatting)
+  - [Development](#development)
 
-## Установка
+## Installation
 
-Требуется Python 3.13 или новее.
+Requires Python 3.13 or later.
 
 ```shell
 pip install cloudru-qa-httpx-curlify
 ```
 
-Библиотека импортируется как модуль `httpx_curlify`.
+Import the library as the module `httpx_curlify`.
 
-## Скиллы для AI-агентов
+## Skills for AI agents
 
-У этой библиотеки собственного скилла пока нет. Если в проекте установлены другие
-библиотеки набора со [скиллами для AI-агентов](https://github.com/cloud-ru-tech/qa-libraries#скиллы-для-ai-агентов),
-выбрать и подключить их можно из корня проекта (нужен [`uv`](https://docs.astral.sh/uv/)):
+This library does not have its own skill yet. If your project uses other
+libraries from this suite with [skills for AI agents](https://github.com/cloud-ru-tech/qa-libraries#skills-for-ai-agents),
+select and enable them from your project root (requires [`uv`](https://docs.astral.sh/uv/)):
 
 ```shell
 uvx library-skills
 ```
 
-Для Claude Code добавьте `--claude`.
+For Claude Code, add `--claude`.
 
-## Использование
+## Usage
 
-### Базовое использование
+### Basic usage
 
-Простое преобразование GET-запроса:
+Convert a GET request:
 
 ```python
 import httpx
@@ -52,14 +54,14 @@ curl_command = to_curl(request)
 print(curl_command)
 ```
 
-Результат:
+Output:
 ```bash
 curl -X GET \
   -H 'host: example.com' \
   https://example.com/api/users
 ```
 
-POST-запрос с JSON:
+A POST request with JSON:
 
 ```python
 request = httpx.Request(
@@ -71,7 +73,7 @@ curl_command = to_curl(request)
 print(curl_command)
 ```
 
-Результат:
+Output:
 ```bash
 curl -X POST \
   -H 'host: example.com' \
@@ -81,7 +83,7 @@ curl -X POST \
   https://example.com/api/users
 ```
 
-Запрос с заголовками:
+A request with headers:
 
 ```python
 request = httpx.Request(
@@ -96,11 +98,11 @@ curl_command = to_curl(request)
 print(curl_command)
 ```
 
-### Скрытие чувствительных данных
+### Masking sensitive data
 
-Библиотека поддерживает скрытие чувствительных данных в заголовках и JSON-теле запроса с использованием синтаксиса [glom](https://glom.readthedocs.io/en/latest/):
+Mask sensitive data in headers and JSON request bodies using [glom](https://glom.readthedocs.io/en/latest/) syntax:
 
-Скрытие заголовков:
+Mask headers:
 
 ```python
 request = httpx.Request(
@@ -115,7 +117,7 @@ curl_command = to_curl(request, sanitize_keys=["authorization", "x-api-key"])
 print(curl_command)
 ```
 
-Результат:
+Output:
 ```bash
 curl -X GET \
   -H 'host: example.com' \
@@ -124,7 +126,7 @@ curl -X GET \
   https://example.com/api/data
 ```
 
-Скрытие данных в JSON:
+Mask JSON data:
 
 ```python
 request = httpx.Request(
@@ -136,7 +138,7 @@ curl_command = to_curl(request, sanitize_keys=["password"])
 print(curl_command)
 ```
 
-Результат:
+Output:
 ```bash
 curl -X POST \
   -H 'host: example.com' \
@@ -145,7 +147,7 @@ curl -X POST \
   https://example.com/api/login
 ```
 
-Скрытие вложенных данных:
+Mask nested data:
 
 ```python
 request = httpx.Request(
@@ -157,7 +159,7 @@ curl_command = to_curl(request, sanitize_keys=["user.password"])
 print(curl_command)
 ```
 
-Результат:
+Output:
 ```bash
 curl -X POST \
   -H 'host: example.com' \
@@ -166,9 +168,9 @@ curl -X POST \
   https://example.com/api/data
 ```
 
-### Форматирование JSON
+### JSON formatting
 
-Можно передать дополнительные параметры для `json.dumps`:
+Pass additional options to `json.dumps`:
 
 ```python
 request = httpx.Request(
@@ -180,7 +182,7 @@ curl_command = to_curl(request, json_dumps_kwargs={"indent": 2})
 print(curl_command)
 ```
 
-Результат:
+Output:
 ```bash
 curl -X POST \
   -H 'host: example.com' \
@@ -192,29 +194,29 @@ curl -X POST \
   https://example.com/api/data
 ```
 
-## Разработка
+## Development
 
-Библиотека развивается в монорепозитории [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries)
-вместе с остальными библиотеками `cloudru-qa-*`. Нужны [`uv`](https://docs.astral.sh/uv/), GNU Make
-и [`checkmake`](https://github.com/checkmake/checkmake),
-команды запускаются из корня репозитория:
+This library is developed in the [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries) monorepo
+alongside the other `cloudru-qa-*` libraries. You need [`uv`](https://docs.astral.sh/uv/), GNU Make
+and [`checkmake`](https://github.com/checkmake/checkmake);
+run the commands from the repository root:
 
 ```shell
-make sync                      # зависимости всех библиотек строго по uv.lock
-make test-httpx-curlify        # тесты этой библиотеки
-make typecheck-httpx-curlify   # mypy для этой библиотеки
-make lint-fix                  # безопасные автоисправления ruff
-make check                     # форматирование, ruff, mypy и тесты всего набора
+make sync                      # dependencies for all libraries from uv.lock
+make test-httpx-curlify        # tests for this library
+make typecheck-httpx-curlify   # mypy for this library
+make lint-fix                  # safe Ruff fixes
+make check                     # formatting, Ruff, mypy, and tests for the whole suite
 ```
 
-Snapshot-тесты обновляются так:
+Update snapshots with:
 
 ```shell
 make test-httpx-curlify PYTEST_ARGS=--snapshot-update
 ```
 
-Тесты прогоняются на Python 3.13 и 3.14. Окружение для другой версии создаётся отдельно:
+Tests run on Python 3.13 and 3.14. Each version uses a separate environment:
 `make sync test-httpx-curlify PYTHON_VERSION=3.14`.
 
-Релиз выпускается git-тегом `httpx-curlify/v<версия>`. Версия в теге должна совпадать с версией
-в `packages/httpx-curlify/pyproject.toml`.
+Create a release with the Git tag `httpx-curlify/v<version>`. The tag version must match the version
+in `packages/httpx-curlify/pyproject.toml`.

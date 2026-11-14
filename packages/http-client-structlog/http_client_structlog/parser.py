@@ -20,15 +20,15 @@ def parse_request(
     sanitizer: Sanitizer,
     json_indent: int | None = None,
 ) -> dict[str, object]:
-    """Распарсить параметры для структурированного лога HTTP-запроса.
+    """Parse fields for a structured HTTP request log.
 
-    :param request: объект запроса с данными для логирования
-    :param sanitizer: правила скрытия конфиденциальных данных
-    :param json_indent: ширина отступа для логирования JSON
-    :return: параметры для структурированного лога запроса
+    :param request: Request containing data to log
+    :param sanitizer: Sensitive data masking rules
+    :param json_indent: JSON log indentation width
+    :return: Structured request log fields
     """
-    # NOTE: тут trace_id - это просто идентификатор, который связывает запрос с ответом.
-    # Он не имеет ничего общего с trace_id от сервера, в котором включена телеметрия.
+    # NOTE: trace_id here only correlates the request and response.
+    # It is unrelated to the trace_id of a server with telemetry enabled.
     trace_id = str(uuid4())
     extensions = cast("dict[str, object]", request.extensions)
     extensions["trace_id"] = trace_id
@@ -54,12 +54,12 @@ def parse_response(
     sanitizer: Sanitizer,
     json_indent: int | None = None,
 ) -> dict[str, object]:
-    """Распарсить параметры для структурированного лога HTTP-ответа.
+    """Parse fields for a structured HTTP response log.
 
-    :param response: объект ответа на запрос с данными для логирования
-    :param sanitizer: правила скрытия конфиденциальных данных
-    :param json_indent: ширина отступа для логирования JSON
-    :return: параметры для структурированного лога ответа
+    :param response: Response containing data to log
+    :param sanitizer: Sensitive data masking rules
+    :param json_indent: JSON log indentation width
+    :return: Structured response log fields
     """
     properties: dict[str, object] = {
         "status_code": response.status_code,
@@ -78,23 +78,23 @@ async def parse_response_async(
     sanitizer: Sanitizer,
     json_indent: int | None = None,
 ) -> dict[str, object]:
-    """Распарсить параметры для структурированного лога ответа асинхронного клиента.
+    """Parse fields for a structured asynchronous client response log.
 
-    Response hook у httpx срабатывает до того, как клиент дочитал тело, поэтому
-    у асинхронного ответа поток ещё асинхронный и синхронный read() к нему неприменим.
+    The httpx response hook runs before the client finishes reading the body, so
+    an asynchronous response still has an asynchronous stream that cannot use synchronous read().
 
-    :return: параметры для структурированного лога ответа
+    :return: Structured response log fields
     """
     await _aread_buffered(response)
     return parse_response(response, sanitizer, json_indent)
 
 
 async def _aread_buffered(response: httpx.Response) -> None:
-    """Дочитать тело ответа, если оно не потоковое."""
+    """Finish reading a non-streaming response body."""
     if is_streamed(response):
         return
 
-    # Лог не должен ронять запрос: нечитаемое тело обработает _parse_body.
+    # Logging must not fail the request: _parse_body handles unreadable bodies.
     with suppress(Exception):
         await response.aread()
 
@@ -107,7 +107,7 @@ def _parse_headers(
     try:
         return to_json(sanitizer.apply(dict[str, str](r.headers)), json_indent)
     except Exception as error:
-        _logger.exception(  # noqa: LOG007 — traceback может раскрыть содержимое запроса
+        _logger.exception(  # noqa: LOG007 — A traceback may expose request contents
             "Не удалось подготовить поле HTTP лога: %s",
             type(error).__name__,
             exc_info=False,
@@ -123,7 +123,7 @@ def _parse_query_params(
     try:
         return to_json(sanitizer.apply(dict[str, str](request.url.params)), json_indent)
     except Exception as error:
-        _logger.exception(  # noqa: LOG007 — traceback может раскрыть содержимое запроса
+        _logger.exception(  # noqa: LOG007 — A traceback may expose request contents
             "Не удалось подготовить поле HTTP лога: %s",
             type(error).__name__,
             exc_info=False,
@@ -148,7 +148,7 @@ def _parse_body(
         content_type = cast("str", value.headers.get("Content-Type", "")).lower()
         return _render_content(content, content_type, value, sanitizer, json_indent)
     except Exception as error:
-        _logger.exception(  # noqa: LOG007 — traceback может раскрыть содержимое запроса
+        _logger.exception(  # noqa: LOG007 — A traceback may expose request contents
             "Не удалось подготовить тело HTTP лога: %s",
             type(error).__name__,
             exc_info=False,

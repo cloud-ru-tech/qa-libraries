@@ -1,67 +1,69 @@
-# HTTP-клиент
+# HTTP client
 
 [![PyPI](https://img.shields.io/pypi/v/cloudru-qa-http-client)](https://pypi.org/project/cloudru-qa-http-client/)
 [![Python](https://img.shields.io/pypi/pyversions/cloudru-qa-http-client)](https://pypi.org/project/cloudru-qa-http-client/)
 [![License](https://img.shields.io/pypi/l/cloudru-qa-http-client)](https://github.com/cloud-ru-tech/qa-libraries/blob/master/LICENSE)
 
-- [HTTP-клиент](#http-клиент)
-  - [Установка](#установка)
-  - [Скиллы для AI-агентов](#скиллы-для-ai-агентов)
-  - [Использование](#использование)
-    - [Пример:](#пример)
-      - [Пример с базовым клиентом](#пример-с-базовым-клиентом)
-      - [Пример с собственным клиентом](#пример-с-собственным-клиентом)
-      - [Пример с асинхронным клиентом](#пример-с-асинхронным-клиентом)
-    - [Конфигурирование](#конфигурирование)
-  - [Доступные опции](#доступные-опции)
+English | [Русский](README.ru.md)
+
+- [HTTP client](#http-client)
+  - [Installation](#installation)
+  - [Skills for AI agents](#skills-for-ai-agents)
+  - [Usage](#usage)
+    - [Example:](#example)
+      - [Base client example](#base-client-example)
+      - [Custom client example](#custom-client-example)
+      - [Asynchronous client example](#asynchronous-client-example)
+    - [Configuration](#configuration)
+  - [Available options](#available-options)
     - [EventHooks](#eventhooks)
-    - [Декорирование метода send](#декорирование-метода-send)
-    - [Потоковые запросы (Streaming)](#потоковые-запросы-streaming)
-      - [Метод `stream`](#метод-stream)
-      - [Метод `stream_request`](#метод-stream_request)
-      - [Декорирование метода stream\_request](#декорирование-метода-stream_request)
-    - [Метод request](#метод-request)
-    - [Таймауты](#таймауты)
-    - [Авторизация](#авторизация)
-    - [Идентификация запросов](#идентификация-запросов)
-    - [Трейсинг](#трейсинг)
-    - [Логирование](#логирование)
-    - [Закрытие соединений](#закрытие-соединений)
-    - [TLS-соединение](#tls-соединение)
-    - [Заголовки по умолчанию](#заголовки-по-умолчанию)
-  - [Разработка](#разработка)
+    - [Decorating the send method](#decorating-the-send-method)
+    - [Streaming requests](#streaming-requests)
+      - [The `stream` method](#the-stream-method)
+      - [The `stream_request` method](#the-stream_request-method)
+      - [Decorating the stream\_request method](#decorating-the-stream_request-method)
+    - [The request method](#the-request-method)
+    - [Timeouts](#timeouts)
+    - [Authorization](#authorization)
+    - [Request identification](#request-identification)
+    - [Tracing](#tracing)
+    - [Logging](#logging)
+    - [Closing connections](#closing-connections)
+    - [TLS connection](#tls-connection)
+    - [Default headers](#default-headers)
+  - [Development](#development)
 
-## Установка
+## Installation
 
-Требуется Python 3.13 или новее.
+Requires Python 3.13 or later.
 
 ```shell
 pip install cloudru-qa-http-client
 ```
 
-Библиотека импортируется как модуль `http_client`.
+Import the library as the `http_client` module.
 
-## Скиллы для AI-агентов
+## Skills for AI agents
 
-В пакет включён скилл [`http-client-usage`](https://github.com/cloud-ru-tech/qa-libraries/blob/master/.agents/skills/http-client-usage/SKILL.md)
-с примерами и правилами использования библиотеки для AI-агентов. Установите библиотеку
-в окружение своего проекта, затем из его корня выполните (нужен [`uv`](https://docs.astral.sh/uv/)):
+The package includes the [`http-client-usage`](https://github.com/cloud-ru-tech/qa-libraries/blob/master/.agents/skills/http-client-usage/SKILL.md) skill
+with examples and usage rules for AI agents. Install the library
+in your project environment, then run this from its root (requires [`uv`](https://docs.astral.sh/uv/)):
 
 ```shell
 uvx library-skills install --skill http-client-usage --yes
 ```
 
-Для Claude Code добавьте `--claude`. Инструкции поставляются вместе с версией библиотеки.
+For Claude Code, add `--claude`. The instructions are shipped with the library version.
 
-## Использование
+## Usage
 
-Данная библиотека содержит классы `HttpClient` и `AsyncHttpClient`. Их можно использовать напрямую или наследовать для создания собственных клиентов.
+The library provides `HttpClient` and `AsyncHttpClient`. Use them directly or subclass them to create custom clients.
 
-Все опции (логирование, идентификация запросов, трейсинг, заголовки по умолчанию и т.д.) работают одинаково для обоих типов клиентов. Синхронные event hooks автоматически оборачиваются в async при использовании с `AsyncHttpClient`.
+All options (logging, request identification, tracing, default headers, and others) work the same for both clients. Synchronous event hooks are automatically wrapped as async when used with `AsyncHttpClient`.
 
-### Пример:
+### Example:
 
-#### Пример с базовым клиентом
+#### Base client example
 
 ```python
 import logging
@@ -78,7 +80,7 @@ with HttpClient(
     response.raise_for_status()
 ```
 
-#### Пример с собственным клиентом
+#### Custom client example
 
 ```python
 import logging
@@ -89,10 +91,10 @@ from httpx import Response
 
 class CustomHttpClient(HttpClient):
     def test_method(self, data: dict[str, object]) -> Response:
-        """Отправить данные в метод сервиса.
+        """Send data to a service method.
 
-        :param data: JSON-тело запроса.
-        :return: ответ сервиса.
+        :param data: JSON request body.
+        :return: service response.
         """
         request = self.client.build_request("POST", "/test_method", json=data)
         return self.send(request)
@@ -108,9 +110,9 @@ with CustomHttpClient(
     response.raise_for_status()
 ```
 
-#### Пример с асинхронным клиентом
+#### Asynchronous client example
 
-Все стандартные опции (включая синхронные event hooks) работают с `AsyncHttpClient` без изменений:
+All standard options, including synchronous event hooks, work unchanged with `AsyncHttpClient`:
 
 ```python
 import logging
@@ -126,8 +128,8 @@ async with AsyncHttpClient(
     response.raise_for_status()
 ```
 
-### Конфигурирование
-Для конфигурирования клиента используются опции `ClientOption`. Опция получает настоящий экземпляр клиента и применяется в его конструкторе. Для регистрации хуков и декораторов используйте `add_request_hook`, `add_response_hook`, `add_send_decorator` и `add_stream_decorator`:
+### Configuration
+Configure the client with `ClientOption` options. Each option receives the actual client instance and runs in its constructor. Register hooks and decorators with `add_request_hook`, `add_response_hook`, `add_send_decorator`, and `add_stream_decorator`:
 
 ```python
 from http_client import BaseHttpClient, ClientOption
@@ -135,10 +137,10 @@ from httpx import Request
 
 
 def with_region(region: str) -> ClientOption:
-    """Добавить регион в заголовки исходящих запросов.
+    """Add a region to outgoing request headers.
 
-    :param region: идентификатор региона.
-    :return: опция клиента.
+    :param region: region identifier.
+    :return: client option.
     """
 
     def add_region(request: Request) -> None:
@@ -150,22 +152,22 @@ def with_region(region: str) -> ClientOption:
     return option
 ```
 
-Регистрация доступна во время применения опций конструктора. После создания клиента его транспорт уже настроен.
+Registration is available while constructor options run. After client creation, its transport is already configured.
 
-## Доступные опции
+## Available options
 
-В модуле `options` доступны различные опции для настройки HTTP-клиента. Все эти опции можно комбинировать при создании экземпляра клиента.
+The `options` module provides options for configuring the HTTP client. Combine them when creating a client instance.
 
 ### EventHooks
 
-Опции Event Hooks предоставляют возможность обрабатывать запросы и ответы:
+Event hook options let you process requests and responses:
 
-- `with_request_hook` - добавляет функцию для обработки запросов перед их отправкой
-- `with_response_hook` - добавляет функцию для обработки ответов после их получения
+- `with_request_hook` — adds a function to process requests before sending
+- `with_response_hook` — adds a function to process responses after receiving
 
-Эти опции предоставляют гибкий способ обработки каждого запроса и/или ответа клиента.
+These options provide a flexible way to handle each client request and/or response.
 
-Пример использования:
+Usage example:
 
 ```python
 import logging
@@ -176,12 +178,12 @@ from http_client import HttpClient, options
 
 
 def my_request_hook(request: Request) -> None:
-    # обработка запроса перед его отправкой
+    # process the request before sending it
     request.headers["X-Custom-Header"] = "Custom Value"
 
 
 def my_response_hook(response: Response) -> None:
-    # обработка ответа после его получения
+    # process the response after receiving it
     logging.getLogger(__name__).info("Response status code: %s", response.status_code)
 
 
@@ -192,7 +194,7 @@ client = HttpClient(
 )
 ```
 
-При использовании с `AsyncHttpClient` синхронные хуки автоматически оборачиваются в async. Можно также передавать нативные async хуки:
+With `AsyncHttpClient`, synchronous hooks are automatically wrapped as async. You can also pass native async hooks:
 
 ```python
 from http_client import AsyncHttpClient, options
@@ -209,18 +211,18 @@ client = AsyncHttpClient(
 )
 ```
 
-Подробнее о хуках можно почитать [в документации `httpx`](https://www.python-httpx.org/advanced/event-hooks/).
+See the [`httpx` documentation](https://www.python-httpx.org/advanced/event-hooks/) for more about hooks.
 
-### Декорирование метода send
+### Decorating the send method
 
-HTTP-клиент поддерживает декорирование метода отправки запроса `send` с помощью опции `with_send_decorator`. Это позволяет добавлять дополнительную функциональность как перед отправкой HTTP-запроса, так и после получения ответа.
+The HTTP client supports decorating its `send` method with `with_send_decorator`. This lets you add behavior before sending the HTTP request and after receiving the response.
 
-Опция `with_send_decorator` позволяет применять паттерн декоратора к методу `send`, что даёт возможность:
-- Выполнять предобработку запроса
-- Выполнять постобработку ответа
-- Реализовывать такие различный функционал как ретраи, логирование, кэширование, мониторинг и др.
+`with_send_decorator` applies the decorator pattern to `send`, letting you:
+- Preprocess the request
+- Postprocess the response
+- Implement retries, logging, caching, monitoring, and other features
 
-Пример создания декоратора для логирования запросов:
+Example of a request logging decorator:
 
 ```python
 from functools import wraps
@@ -234,9 +236,9 @@ import httpx
 def logging_decorator(func: SyncSendMethod) -> SyncSendMethod:
     @wraps(func)
     def wrapper(request: httpx.Request, **kwargs: Unpack[SendOptions]) -> httpx.Response:
-        logging.getLogger(__name__).info("Отправка запроса: %s %s", request.method, request.url)
+        logging.getLogger(__name__).info("Sending request: %s %s", request.method, request.url)
         response = func(request, **kwargs)
-        logging.getLogger(__name__).info("Получен ответ: %s", response.status_code)
+        logging.getLogger(__name__).info("Received response: %s", response.status_code)
         return response
 
     return wrapper
@@ -245,7 +247,7 @@ def logging_decorator(func: SyncSendMethod) -> SyncSendMethod:
 client = HttpClient("https://example.com", options.with_send_decorator(logging_decorator))
 ```
 
-Для асинхронного HTTP-клиента декоратор должен быть асинхронным:
+For the asynchronous HTTP client, the decorator must be asynchronous:
 
 ```python
 from functools import wraps
@@ -259,9 +261,9 @@ import httpx
 def async_logging_decorator(func: AsyncSendMethod) -> AsyncSendMethod:
     @wraps(func)
     async def wrapper(request: httpx.Request, **kwargs: Unpack[SendOptions]) -> httpx.Response:
-        logging.getLogger(__name__).info("Отправка запроса: %s %s", request.method, request.url)
+        logging.getLogger(__name__).info("Sending request: %s %s", request.method, request.url)
         response = await func(request, **kwargs)
-        logging.getLogger(__name__).info("Получен ответ: %s", response.status_code)
+        logging.getLogger(__name__).info("Received response: %s", response.status_code)
         return response
 
     return wrapper
@@ -270,25 +272,25 @@ def async_logging_decorator(func: AsyncSendMethod) -> AsyncSendMethod:
 client = AsyncHttpClient("https://example.com", options.with_send_decorator(async_logging_decorator))
 ```
 
-Можно применять несколько декораторов одновременно. Каждый следующий декоратор оборачивает предыдущий, поэтому последний добавленный оказывается внешним и его код выполняется первым:
+You can apply several decorators. Each new decorator wraps the previous one, so the last one added is outermost and runs first:
 
 ```python
 client = HttpClient(
     "https://example.com",
-    options.with_send_decorator(decorator1),  # накладывается первым, оказывается внутренним
-    options.with_send_decorator(decorator2),  # накладывается вторым, оказывается внешним
+    options.with_send_decorator(decorator1),  # applied first, becomes innermost
+    options.with_send_decorator(decorator2),  # applied second, becomes outermost
 )
 ```
 
-При отправке запроса порядок вызовов будет таким: `decorator2` → `decorator1` → `send`. Ответ проходит через декораторы в обратном порядке: сначала завершается `decorator1`, затем `decorator2`.
+Request calls run in this order: `decorator2` → `decorator1` → `send`. The response passes through them in reverse: `decorator1` finishes first, then `decorator2`.
 
-### Потоковые запросы (Streaming)
+### Streaming requests
 
-HTTP-клиент поддерживает потоковые запросы двумя способами:
+The HTTP client supports streaming requests in two ways:
 
-#### Метод `stream`
+#### The `stream` method
 
-Метод `stream(method, url, **kwargs)` полностью совместим с API `httpx`. Принимает HTTP-метод и URL, строит запрос и возвращает контекстный менеджер:
+`stream(method, url, **kwargs)` is fully compatible with the `httpx` API. It takes an HTTP method and URL, builds a request, and returns a context manager:
 
 ```python
 from http_client import HttpClient, options
@@ -299,7 +301,7 @@ client = HttpClient(
     options.with_logger(logger),
 )
 
-# Потоковая загрузка (контракт httpx)
+# Streaming download (httpx contract)
 with client.stream("GET", "/large-file.zip") as response:
     response.raise_for_status()
 
@@ -308,7 +310,7 @@ with client.stream("GET", "/large-file.zip") as response:
             f.write(chunk)
 ```
 
-Пример с асинхронным клиентом:
+Asynchronous client example:
 
 ```python
 from http_client import AsyncHttpClient, options
@@ -326,9 +328,9 @@ async with client.stream("GET", "/stream-data") as response:
         process_line(line)
 ```
 
-#### Метод `stream_request`
+#### The `stream_request` method
 
-Метод `stream_request(request, **kwargs)` принимает готовый объект `httpx.Request` и поддерживает все опции клиента, включая декораторы:
+`stream_request(request, **kwargs)` takes a ready-made `httpx.Request` and supports all client options, including decorators:
 
 ```python
 request = client.client.build_request("GET", "/large-file.zip")
@@ -338,9 +340,9 @@ with client.stream_request(request) as response:
         f.write(chunk)
 ```
 
-#### Декорирование метода stream_request
+#### Decorating the stream_request method
 
-Аналогично методу `send`, можно декорировать метод `stream_request` с помощью опции `with_stream_decorator`:
+Like `send`, `stream_request` can be decorated with `with_stream_decorator`:
 
 ```python
 from functools import wraps
@@ -357,11 +359,11 @@ def stream_logging_decorator(func: SyncStreamRequestMethod) -> SyncStreamRequest
     @wraps(func)
     @contextmanager
     def wrapper(request: httpx.Request, **kwargs: Unpack[StreamOptions]) -> Iterator[httpx.Response]:
-        logging.getLogger(__name__).info("Начало потока: %s %s", request.method, request.url)
+        logging.getLogger(__name__).info("Starting stream: %s %s", request.method, request.url)
         with func(request, **kwargs) as response:
-            logging.getLogger(__name__).info("Статус потока: %s", response.status_code)
+            logging.getLogger(__name__).info("Stream status: %s", response.status_code)
             yield response
-        logging.getLogger(__name__).info("Поток завершён")
+        logging.getLogger(__name__).info("Stream finished")
 
     return wrapper
 
@@ -369,84 +371,84 @@ def stream_logging_decorator(func: SyncStreamRequestMethod) -> SyncStreamRequest
 client = HttpClient("https://example.com", options.with_stream_decorator(stream_logging_decorator))
 ```
 
-**Важно:** При логировании потоковых запросов body ответа отображается как `<streamed content>`, так как содержимое ещё не было прочитано в момент срабатывания response hook.
+**Important:** When logging streaming requests, the response body appears as `<streamed content>` because it has not yet been read when the response hook runs.
 
-### Метод request
+### The request method
 
-Метод `request(method, url, **kwargs)` позволяет выполнять HTTP-запросы с произвольным методом:
+`request(method, url, **kwargs)` sends HTTP requests with any method:
 
 ```python
 response = client.request("PATCH", "/api/resource", json={"field": "value"})
 ```
 
-### Таймауты
+### Timeouts
 
-Опция `with_timeout` позволяет устанавливать различные типы таймаутов для HTTP-запросов:
+`with_timeout` sets different types of HTTP request timeouts:
 
 ```python
 from httpx import Timeout
 from http_client import HttpClient, options
 
-# Установка разных типов таймаутов
+# Set different timeout types
 timeout = Timeout(
-    connect=5.0,  # время на установление соединения
-    read=10.0,  # время на чтение ответа
-    write=5.0,  # время на запись запроса
-    pool=1.0,  # время ожидания свободного соединения в пуле
+    connect=5.0,  # time to establish a connection
+    read=10.0,  # time to read the response
+    write=5.0,  # time to write the request
+    pool=1.0,  # time to wait for a free connection in the pool
 )
 
 client = HttpClient("https://example.com", options.with_timeout(timeout))
 ```
 
-### Авторизация
+### Authorization
 
-Опция `with_auth` настраивает механизм авторизации для HTTP-запросов. Поддерживаются все механизмы авторизации, доступные в `httpx`. Также можно реализовать собственные механизмы, подробнее в [документации `httpx`](https://www.python-httpx.org/advanced/authentication/#custom-authentication-schemes)
+`with_auth` configures HTTP request authorization. All `httpx` authorization mechanisms are supported. You can also implement your own; see the [`httpx` documentation](https://www.python-httpx.org/advanced/authentication/#custom-authentication-schemes).
 
 ```python
 from httpx import BasicAuth, DigestAuth
 from http_client import HttpClient, options
 
-# Базовая авторизация
+# Basic authorization
 client = HttpClient("https://example.com", options.with_auth(BasicAuth(username="user", password="password")))
 
-# Digest авторизация
+# Digest authorization
 client = HttpClient("https://example.com", options.with_auth(DigestAuth(username="user", password="password")))
 
-# Кастомная Bearer-токен авторизация
+# Custom Bearer token authorization
 client = HttpClient(
     "https://example.com", options.with_auth(lambda r: r.headers.update({"Authorization": f"Bearer {token}"}))
 )
 ```
 
-### Идентификация запросов
+### Request identification
 
-Опция `with_autogenerated_request_id` автоматически добавляет уникальный идентификатор в заголовок `X-Request-ID` каждого запроса:
+`with_autogenerated_request_id` automatically adds a unique identifier to each request's `X-Request-ID` header:
 
 ```python
 from http_client import HttpClient, options
 
-# Автоматическая генерация X-Request-ID
+# Automatically generate X-Request-ID
 client = HttpClient("https://example.com", options.with_autogenerated_request_id())
 ```
 
-Это полезно для трассировки запросов в микросервисной архитектуре и при отладке.
+This is useful for tracing requests across microservices and for debugging.
 
-### Трейсинг
+### Tracing
 
-Опция `with_autogenerated_traceparent` автоматически добавляет заголовок трассировки `traceparent` для совместимости с протоколом W3C Trace Context:
+`with_autogenerated_traceparent` automatically adds a `traceparent` tracing header compatible with W3C Trace Context:
 
 ```python
 from http_client import HttpClient, options
 
-# Добавление заголовка traceparent ко всем запросам
+# Add a traceparent header to every request
 client = HttpClient("https://example.com", options.with_autogenerated_traceparent())
 ```
 
-Это позволяет отслеживать запросы через несколько сервисов, использующих различные системы мониторинга.
+This lets you track requests across multiple services using different monitoring systems.
 
-### Логирование
+### Logging
 
-Опция `with_logger` настраивает логирование HTTP-запросов и ответов. Общие значения по умолчанию задаются объектом `LoggingConfig`:
+`with_logger` configures HTTP request and response logging. Set shared defaults with a `LoggingConfig` object:
 
 ```python
 from http_client import configure_logging
@@ -455,39 +457,39 @@ from http_client.config import LoggingConfig
 configure_logging(options=LoggingConfig(json_indent=2, use_line_breaks=True))
 ```
 
-Параметры конкретного клиента можно передать в `with_logger`:
+Pass client-specific settings to `with_logger`:
 
 ```python
 import logging
 from http_client import HttpClient, options
 
-# Настраиваем свой логгер
+# Configure a custom logger
 logger = logging.getLogger("http_client")
 
 client = HttpClient(
     "https://example.com",
     options.with_logger(
         logger,
-        sanitize_keys=["authorization", "password"],  # Скрытие секретных данных
+        sanitize_keys=["authorization", "password"],  # hide secret data
     ),
 )
 ```
 
-Опция `sanitize_keys` позволяет скрывать чувствительную информацию в логах, такую как токены авторизации или пароли.
+`sanitize_keys` hides sensitive information in logs, such as authorization tokens and passwords.
 
-Типовые секреты маскируются **по умолчанию**, даже если `sanitize_keys` не задан: `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-api-key`, `api-key`, `api_key`, `access_token`, `refresh_token`, `password`, `secret`, `token`. Ключи из `sanitize_keys` добавляются к этому списку.
+Common secrets are masked **by default**, even without `sanitize_keys`: `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-api-key`, `api-key`, `api_key`, `access_token`, `refresh_token`, `password`, `secret`, `token`. Keys from `sanitize_keys` extend this list.
 
-Отключить защиту по умолчанию можно явным флагом — например, при отладке в закрытом контуре:
+Disable the default protection with an explicit flag, for example when debugging in a private environment:
 
 ```python
 options.with_logger(logger, use_default_sanitize_keys=False)
 ```
 
-⚠️ Маскирование действует только на записи access-лога, которые пишет эта библиотека. Исключения `httpx` могут содержать полный URL вместе с query-параметрами, поэтому секреты в URL передавать не следует.
+⚠️ Masking applies only to access log records written by this library. `httpx` exceptions may contain the full URL, including query parameters, so do not pass secrets in URLs.
 
-### Закрытие соединений
+### Closing connections
 
-Пул соединений создаётся в конструкторе клиента, поэтому клиент нужно закрывать. Проще всего через контекстный менеджер:
+The connection pool is created in the client constructor, so close the client. A context manager is the simplest way:
 
 ```python
 with HttpClient("https://example.com") as client:
@@ -497,50 +499,50 @@ async with AsyncHttpClient("https://example.com") as client:
     await client.get("/api/resource")
 ```
 
-Для долгоживущего клиента, который создаётся один раз на приложение, есть явные методы:
+For a long-lived client created once per application, use explicit methods:
 
 ```python
 client.close()  # HttpClient
 await client.aclose()  # AsyncHttpClient
 ```
 
-Повторно открыть закрытый клиент нельзя — как и в `httpx`, это приводит к `RuntimeError`.
+A closed client cannot be reopened: like `httpx`, this raises `RuntimeError`.
 
-### TLS-соединение
+### TLS connection
 
-Библиотека предоставляет две опции для настройки TLS-соединения. Обе применяются одинаково к `HttpClient` и `AsyncHttpClient`.
+The library provides two options to configure TLS connections. Both work the same with `HttpClient` and `AsyncHttpClient`.
 
-1. `with_verify_context` - устанавливает контекст верификации TLS соединения:
+1. `with_verify_context` — sets the TLS verification context:
 
 ```python
 import ssl
 from http_client import HttpClient, options
 
-# Создание SSL контекста
+# Create an SSL context
 ssl_context = ssl.create_default_context()
 ssl_context.load_verify_locations("/path/to/ca-certificates.crt")
 
-# Установка SSL контекста
+# Set the SSL context
 client = HttpClient("https://example.com", options.with_verify_context(verify=ssl_context))
 ```
 
-2. `use_truststore` - использует системное хранилище сертификатов для верификации:
+2. `use_truststore` — uses the system certificate store for verification:
 
 ```python
 from http_client import HttpClient, options
 
-# Использование системного хранилища сертификатов
+# Use the system certificate store
 client = HttpClient("https://example.com", options.use_truststore())
 ```
 
-Для использования опции `use_truststore` необходимо установить дополнительную зависимость:
+To use `use_truststore`, install the extra dependency:
 ```
 pip install "cloudru-qa-http-client[truststore]"
 ```
 
-### Заголовки по умолчанию
+### Default headers
 
-опция `with_default_headers` устанавливает заголовки по умолчанию, с которыми будут отправляться все запросы клиента.
+`with_default_headers` sets default headers sent with all client requests.
 
 ```python
 from http_client import HttpClient, options
@@ -555,27 +557,27 @@ client = HttpClient(
     options.with_default_headers(headers),
 )
 ```
-## Разработка
+## Development
 
-Библиотека развивается в монорепозитории [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries)
-вместе с остальными библиотеками `cloudru-qa-*`. Нужны [`uv`](https://docs.astral.sh/uv/) 0.11.14
-или новее, GNU Make и [`checkmake`](https://github.com/checkmake/checkmake), команды запускаются из корня репозитория:
+The library is developed in the [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries) monorepo
+alongside the other `cloudru-qa-*` libraries. You need [`uv`](https://docs.astral.sh/uv/) 0.11.14
+or later, GNU Make, and [`checkmake`](https://github.com/checkmake/checkmake). Run commands from the repository root:
 
 ```shell
-make sync                     # зависимости всех библиотек строго по uv.lock
-make test-http-client         # тесты этой библиотеки
-make typecheck-http-client    # mypy для этой библиотеки
-make check                    # форматирование, ruff, mypy и тесты всего набора
+make sync                     # install dependencies for all libraries from uv.lock
+make test-http-client         # tests for this library
+make typecheck-http-client    # mypy for this library
+make check                    # formatting, ruff, mypy, and tests for the entire workspace
 ```
 
-⚠️ **Важно**, чтобы библиотека оставалась легковесной и универсальной. Новые зависимости стоит
-добавлять, только если есть уверенность, что они необходимы всем пользователям библиотеки.
+⚠️ **Keep** the library lightweight and general-purpose. Discuss new dependencies
+only when you are sure all library users need them.
 
-Тесты прогоняются на Python 3.13 и 3.14. Окружение для другой версии создаётся отдельно:
+Tests run on Python 3.13 and 3.14. Create a separate environment for another version:
 `make sync test-http-client PYTHON_VERSION=3.14`.
 
-Демо-сценарии с настоящими запросами к локальному [go-httpbin](https://github.com/mccutchen/go-httpbin)
-лежат в `examples/httpbin`. Нужен запущенный Docker, команды выполняются из `packages/http-client`:
+Demo scenarios with real requests to local [go-httpbin](https://github.com/mccutchen/go-httpbin)
+are in `examples/httpbin`. Docker must be running; run commands from `packages/http-client`:
 
 ```shell
 docker compose up -d
@@ -583,5 +585,5 @@ uv run --no-sync python -m examples.httpbin
 docker compose down
 ```
 
-Релиз выпускается git-тегом `http-client/v<версия>`. Версия в теге должна совпадать с версией
-в `packages/http-client/pyproject.toml`.
+Publish a release with the git tag `http-client/v<version>`. The tag version must match the version
+in `packages/http-client/pyproject.toml`.

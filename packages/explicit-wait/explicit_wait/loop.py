@@ -23,14 +23,14 @@ T = TypeVar("T")
 
 
 def describe_predicate(predicate: object, message: str | None) -> str:
-    """Построить человекочитаемое описание того, чего ждём.
+    """Build a readable description of the expected condition.
 
-    Адрес объекта и repr аргументов намеренно не используются: адрес бесполезен в отчёте,
-    а repr может вынести в лог чувствительные данные.
+    Object addresses and argument repr are intentionally omitted: addresses are useless in reports,
+    and repr may expose sensitive data in logs.
 
-    :param predicate: функция-предикат или другой вызываемый объект.
-    :param message: описание, заданное пользователем; имеет приоритет.
-    :return: описание для сообщения об ошибке.
+    :param predicate: predicate function or another callable object.
+    :param message: user-defined description; takes precedence.
+    :return: description for the error message.
     """
     if message is not None:
         return message
@@ -43,14 +43,14 @@ def describe_predicate(predicate: object, message: str | None) -> str:
 
 
 class WaitLoop[T]:
-    """Ядро ожидания без ввода-вывода.
+    """Wait core without I/O.
 
-    Хранит состояние ожидания и решает, что делать дальше, но ничего не выполняет само:
-    вызов предиката и сон возложены на драйвер. За счёт этого синхронный и асинхронный
-    варианты ожидания используют одну и ту же логику остановки, бэкоффа и диагностики.
+    Stores wait state and decides what to do next without performing actions itself:
+    the driver calls the predicate and sleeps. This lets synchronous and asynchronous
+    waits share stopping, backoff, and diagnostic logic.
 
-    Причины остановки проверяются в фиксированном порядке: сначала наступивший дедлайн,
-    затем исчерпание попыток, затем невозможность вместить следующую паузу до дедлайна.
+    Stopping reasons are checked in a fixed order: an elapsed deadline first,
+    then exhausted attempts, then a next pause that cannot fit before the deadline.
     """
 
     def __init__(
@@ -61,12 +61,12 @@ class WaitLoop[T]:
         succeeds_on: SuccessCheck = bool,
         clock: Clock = time.monotonic,
     ) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param waiting_for: значение настройки ``waiting_for``.
-        :param options: параметры одного ожидания.
-        :param succeeds_on: значение настройки ``succeeds_on``.
-        :param clock: значение настройки ``clock``.
+        :param waiting_for: Value of ``waiting_for``.
+        :param options: parameters for one wait.
+        :param succeeds_on: Value of ``succeeds_on``.
+        :param clock: Value of ``clock``.
         """
         config = get_config()
         self._waiting_for = waiting_for
@@ -87,44 +87,44 @@ class WaitLoop[T]:
 
     @property
     def waiting_for(self) -> str:
-        """Получить описание того, чего ждём."""
+        """Get a description of the expected condition."""
         return self._waiting_for
 
     @property
     def attempts(self) -> int:
-        """Получить число уже выполненных попыток."""
+        """Get the number of completed attempts."""
         return self._attempts
 
     @property
     def is_satisfied(self) -> bool:
-        """Проверить, что условие ожидания выполнено."""
+        """Check that the wait condition is satisfied."""
         return self._is_satisfied
 
     @property
     def stopped_on_attempts(self) -> bool:
-        """Проверить, что ожидание прекращено из-за исчерпания попыток, а не по времени."""
+        """Check that the wait stopped because attempts were exhausted, rather than time."""
         return self._stop_reason == STOP_ON_ATTEMPTS
 
     @property
     def value(self) -> T:
-        """Получить результат, на котором ожидание завершилось успешно.
+        """Get the result that satisfied the wait.
 
-        Осмысленно только когда ``is_satisfied`` истинно и успехом считается truthy-результат.
+        Meaningful only when ``is_satisfied`` is true and a truthy result counts as success.
         """
-        # Успех по truthy-проверке исключает None, но выразить «truthy T» типами нельзя.
+        # A truthy result excludes None, but types cannot express a truthy T.
         return cast("T", self._last_result)
 
     def elapsed_seconds(self) -> float:
-        """Получить время, прошедшее с начала ожидания, в секундах."""
+        """Get the time elapsed since the wait started, in seconds."""
         return self._deadline.elapsed_seconds()
 
     def expire_if_deadline_reached(self) -> bool:
-        """Проверить дедлайн перед началом очередной попытки.
+        """Check the deadline before starting the next attempt.
 
-        Вызывается после сна, потому что проснуться можно позже заказанного: и ``time.sleep``,
-        и event loop гарантируют только нижнюю границу паузы.
+        Called after sleeping, as wakeup may happen later than requested: both ``time.sleep``
+        and the event loop guarantee only a minimum pause.
 
-        :return: True, если начинать новую попытку уже нельзя.
+        :return: True if another attempt can no longer start.
         """
         if self._deadline.seconds_remaining() > 0:
             return False
@@ -132,14 +132,14 @@ class WaitLoop[T]:
         return True
 
     def start_attempt(self) -> None:
-        """Отметить начало очередной попытки."""
+        """Mark the start of the next attempt."""
         self._attempts += 1
 
     def is_expected(self, error: Exception) -> bool:
-        """Проверить, что исключение предиката следует проигнорировать и повторить попытку.
+        """Check whether to ignore a predicate exception and retry.
 
-        :param error: исключение, выброшенное предикатом.
-        :return: True, если попытку нужно повторить.
+        :param error: exception raised by the predicate.
+        :return: True if the attempt should be retried.
         """
         if not isinstance(error, self._expected_exceptions):
             return False
@@ -148,9 +148,9 @@ class WaitLoop[T]:
         return self._retry_on_exception(error)
 
     def record_result(self, value: T | None) -> None:
-        """Сохранить результат попытки.
+        """Store the attempt result.
 
-        :param value: значение, которое вернул предикат.
+        :param value: value returned by the predicate.
         """
         self._last_result = value
         self._last_exception = None
@@ -164,9 +164,9 @@ class WaitLoop[T]:
             )
 
     def record_exception(self, error: Exception) -> None:
-        """Сохранить ожидаемое исключение попытки.
+        """Store the attempt's expected exception.
 
-        :param error: исключение, выброшенное предикатом.
+        :param error: exception raised by the predicate.
         """
         self._last_result = None
         self._last_exception = error
@@ -181,9 +181,9 @@ class WaitLoop[T]:
             )
 
     def next_delay(self) -> float | None:
-        """Вычислить паузу перед следующей попыткой.
+        """Calculate the pause before the next attempt.
 
-        :return: пауза в секундах или None, если ожидание нужно прекратить.
+        :return: pause in seconds, or None if the wait should stop.
         """
         remaining = self._deadline.seconds_remaining()
         if remaining <= 0:
@@ -199,19 +199,19 @@ class WaitLoop[T]:
         return delay
 
     def build_attempt(self, *, next_sleep_seconds: float | None) -> Attempt:
-        """Собрать описание последней попытки для передачи в хук.
+        """Build the last attempt's description for a hook.
 
-        :param next_sleep_seconds: пауза перед следующей попыткой или None, если её не будет.
-        :return: описание попытки.
+        :param next_sleep_seconds: pause before the next attempt, or None if none is planned.
+        :return: attempt description.
         """
         return self._attempt_at(self._deadline.elapsed_seconds(), next_sleep_seconds)
 
     def terminal_snapshot(self) -> tuple[WaitStoppedError, Attempt]:
-        """Собрать согласованные ошибку остановки и описание последней попытки.
+        """Build a consistent stopping error and last attempt description.
 
-        Часы читаются один раз, поэтому оба объекта описывают ровно один момент времени.
+        The clock is read once, so both objects describe exactly the same moment.
 
-        :return: пара из ошибки остановки и описания последней попытки.
+        :return: pair of the stopping error and last attempt description.
         """
         elapsed = self._deadline.elapsed_seconds()
         if elapsed >= self._deadline.timeout_seconds:

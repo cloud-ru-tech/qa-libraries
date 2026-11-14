@@ -9,22 +9,22 @@ if TYPE_CHECKING:
 
 
 class ResponseParseError(Exception):
-    """Не удалось разобрать тело ответа на запрос.
+    """Failed to parse the response body.
 
-    Оборачивает исходную ошибку парсинга, добавляя к ней HTTP-контекст: метод, URL,
-    статус и тело ответа. Исходное исключение доступно в атрибуте `cause` и в `__cause__`.
+    Wrap the original parsing error with HTTP context: method, URL,
+    status and response body. The original exception is available through `cause` and `__cause__`.
 
-    Тело в сообщении обрезается до `BODY_PREVIEW_LIMIT` байт. Если ответ получен
-    стримингом и тело ещё не прочитано, вместо него подставляется `<streamed content>`.
+    Truncate the body in the message to `BODY_PREVIEW_LIMIT` bytes. For a streaming
+    response whose body has not been read, use `<streamed content>` instead.
     """
 
     BODY_PREVIEW_LIMIT = 512
 
     def __init__(self, response: Response, cause: Exception) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param response: значение настройки ``response``.
-        :param cause: значение настройки ``cause``.
+        :param response: Value of ``response``.
+        :param cause: Value of ``cause``.
         """
         self.response = response
         self.cause = cause

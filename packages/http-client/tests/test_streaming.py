@@ -13,7 +13,7 @@ CHUNK_SIZE = 100
 
 
 def test_stream_request_reads_whole_content(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Потоковый ответ вычитывается целиком."""
+    """Read a streaming response in full."""
     payload = b"test content for streaming"
     httpx_mock.add_response(url="https://example.com/stream", method="GET", content=payload)
     client = new_client("https://example.com")
@@ -25,7 +25,7 @@ def test_stream_request_reads_whole_content(httpx_mock: HTTPXMock, new_client: S
 
 
 def test_stream_request_keeps_response_headers(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Заголовки потокового ответа доступны до чтения тела."""
+    """Streaming response headers are available before reading the body."""
     httpx_mock.add_response(
         url="https://example.com/stream",
         method="GET",
@@ -41,7 +41,7 @@ def test_stream_request_keeps_response_headers(httpx_mock: HTTPXMock, new_client
 
 
 def test_stream_request_reads_lines(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Потоковый ответ читается построчно."""
+    """Read a streaming response line by line."""
     httpx_mock.add_response(url="https://example.com/lines", method="GET", text="line 1\nline 2\nline 3")
     client = new_client("https://example.com")
 
@@ -52,7 +52,7 @@ def test_stream_request_reads_lines(httpx_mock: HTTPXMock, new_client: SyncClien
 
 
 def test_stream_request_respects_requested_chunk_size(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Порции потока не длиннее запрошенного размера."""
+    """Stream chunks do not exceed the requested size."""
     httpx_mock.add_response(url="https://example.com/chunks", method="GET", content=b"0123456789" * 100)
     client = new_client("https://example.com")
 
@@ -63,7 +63,7 @@ def test_stream_request_respects_requested_chunk_size(httpx_mock: HTTPXMock, new
 
 
 def test_stream_request_splits_large_content(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Содержимое длиннее размера порции приходит несколькими порциями."""
+    """Content longer than the chunk size arrives in multiple chunks."""
     httpx_mock.add_response(url="https://example.com/chunks", method="GET", content=b"0123456789" * 100)
     client = new_client("https://example.com")
 
@@ -74,7 +74,7 @@ def test_stream_request_splits_large_content(httpx_mock: HTTPXMock, new_client: 
 
 
 def test_stream_request_chunks_join_into_content(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Порции складываются обратно в исходное содержимое."""
+    """Chunks reconstruct the original contents."""
     payload = b"0123456789" * 100
     httpx_mock.add_response(url="https://example.com/chunks", method="GET", content=payload)
     client = new_client("https://example.com")
@@ -86,9 +86,9 @@ def test_stream_request_chunks_join_into_content(httpx_mock: HTTPXMock, new_clie
 
 
 def test_stream_request_sends_prepared_request(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """stream_request отправляет переданный Request, а не пересобирает его.
+    """stream_request sends the supplied Request without rebuilding it.
 
-    Регрессия: пересборка через client.stream() падала на потоковом теле запроса с RequestNotRead.
+    Regression: rebuilding with client.stream() raised RequestNotRead for streaming request bodies.
     """
     httpx_mock.add_response(url="https://example.com/upload", method="POST", content=b"ok")
     client = new_client("https://example.com")
@@ -104,7 +104,7 @@ def test_stream_request_sends_prepared_request(httpx_mock: HTTPXMock, new_client
 
 
 def test_stream_request_applies_auth_from_call(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Авторизация, переданная в stream_request, попадает в запрос."""
+    """Authentication supplied to stream_request is included in the request."""
     httpx_mock.add_response(url="https://example.com/secure", method="GET", content=b"secure data")
     client = new_client("https://example.com")
 
@@ -118,7 +118,7 @@ def test_stream_request_applies_auth_from_call(httpx_mock: HTTPXMock, new_client
 
 
 def test_stream_request_anonymous_drops_client_auth(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """anonymous=True отключает авторизацию клиента и для потокового запроса."""
+    """anonymous=True disables client authentication for streaming requests too."""
     httpx_mock.add_response(url="https://example.com/public", method="GET", content=b"public data")
     client = new_client("https://example.com", with_auth(BasicAuth(username="reader", password="letmein")))  # noqa: S106
 
@@ -129,7 +129,7 @@ def test_stream_request_anonymous_drops_client_auth(httpx_mock: HTTPXMock, new_c
 
 
 def test_send_leaves_stream_unconsumed(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """send(stream=True) отдаёт ответ, тело которого ещё не прочитано."""
+    """send(stream=True) yields a response with an unread body."""
     httpx_mock.add_response(url="https://example.com/api/data", method="GET", content=b"x" * 64)
     client = new_client("https://example.com")
 
@@ -141,7 +141,7 @@ def test_send_leaves_stream_unconsumed(httpx_mock: HTTPXMock, new_client: SyncCl
 
 
 def test_stream_reads_content_by_method_and_url(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """stream(method, url) повторяет контракт httpx и отдаёт содержимое."""
+    """stream(method, url) follows the httpx contract and yields content."""
     payload = b"httpx-style streaming"
     httpx_mock.add_response(url="https://example.com/data", method="GET", content=payload)
     client = new_client("https://example.com")
@@ -153,7 +153,7 @@ def test_stream_reads_content_by_method_and_url(httpx_mock: HTTPXMock, new_clien
 
 
 def test_stream_sends_given_method(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """stream(method, url) отправляет запрос переданным методом."""
+    """stream(method, url) sends a request with the supplied method."""
     httpx_mock.add_response(url="https://example.com/search", method="POST", content=b"result")
     client = new_client("https://example.com")
 
@@ -166,7 +166,7 @@ def test_stream_sends_given_method(httpx_mock: HTTPXMock, new_client: SyncClient
 async def test_async_stream_request_reads_whole_content(
     httpx_mock: HTTPXMock, new_async_client: AsyncClientFactory
 ) -> None:
-    """Потоковый ответ асинхронного клиента вычитывается целиком."""
+    """Read an asynchronous client streaming response in full."""
     payload = b"async test content"
     httpx_mock.add_response(url="https://example.com/async-stream", method="GET", content=payload)
     client = new_async_client("https://example.com")
@@ -178,7 +178,7 @@ async def test_async_stream_request_reads_whole_content(
 
 
 async def test_async_stream_request_reads_lines(httpx_mock: HTTPXMock, new_async_client: AsyncClientFactory) -> None:
-    """Потоковый ответ асинхронного клиента читается построчно."""
+    """Read an asynchronous client streaming response line by line."""
     httpx_mock.add_response(url="https://example.com/async-lines", method="GET", text="alpha\nbeta\ngamma")
     client = new_async_client("https://example.com")
 
@@ -192,7 +192,7 @@ async def test_async_stream_request_respects_requested_chunk_size(
     httpx_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
 ) -> None:
-    """Порции потока асинхронного клиента не длиннее запрошенного размера."""
+    """Asynchronous client stream chunks do not exceed the requested size."""
     httpx_mock.add_response(url="https://example.com/async-chunks", method="GET", content=b"0123456789" * 100)
     client = new_async_client("https://example.com")
 
@@ -206,7 +206,7 @@ async def test_async_stream_request_chunks_join_into_content(
     httpx_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
 ) -> None:
-    """Порции асинхронного потока складываются обратно в исходное содержимое."""
+    """Asynchronous stream chunks reconstruct the original contents."""
     payload = b"0123456789" * 100
     httpx_mock.add_response(url="https://example.com/async-chunks", method="GET", content=payload)
     client = new_async_client("https://example.com")
@@ -221,7 +221,7 @@ async def test_async_stream_request_applies_auth_from_call(
     httpx_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
 ) -> None:
-    """Авторизация, переданная в асинхронный stream_request, попадает в запрос."""
+    """Authentication supplied to asynchronous stream_request is included in the request."""
     httpx_mock.add_response(url="https://example.com/secure", method="GET", content=b"secure async data")
     client = new_async_client("https://example.com")
 
@@ -238,7 +238,7 @@ async def test_async_stream_reads_content_by_method_and_url(
     httpx_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
 ) -> None:
-    """Асинхронный stream(method, url) повторяет контракт httpx и отдаёт содержимое."""
+    """Asynchronous stream(method, url) follows the httpx contract and yields content."""
     payload = b"async httpx-style streaming"
     httpx_mock.add_response(url="https://example.com/data", method="GET", content=payload)
     client = new_async_client("https://example.com")
@@ -250,7 +250,7 @@ async def test_async_stream_reads_content_by_method_and_url(
 
 
 async def test_async_stream_sends_given_method(httpx_mock: HTTPXMock, new_async_client: AsyncClientFactory) -> None:
-    """Асинхронный stream(method, url) отправляет запрос переданным методом."""
+    """Asynchronous stream(method, url) sends a request with the supplied method."""
     httpx_mock.add_response(url="https://example.com/upload", method="PUT", content=b"uploaded")
     client = new_async_client("https://example.com")
 

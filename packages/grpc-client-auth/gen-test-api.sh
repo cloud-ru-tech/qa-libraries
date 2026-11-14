@@ -1,7 +1,7 @@
 #!/bin/bash
-# Скрипт для генерации API для тестов.
-# Генерирует pb2.py файлы для gRPC клиента
-# на основе protobuf файлов в директории proto.
+# Script for generating the test API.
+# Generate pb2.py files for the gRPC client
+# from protobuf files in the proto directory.
 
 set -euo pipefail
 
@@ -23,7 +23,7 @@ PROTO_LIST=$(find ./proto -name '*.proto')
 
 PROTO_FILES=()
 while IFS= read -r proto_file; do
-  # Пустая строка приходит, когда find ничего не нашел: здесь это не имя файла.
+  # An empty line means find found nothing; it is not a filename here.
   [[ -n "${proto_file}" ]] && PROTO_FILES+=("${proto_file}")
 done <<<"${PROTO_LIST}"
 
@@ -32,8 +32,8 @@ if [[ ${#PROTO_FILES[@]} -eq 0 ]]; then
   exit 1
 fi
 
-# protoc запускается тем же интерпретатором, что и остальные команды проекта:
-# в системном python может не оказаться grpcio-tools.
+# protoc uses the same interpreter as the other project commands:
+# the system python may not have grpcio-tools installed.
 python -m grpc_tools.protoc \
   -I./proto \
   --python_out="${OUT_DIR}" \

@@ -7,13 +7,13 @@ import pytest
 
 
 class DockerServices(Protocol):
-    """Публичные операции тестового Docker сервиса."""
+    """Public operations for the test Docker service."""
 
     def port_for(self, service: str, port: int) -> int:
-        """Вернуть порт сервиса на Docker хосте."""
+        """Return the service port on the Docker host."""
 
     def wait_until_responsive(self, *, timeout: float, pause: float, check: Callable[[], bool]) -> None:
-        """Дождаться успешной проверки готовности."""
+        """Wait for a successful readiness check."""
 
 
 HTTPBIN_SERVICE = "httpbin"
@@ -22,17 +22,17 @@ HTTPBIN_PORT = 8080
 
 @pytest.fixture(scope="session")
 def docker_compose_file() -> list[str]:
-    """Указать compose файл демо вместо расположения по умолчанию."""
+    """Use the demo compose file instead of the default location."""
     return [str(Path(__file__).parent / "docker-compose.yml")]
 
 
 @pytest.fixture(scope="session")
 def httpbin_url(docker_services: DockerServices, docker_ip: str) -> str:
-    """Поднять httpbin и дождаться его готовности.
+    """Start httpbin and wait until it is ready.
 
-    Контейнер удаляется после прогона фикстурой ``docker_services``.
+    The ``docker_services`` fixture removes the container after the run.
 
-    :returns: адрес поднятого httpbin.
+    :returns: Address of the running httpbin.
     """
     public_port = docker_services.port_for(HTTPBIN_SERVICE, HTTPBIN_PORT)
     base_url = f"http://{docker_ip}:{public_port}"

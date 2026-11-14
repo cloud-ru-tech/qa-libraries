@@ -49,14 +49,14 @@ STREAM_MESSAGES_COUNT = 10
 
 
 async def test_returns_ok_status_for_unary_request(async_grpcbin_client: AsyncGRPCbinServiceClient) -> None:
-    """Успешный асинхронный запрос завершается статусом OK."""
+    """A successful asynchronous request finishes with status OK."""
     response = await async_grpcbin_client.dummy_unary(grpcbin_pb2.DummyMessage(f_string="перевозка"))
 
     assert_that(response).has_status_code(grpc.StatusCode.OK)
 
 
 async def test_returns_echoed_message(async_grpcbin_client: AsyncGRPCbinServiceClient) -> None:
-    """Сервис возвращает отправленное сообщение."""
+    """The service returns the sent message."""
     sent_value = "маршрутный лист"
 
     response = await async_grpcbin_client.dummy_unary(grpcbin_pb2.DummyMessage(f_string=sent_value))
@@ -65,7 +65,7 @@ async def test_returns_echoed_message(async_grpcbin_client: AsyncGRPCbinServiceC
 
 
 async def test_returns_requested_error_code(async_grpcbin_client: AsyncGRPCbinServiceClient) -> None:
-    """Сервис отвечает запрошенным кодом ошибки."""
+    """The service responds with the requested error code."""
     response = await async_grpcbin_client.specific_error(
         code=code_number(grpc.StatusCode.RESOURCE_EXHAUSTED),
         reason="квота исчерпана",
@@ -75,7 +75,7 @@ async def test_returns_requested_error_code(async_grpcbin_client: AsyncGRPCbinSe
 
 
 async def test_returns_error_reason_in_details(async_grpcbin_client: AsyncGRPCbinServiceClient) -> None:
-    """Текст ошибки от сервиса попадает в детали ответа."""
+    """The service error text appears in response details."""
     reason = "рейс отменен"
 
     response = await async_grpcbin_client.specific_error(code=code_number(grpc.StatusCode.ABORTED), reason=reason)
@@ -87,7 +87,7 @@ async def test_collects_all_messages_of_server_stream(
     async_grpcbin_client: AsyncGRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Собранный поток ответов содержит все присланные сервисом сообщения."""
+    """A collected response stream contains all messages sent by the service."""
     stream = await async_grpcbin_client.send_server_stream(dummy_message)
     response = await stream.collect()
 
@@ -98,7 +98,7 @@ async def test_returns_ok_status_after_collecting_stream(
     async_grpcbin_client: AsyncGRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Собранный поток ответов завершается статусом OK."""
+    """A collected response stream finishes with status OK."""
     stream = await async_grpcbin_client.send_server_stream(dummy_message)
     response = await stream.collect()
 
@@ -109,7 +109,7 @@ async def test_reads_server_stream_lazily(
     async_grpcbin_client: AsyncGRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Поток ответов читается по одному сообщению за раз."""
+    """A response stream is read one message at a time."""
     stream = await async_grpcbin_client.send_server_stream(dummy_message)
 
     async with stream:
@@ -122,7 +122,7 @@ async def test_rejects_second_reading_of_stream(
     async_grpcbin_client: AsyncGRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Повторное чтение потока завершается ошибкой."""
+    """Reading the stream again raises an error."""
     stream = await async_grpcbin_client.send_server_stream(dummy_message)
     await stream.collect()
 
@@ -131,14 +131,14 @@ async def test_rejects_second_reading_of_stream(
 
 
 async def test_sends_metadata(async_grpcbin_client: AsyncGRPCbinServiceClient) -> None:
-    """Метаданные запроса доходят до сервиса."""
+    """Request metadata reaches the service."""
     response = await async_grpcbin_client.get_headers({"x-shipment": "SH-77"})
 
     assert_that(response).received_metadata("x-shipment", "SH-77")
 
 
 async def test_sends_bearer_token(service_addr: str) -> None:
-    """Токен доступа уходит в заголовке авторизации."""
+    """The access token is sent in the authorization header."""
     async with AsyncGRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -150,7 +150,7 @@ async def test_sends_bearer_token(service_addr: str) -> None:
 
 
 async def test_refreshes_token_after_unauthenticated(service_addr: str) -> None:
-    """После ответа UNAUTHENTICATED выпускается новый токен."""
+    """A new token is issued after an UNAUTHENTICATED response."""
     auth = FakeAsyncAuth()
 
     async with AsyncGRPCbinServiceClient.from_addr(
@@ -164,7 +164,7 @@ async def test_refreshes_token_after_unauthenticated(service_addr: str) -> None:
 
 
 async def test_rejects_sync_auth_in_async_client(service_addr: str) -> None:
-    """Асинхронный клиент не принимает синхронную реализацию авторизации."""
+    """The asynchronous client rejects synchronous authentication implementations."""
     with pytest.raises(TypeError):
         AsyncGRPCbinServiceClient.from_addr(
             service_addr,
@@ -174,7 +174,7 @@ async def test_rejects_sync_auth_in_async_client(service_addr: str) -> None:
 
 
 async def test_adds_generated_request_id(service_addr: str) -> None:
-    """Клиент добавляет к запросу сгенерированный идентификатор."""
+    """The client adds a generated identifier to requests."""
     async with AsyncGRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -189,7 +189,7 @@ async def test_adds_generated_request_id(service_addr: str) -> None:
 
 
 async def test_logs_sent_request(service_addr: str, logger: logging.Logger, log_stream: io.StringIO) -> None:
-    """Отправленный запрос попадает в лог."""
+    """The sent request is logged."""
     async with AsyncGRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -201,7 +201,7 @@ async def test_logs_sent_request(service_addr: str, logger: logging.Logger, log_
 
 
 async def test_logs_received_response(service_addr: str, logger: logging.Logger, log_stream: io.StringIO) -> None:
-    """Полученный ответ попадает в лог."""
+    """The received response is logged."""
     async with AsyncGRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -217,7 +217,7 @@ async def test_completes_server_stream_with_logging_interceptor(
     logger: logging.Logger,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Поток ответов работает, когда к клиенту подключено логирование."""
+    """Response streaming works with client logging enabled."""
     async with AsyncGRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -230,7 +230,7 @@ async def test_completes_server_stream_with_logging_interceptor(
 
 
 async def test_repeats_call_after_unauthenticated() -> None:
-    """После ответа UNAUTHENTICATED запрос отправляется повторно."""
+    """The request is retried after an UNAUTHENTICATED response."""
     prefix = uuid4().hex
     continuation = FakeAsyncContinuation(accepted_token=f"{prefix}-2")
     interceptor = AsyncAuthInterceptor(FakeAsyncAuth(prefix=prefix))
@@ -241,7 +241,7 @@ async def test_repeats_call_after_unauthenticated() -> None:
 
 
 async def test_sends_refreshed_token_in_repeated_call() -> None:
-    """Повторный запрос уходит с новым токеном."""
+    """The retry uses the new token."""
     prefix = uuid4().hex
     continuation = FakeAsyncContinuation(accepted_token=f"{prefix}-2")
     interceptor = AsyncAuthInterceptor(FakeAsyncAuth(prefix=prefix))
@@ -252,7 +252,7 @@ async def test_sends_refreshed_token_in_repeated_call() -> None:
 
 
 async def test_passes_rejected_token_to_refresh() -> None:
-    """Источнику токенов сообщается, какой именно токен отверг сервис."""
+    """The token provider is told exactly which token the service rejected."""
     prefix = uuid4().hex
     auth = FakeAsyncAuth(prefix=prefix)
     interceptor = AsyncAuthInterceptor(auth)
@@ -267,7 +267,7 @@ async def test_passes_rejected_token_to_refresh() -> None:
 
 
 async def test_gives_up_after_single_repeat() -> None:
-    """Если новый токен тоже отвергнут, третьей попытки не будет."""
+    """If the new token is also rejected, there is no third attempt."""
     continuation = FakeAsyncContinuation(accepted_token=None)
     interceptor = AsyncAuthInterceptor(FakeAsyncAuth())
 
@@ -277,7 +277,7 @@ async def test_gives_up_after_single_repeat() -> None:
 
 
 async def test_keeps_user_defined_authorization(service_addr: str) -> None:
-    """Собственный заголовок авторизации вызывающего кода не подменяется."""
+    """The caller's custom authorization header is preserved."""
     async with AsyncGRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -289,7 +289,7 @@ async def test_keeps_user_defined_authorization(service_addr: str) -> None:
 
 
 async def test_rejects_interceptors_for_external_channel(service_addr: str) -> None:
-    """Интерцепторы нельзя добавить к готовому асинхронному каналу."""
+    """Interceptors cannot be added to an existing asynchronous channel."""
     channel = grpc.aio.insecure_channel(service_addr)
 
     with pytest.raises(ValueError, match="готовому асинхронному каналу"):
@@ -299,7 +299,7 @@ async def test_rejects_interceptors_for_external_channel(service_addr: str) -> N
 
 
 async def test_sends_request_through_external_channel(service_addr: str) -> None:
-    """Клиент работает поверх готового асинхронного канала."""
+    """The client works over an existing asynchronous channel."""
     channel = grpc.aio.insecure_channel(service_addr)
     client = AsyncGRPCbinServiceClient.from_channel(channel)
 
@@ -310,7 +310,7 @@ async def test_sends_request_through_external_channel(service_addr: str) -> None
 
 
 async def test_keeps_external_channel_open_after_close(service_addr: str) -> None:
-    """Канал, переданный извне, продолжает работать после закрытия клиента."""
+    """An externally supplied channel keeps working after the client closes."""
     channel = grpc.aio.insecure_channel(service_addr)
     client = AsyncGRPCbinServiceClient.from_channel(channel)
     await client.close()
@@ -325,7 +325,7 @@ async def test_returns_ok_status_for_client_stream(
     async_grpcbin_client: AsyncGRPCbinServiceClient,
     dummy_messages: Iterator[grpcbin_pb2.DummyMessage],
 ) -> None:
-    """Поток запросов завершается статусом OK."""
+    """A request stream finishes with status OK."""
     response = await async_grpcbin_client.send_client_stream(dummy_messages)
 
     assert_that(response).has_status_code(grpc.StatusCode.OK)
@@ -335,7 +335,7 @@ async def test_collects_all_messages_of_bidirectional_stream(
     async_grpcbin_client: AsyncGRPCbinServiceClient,
     dummy_messages: Iterator[grpcbin_pb2.DummyMessage],
 ) -> None:
-    """Двунаправленный поток возвращает столько же сообщений, сколько отправлено."""
+    """A bidirectional stream returns as many messages as were sent."""
     stream = await async_grpcbin_client.send_bidirectional_stream(dummy_messages)
     response = await stream.collect()
 
@@ -346,7 +346,7 @@ async def test_reports_deadline_exceeded_for_interrupted_stream(
     async_grpcbin_client: AsyncGRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Оборванный по истечении времени поток превращается в ответ со статусом ошибки."""
+    """A timed-out stream becomes a response with an error status."""
     stream = await async_grpcbin_client.send_server_stream(dummy_message, CallOptions(timeout=0.05))
     response = await stream.collect()
 
@@ -357,7 +357,7 @@ async def test_stops_collecting_stream_at_limit(
     async_grpcbin_client: AsyncGRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Сбор потока прекращается по достижении заданного предела."""
+    """Stream collection stops at the specified limit."""
     limit = 2
 
     stream = await async_grpcbin_client.send_server_stream(dummy_message)
@@ -370,7 +370,7 @@ async def test_reports_cancelled_status_after_cancel(
     async_grpcbin_client: AsyncGRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Отмененный поток сообщает статус CANCELLED."""
+    """A cancelled stream reports status CANCELLED."""
     stream = await async_grpcbin_client.send_server_stream(dummy_message)
     await anext(aiter(stream))
     stream.cancel()
@@ -384,7 +384,7 @@ async def test_logs_finished_stream_after_cancel(
     log_stream: io.StringIO,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Отмена потока не оставляет лог без записи о завершении."""
+    """Stream cancellation still produces a completion log record."""
     async with AsyncGRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -403,7 +403,7 @@ async def test_logs_finished_server_stream(
     log_stream: io.StringIO,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Завершение потока ответов попадает в лог асинхронного клиента."""
+    """Response stream completion is logged by the asynchronous client."""
     async with AsyncGRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -421,7 +421,7 @@ async def test_logs_number_of_streamed_messages(
     log_stream: io.StringIO,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Количество полученных сообщений потока попадает в лог асинхронного клиента."""
+    """The asynchronous client logs the number of received stream messages."""
     async with AsyncGRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -434,10 +434,10 @@ async def test_logs_number_of_streamed_messages(
 
 
 def test_splits_multi_interface_interceptor() -> None:
-    """Интерцептор со всеми типами вызовов раскладывается на отдельные объекты.
+    """An interceptor supporting all call types is split into separate objects.
 
-    grpc.aio кладет интерцептор только в одну цепочку, поэтому мульти-интерцептор,
-    поданный как один объект, обслуживал бы лишь один тип вызовов.
+    grpc.aio places an interceptor in only one chain, so a multi-interceptor
+    supplied as a single object would serve only one call type.
     """
     interceptor = AsyncAutogenerateRequestIdInterceptor()
 
@@ -445,7 +445,7 @@ def test_splits_multi_interface_interceptor() -> None:
 
 
 def test_keeps_single_interface_interceptor_as_is() -> None:
-    """Интерцептор с единственным интерфейсом раскладывать не нужно."""
+    """An interceptor with a single interface does not need splitting."""
 
     class SingleInterface(AsyncUnaryUnaryBase):
         @override
@@ -463,7 +463,7 @@ async def test_reads_nothing_with_zero_limit(
     async_grpcbin_client: AsyncGRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """С нулевым пределом поток не читается вовсе."""
+    """A zero limit prevents any stream reads."""
     stream = await async_grpcbin_client.send_server_stream(dummy_message)
     response = await stream.collect(limit=0)
 
@@ -471,10 +471,10 @@ async def test_reads_nothing_with_zero_limit(
 
 
 async def test_makes_no_reads_with_zero_limit() -> None:
-    """С нулевым пределом сообщения у вызова не запрашиваются.
+    """A zero limit prevents requesting messages from the call.
 
-    Проверяется на поддельном вызове: по пустому списку нельзя отличить «не читали»
-    от «прочитали и выбросили».
+    Use a fake call: an empty list cannot distinguish no reads
+    from reading and discarding messages.
     """
     call = FakeAsyncStreamCall(messages_count=3)
     stream: AsyncGRPCStreamResponse[object] = AsyncGRPCStreamResponse(cast("grpc.aio.Call", call))
@@ -488,7 +488,7 @@ async def test_rejects_negative_limit(
     async_grpcbin_client: AsyncGRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Отрицательный предел числа сообщений не принимается."""
+    """A negative message count limit is rejected."""
     stream = await async_grpcbin_client.send_server_stream(dummy_message)
 
     with pytest.raises(ValueError, match="отрицательным"):
@@ -499,9 +499,9 @@ async def test_propagates_external_cancellation_of_collect(
     async_grpcbin_client: AsyncGRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Отмена задачи, читающей поток, доходит до вызывающего кода.
+    """Cancellation of the stream reader task reaches the caller.
 
-    Проглотив ее, клиент сломал бы asyncio.timeout и корректное завершение приложения.
+    Swallowing it would break asyncio.timeout and graceful application shutdown.
     """
     stream = await async_grpcbin_client.send_server_stream(dummy_message)
     task = asyncio.create_task(stream.collect())
@@ -518,10 +518,10 @@ async def test_writes_final_log_before_close_returns(
     log_stream: io.StringIO,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Незавершенный поток попадает в лог до возврата из close().
+    """An unfinished stream is logged before close() returns.
 
-    Поток обрывается именно при закрытии канала, поэтому задача его лога появляется
-    позже первого дренажа.
+    The stream is interrupted when the channel closes, so its logging task appears
+    after the first drain.
     """
     client = AsyncGRPCbinServiceClient.from_addr(
         service_addr,
@@ -541,7 +541,7 @@ async def test_leaves_no_pending_log_tasks_after_close(
     logger: logging.Logger,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """После закрытия клиента не остается незавершенных задач логирования."""
+    """Closing the client leaves no pending logging tasks."""
     interceptor = AsyncLoggingInterceptor(logger=logger)
     client = AsyncGRPCbinServiceClient.from_addr(
         service_addr,
@@ -557,10 +557,10 @@ async def test_leaves_no_pending_log_tasks_after_close(
 
 
 async def test_applies_all_interceptor_types_of_multi_interceptor(service_addr: str) -> None:
-    """Интерцептор со всеми типами вызовов срабатывает на каждом из них.
+    """An interceptor supporting all call types runs for each of them.
 
-    Проверка идет через реальные вызовы: grpc.aio раскладывает интерцепторы по цепочкам сам,
-    и ошибка в этом месте не видна ни по типам, ни по числу адаптеров.
+    Use real calls: grpc.aio assigns interceptors to chains itself,
+    and errors here are invisible from types or adapter counts.
     """
     recorder = _RecordingInterceptor()
 
@@ -584,7 +584,7 @@ async def test_applies_all_interceptor_types_of_multi_interceptor(service_addr: 
 
 class _RecordingInterceptor(AsyncMetadataInterceptor):
     def __init__(self) -> None:
-        """Создать регистратор типов вызовов."""
+        """Create a call type recorder."""
         self.seen: list[str] = []
 
     @override
@@ -630,7 +630,7 @@ class _RecordingInterceptor(AsyncMetadataInterceptor):
 
 
 async def test_keeps_messages_received_before_error() -> None:
-    """Сообщения, пришедшие до ошибки сервера, остаются в собранном ответе."""
+    """Messages received before a server error remain in the collected response."""
     received = object()
     call = FakeFailingAsyncStreamCall([received], _aio_error())
     stream: AsyncGRPCStreamResponse[object] = AsyncGRPCStreamResponse(cast("grpc.aio.Call", call))
@@ -641,7 +641,7 @@ async def test_keeps_messages_received_before_error() -> None:
 
 
 async def test_reports_error_status_for_interrupted_stream() -> None:
-    """Оборванный поток сообщает код ошибки сервера."""
+    """An interrupted stream reports the server error code."""
     call = FakeFailingAsyncStreamCall([object()], _aio_error())
     stream: AsyncGRPCStreamResponse[object] = AsyncGRPCStreamResponse(cast("grpc.aio.Call", call))
 
@@ -651,7 +651,7 @@ async def test_reports_error_status_for_interrupted_stream() -> None:
 
 
 async def test_keeps_original_error_of_interrupted_stream() -> None:
-    """Ответ оборванного потока хранит исходную ошибку gRPC."""
+    """An interrupted stream response retains the original gRPC error."""
     error = _aio_error()
     call = FakeFailingAsyncStreamCall([object()], error)
     stream: AsyncGRPCStreamResponse[object] = AsyncGRPCStreamResponse(cast("grpc.aio.Call", call))
@@ -662,7 +662,7 @@ async def test_keeps_original_error_of_interrupted_stream() -> None:
 
 
 def _aio_error() -> grpc.aio.AioRpcError:
-    """Собрать ошибку асинхронного вызова для поддельного потока."""
+    """Build an asynchronous call error for a fake stream."""
     return grpc.aio.AioRpcError(
         code=grpc.StatusCode.RESOURCE_EXHAUSTED,
         initial_metadata=grpc.aio.Metadata(),
@@ -676,7 +676,7 @@ async def test_counts_message_delivered_together_with_completion(
     logger: logging.Logger,
     log_stream: io.StringIO,
 ) -> None:
-    """Сообщение попадает в счётчик, даже если вызов завершился в момент его выдачи."""
+    """A message is counted even if the call finishes while yielding it."""
     call = FakeAsyncCallbackStreamCall(messages_count=1)
     interceptor = AsyncLoggingInterceptor(logger=logger)
 

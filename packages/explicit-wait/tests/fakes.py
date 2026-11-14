@@ -5,56 +5,56 @@ from threading import Event
 
 
 class FakeClock:
-    """Управляемые часы вместе с управляемым сном.
+    """Controlled clock with controlled sleep.
 
-    Время не идёт само: оно двигается только вызовом ``sleep`` или ``advance``. За счёт
-    этого тесты бэкоффа и таймаутов детерминированы и выполняются мгновенно.
+    Time does not pass on its own: only ``sleep`` or ``advance`` move it forward. This makes
+    backoff and timeout tests deterministic and immediate.
 
-    Параметр ``overshoot`` моделирует реальность, в которой и ``time.sleep``, и event loop
-    гарантируют только нижнюю границу паузы: сон сдвигает часы на запрошенное время плюс
-    заданную задержку пробуждения.
+    ``overshoot`` models how both ``time.sleep`` and the event loop guarantee only
+    a minimum pause: sleep advances the clock by the requested time plus
+    the specified wakeup delay.
     """
 
     def __init__(self, start: float = 0.0, *, overshoot: float = 0.0) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param start: значение настройки ``start``.
-        :param overshoot: значение настройки ``overshoot``.
+        :param start: Value of ``start``.
+        :param overshoot: Value of ``overshoot``.
         """
         self._now = start
         self._overshoot = overshoot
         self.sleeps: list[float] = []
 
     def monotonic(self) -> float:
-        """Получить текущее показание часов."""
+        """Get the current clock reading."""
         return self._now
 
     def sleep(self, seconds: float) -> None:
-        """Проспать заданное время, сдвинув часы вперёд."""
+        """Sleep for the given duration by advancing the clock."""
         self.sleeps.append(seconds)
         self._now += seconds + self._overshoot
 
     async def async_sleep(self, seconds: float) -> None:
-        """Проспать заданное время в асинхронном коде, уступив управление event loop."""
+        """Sleep in asynchronous code, yielding control to the event loop."""
         self.sleep(seconds)
         await asyncio.sleep(0)
 
     def advance(self, seconds: float) -> None:
-        """Сдвинуть часы вперёд, не записывая это как сон."""
+        """Advance the clock without recording a sleep."""
         self._now += seconds
 
 
 class ScriptedPredicate:
-    """Предикат, отдающий заранее заданные значения по порядку.
+    """Predicate returning predefined values in order.
 
-    Экземпляр исключения в сценарии означает, что попытка должна завершиться этим
-    исключением. Обращение за значением после конца сценария — ошибка теста.
+    An exception instance in the script makes the attempt raise that
+    exception. Requesting a value after the script ends is a test error.
     """
 
     def __init__(self, results: Sequence[object]) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param results: значение настройки ``results``.
+        :param results: Value of ``results``.
         """
         self._results = list(results)
         self.calls = 0
@@ -71,13 +71,13 @@ class ScriptedPredicate:
 
 
 class CountingPredicate:
-    """Предикат, становящийся truthy на заданной по счёту попытке."""
+    """Predicate that becomes truthy on a specified attempt."""
 
     def __init__(self, truthy_on_call: int, *, value: object = True) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param truthy_on_call: значение настройки ``truthy_on_call``.
-        :param value: значение настройки ``value``.
+        :param truthy_on_call: Value of ``truthy_on_call``.
+        :param value: Value of ``value``.
         """
         self._truthy_on_call = truthy_on_call
         self._value = value
@@ -89,7 +89,7 @@ class CountingPredicate:
 
 
 class FalsyWithHugeRepr:
-    """Falsy-результат с очень длинным repr: нужен, чтобы проверить усечение диагностики."""
+    """Falsy result with a very long repr for testing diagnostic truncation."""
 
     REPR_LENGTH = 5000
 
@@ -101,9 +101,9 @@ class FalsyWithHugeRepr:
 
 
 class FalsyWithBrokenRepr:
-    """Falsy-результат, у которого ``__repr__`` падает.
+    """Falsy result whose ``__repr__`` raises an exception.
 
-    Нужен, чтобы диагностика ошибки не подменяла собой саму ошибку остановки.
+    Ensures error diagnostics do not replace the stopping error itself.
     """
 
     def __bool__(self) -> bool:
@@ -115,7 +115,7 @@ class FalsyWithBrokenRepr:
 
 
 class BrokenStrError(Exception):
-    """Ожидаемое исключение, у которого падает приведение к строке."""
+    """Expected exception whose string conversion raises an error."""
 
     def __str__(self) -> str:
         message = "str упал"
@@ -124,19 +124,19 @@ class BrokenStrError(Exception):
 
 @types.coroutine
 def generator_based_awaitable(value: object) -> Generator[None, None, object]:
-    """Создать awaitable старого образца, который не является ``collections.abc.Awaitable``.
+    """Create a legacy awaitable that is not a ``collections.abc.Awaitable``.
 
-    :param value: значение, которое вернёт ожидание.
-    :return: awaitable-генератор.
+    :param value: value returned by the awaitable.
+    :return: awaitable generator.
     """
     yield from ()
     return value
 
 
 class AwaitableWithoutClose:
-    """Awaitable-объект без метода ``close``.
+    """Awaitable without a ``close`` method.
 
-    Синхронный агрегат обязан отвергать и такие результаты, хотя закрыть их нечем.
+    Synchronous combinations must reject these results even though they cannot close them.
     """
 
     def __await__(self) -> Generator[None, None, bool]:
@@ -145,9 +145,9 @@ class AwaitableWithoutClose:
 
 
 class AwaitableWithBrokenClose:
-    """Awaitable-объект, у которого ``close`` падает.
+    """Awaitable whose ``close`` raises an exception.
 
-    Очистка не должна подменять собой ошибку о недопустимом асинхронном предикате.
+    Cleanup must not replace the error about an invalid asynchronous predicate.
     """
 
     def __await__(self) -> Generator[None, None, bool]:
@@ -155,7 +155,7 @@ class AwaitableWithBrokenClose:
         return True
 
     def close(self) -> None:
-        """Сломанная очистка."""
+        """Fail during cleanup."""
         message = "close упал"
         raise RuntimeError(message)
 
@@ -171,11 +171,11 @@ def _awaitable_that_refuses_to_close() -> Generator[None, None, bool]:
 
 
 def started_awaitable_that_refuses_to_close() -> Generator[None, None, bool]:
-    """Создать уже начатый awaitable, чей ``close`` выбрасывает исключение.
+    """Create an already started awaitable whose ``close`` raises an exception.
 
-    Закрытие такого объекта не должно подменять ошибку о недопустимом асинхронном предикате.
+    Closing this object must not replace the error about an invalid asynchronous predicate.
 
-    :return: приостановленный на yield awaitable-генератор.
+    :return: awaitable generator suspended at yield.
     """
     awaitable = _awaitable_that_refuses_to_close()
     awaitable.send(None)
@@ -183,26 +183,26 @@ def started_awaitable_that_refuses_to_close() -> Generator[None, None, bool]:
 
 
 class EventCancelledOnWait(Event):
-    """Событие отмены, которое выставляется ровно в момент ожидания паузы.
+    """Cancellation event set exactly when waiting for a pause.
 
-    Позволяет проверить отмену во время сна без реальных задержек и гонок.
+    Tests cancellation during sleep without real delays or races.
     """
 
     def wait(self, timeout: float | None = None) -> bool:
-        """Выставить событие и дождаться его.
+        """Set the event and wait for it.
 
-        :param timeout: максимальное время ожидания.
-        :return: True, поскольку событие всегда оказывается выставленным.
+        :param timeout: maximum wait time.
+        :return: True, as the event is always set.
         """
         self.set()
         return super().wait(timeout)
 
 
 class AwaitableTrackingClose:
-    """Awaitable-объект, запоминающий, вызывали ли у него ``close``."""
+    """Awaitable that records whether its ``close`` was called."""
 
     def __init__(self) -> None:
-        """Инициализировать объект."""
+        """Initialize the object."""
         self.close_called = False
 
     def __await__(self) -> Generator[None, None, bool]:
@@ -210,7 +210,7 @@ class AwaitableTrackingClose:
         return True
 
     def close(self) -> None:
-        """Запомнить факт вызова очистки."""
+        """Record the cleanup call."""
         self.close_called = True
 
 

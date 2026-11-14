@@ -23,7 +23,7 @@ UNAUTHENTICATED_CODE = 16
 
 
 async def test_sends_token_received_from_iam(service_addr: str, httpx_mock: HTTPXMock) -> None:
-    """Полученный от IAM токен уходит в заголовке авторизации."""
+    """The token received from IAM is sent in the authorization header."""
     access_token = uuid4().hex
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response(access_token))
 
@@ -41,7 +41,7 @@ async def test_sends_token_received_from_iam(service_addr: str, httpx_mock: HTTP
 
 
 async def test_requests_token_from_openid_api(service_addr: str, httpx_mock: HTTPXMock) -> None:
-    """С клиентом OpenID токен запрашивается через openid API IAM."""
+    """The OpenID client requests tokens through the IAM openid API."""
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("async-openid-token"))
 
     async with (
@@ -58,7 +58,7 @@ async def test_requests_token_from_openid_api(service_addr: str, httpx_mock: HTT
 
 
 async def test_requests_token_once_for_several_requests(service_addr: str, httpx_mock: HTTPXMock) -> None:
-    """Для нескольких запросов токен запрашивается в IAM один раз."""
+    """Multiple requests fetch a token from IAM only once."""
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("async-cached-token"))
 
     async with (
@@ -76,7 +76,7 @@ async def test_requests_token_once_for_several_requests(service_addr: str, httpx
 
 
 async def test_reuses_token_from_store(service_addr: str, httpx_mock: HTTPXMock) -> None:
-    """Действующий токен из хранилища используется без обращения в IAM."""
+    """A valid stored token is used without contacting IAM."""
     store = InMemoryAsyncAuthStore()
     await store.set("key-id", Token.with_lifetime("async-stored-token", 3600))
 
@@ -94,7 +94,7 @@ async def test_reuses_token_from_store(service_addr: str, httpx_mock: HTTPXMock)
 
 
 async def test_requests_new_token_after_unauthenticated(service_addr: str, httpx_mock: HTTPXMock) -> None:
-    """После ответа UNAUTHENTICATED токен запрашивается в IAM заново."""
+    """The token is requested from IAM again after an UNAUTHENTICATED response."""
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("async-first-token"))
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("async-second-token"))
 
@@ -112,7 +112,7 @@ async def test_requests_new_token_after_unauthenticated(service_addr: str, httpx
 
 
 async def test_returns_unauthenticated_when_new_token_is_rejected(service_addr: str, httpx_mock: HTTPXMock) -> None:
-    """Если сервис отверг и новый токен, возвращается статус ошибки."""
+    """If the service also rejects the new token, an error status is returned."""
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("async-first-token"))
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("async-second-token"))
 
@@ -130,7 +130,7 @@ async def test_returns_unauthenticated_when_new_token_is_rejected(service_addr: 
 
 
 async def test_issues_single_token_for_concurrent_refresh() -> None:
-    """Корутины, одновременно отвергнутые с одним токеном, вызывают один поход в IAM."""
+    """Coroutines whose shared token is rejected concurrently make a single IAM request."""
     iam_client = SlowAsyncIamClient()
     auth = IAM_GrpcAsyncAuth("key-id", "key-secret", iam_client)
     rejected = await auth.token()
@@ -141,7 +141,7 @@ async def test_issues_single_token_for_concurrent_refresh() -> None:
 
 
 async def test_returns_same_token_to_concurrent_refresh() -> None:
-    """Все одновременно обновляющиеся корутины получают один и тот же токен."""
+    """All coroutines refreshing concurrently receive the same token."""
     auth = IAM_GrpcAsyncAuth("key-id", "key-secret", SlowAsyncIamClient())
     rejected = await auth.token()
 
@@ -151,7 +151,7 @@ async def test_returns_same_token_to_concurrent_refresh() -> None:
 
 
 async def test_saves_received_token_to_store(service_addr: str, httpx_mock: HTTPXMock) -> None:
-    """Полученный от IAM токен сохраняется в хранилище."""
+    """The token received from IAM is saved in storage."""
     store = InMemoryAsyncAuthStore()
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("async-token-to-store"))
 
@@ -171,7 +171,7 @@ async def test_saves_received_token_to_store(service_addr: str, httpx_mock: HTTP
 
 
 async def test_issues_single_token_when_iam_repeats_same_value() -> None:
-    """Обновление распознаётся, даже если IAM вернул прежний текст токена."""
+    """A refresh is recognized even when IAM returns the same token text."""
     iam_client = ConstantAsyncIamClient()
     auth = IAM_GrpcAsyncAuth("key-id", "key-secret", iam_client)
     rejected = await auth.token()

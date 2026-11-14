@@ -9,7 +9,7 @@ from tenacity.stop import StopBaseT
 from tenacity.wait import WaitBaseT
 
 DEFAULT_RETRIES_STOP = tenacity.stop_after_attempt(5)
-# Джиттер обязателен: без него все клиенты после общего сбоя идут на повтор синхронно.
+# Jitter is required: without it all clients retry simultaneously after a shared failure.
 DEFAULT_RETRIES_WAIT = tenacity.wait_exponential_jitter(initial=1, max=64, jitter=1)
 DEFAULT_MAX_RETRY_AFTER = 60.0
 
@@ -17,7 +17,7 @@ RetryHookT = Callable[[tenacity.RetryCallState], Awaitable[None] | None]
 
 
 class _Unset(Enum):
-    """Отличает «параметр не задан» от «задан как None»."""
+    """Distinguish an omitted parameter from an explicit None."""
 
     MARKER = "unset"
 
@@ -25,9 +25,9 @@ class _Unset(Enum):
         return "UNSET"
 
 
-#: Значение по умолчанию для переопределений: наследовать из глобальной конфигурации.
-#: Нужен отдельно от `None`, потому что `None` — осмысленное значение для `before_sleep_hook`
-#: и означает «хук на этом клиенте отключён».
+#: Default override value: inherit the global configuration.
+#: Keep it separate from `None`, because `None` is a meaningful value for `before_sleep_hook`
+#: and means that the hook is disabled for this client.
 UNSET: Literal[_Unset.MARKER] = _Unset.MARKER
 
 type Unset = Literal[_Unset.MARKER]
@@ -35,7 +35,7 @@ type Unset = Literal[_Unset.MARKER]
 
 @dataclass(frozen=True, kw_only=True)
 class Config:
-    """Политика повторов. Неизменяема: `configure()` подменяет её целиком."""
+    """Immutable retry policy: `configure()` replaces it in full."""
 
     stop: StopBaseT = DEFAULT_RETRIES_STOP
     wait: WaitBaseT = DEFAULT_RETRIES_WAIT
@@ -47,11 +47,11 @@ class Config:
 
 @dataclass(frozen=True, kw_only=True)
 class RetryOverrides:
-    """Точечные переопределения политики для одного клиента.
+    """Individual policy overrides for one client.
 
-    Поле, оставленное `UNSET`, берётся из глобальной конфигурации, причём в момент запроса,
-    а не в момент создания клиента. Явный `None` у `before_sleep_hook` отключает хук
-    для этого клиента.
+    Read fields left `UNSET` from the global configuration at request time,
+    rather than client creation time. An explicit `None` for `before_sleep_hook` disables the hook
+    for this client.
     """
 
     stop: StopBaseT | Unset = UNSET
@@ -62,10 +62,10 @@ class RetryOverrides:
     max_retry_after: float | Unset = UNSET
 
     def apply_to(self, base: Config) -> Config:
-        """Применить переопределения к текущей конфигурации.
+        """Apply overrides to the current configuration.
 
-        :param base: глобальный снимок настроек.
-        :return: настройки клиента с учётом переопределений.
+        :param base: Global settings snapshot.
+        :return: Client settings with overrides applied.
         """
         values = (
             self.stop,
@@ -87,12 +87,12 @@ class RetryOverrides:
         )
 
     def merge(self, other: "RetryOverrides") -> "RetryOverrides":
-        """Объединить переопределения двух опций одного клиента.
+        """Merge overrides from two options for the same client.
 
-        Клиент обслуживается единой политикой, поэтому параметр задаётся ровно в одной опции.
-        Сравнивать значения по смыслу библиотека не пытается: у стратегий tenacity нет `__eq__`,
-        а у функций-хуков поверхностное сравнение объявляло бы разные объекты одинаковыми
-        и молча отбрасывало один из них.
+        The client uses a single policy, so each parameter must be set in exactly one option.
+        Do not compare values semantically: tenacity strategies lack `__eq__`,
+        and shallow comparison of hook functions could treat different objects as equal
+        and silently discard one of them.
         """
         return RetryOverrides(
             stop=_merge_override("stop", self.stop, other.stop),
@@ -128,10 +128,10 @@ class _State:
 
 
 def configure(*, options: Config | None = None) -> None:
-    """Заменить глобальную политику повторов единым снимком.
+    """Replace the global retry policy with a single snapshot.
 
-    :param options: настройки повторов; None восстанавливает значения по умолчанию.
-    :raises ValueError: если ограничение Retry-After не является конечным неотрицательным числом.
+    :param options: Retry settings; None restores defaults.
+    :raises ValueError: If the Retry-After limit is not a finite nonnegative number.
     """
     snapshot = Config() if options is None else options
     if not math.isfinite(snapshot.max_retry_after) or snapshot.max_retry_after < 0:
@@ -141,5 +141,5 @@ def configure(*, options: Config | None = None) -> None:
 
 
 def get_config() -> Config:
-    """Текущая глобальная политика. Объект неизменяем, поэтому это безопасный снимок."""
+    """Return the current global policy as a safe, immutable snapshot."""
     return _State.current

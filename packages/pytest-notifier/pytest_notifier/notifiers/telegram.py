@@ -7,29 +7,29 @@ from .base import NotifierBase
 
 
 class TelegramNotifier(NotifierBase):
-    """Нотификатор для отправки результатов в Telegram через Bot API."""
+    """Notifier that sends results to Telegram through the Bot API."""
 
     BASE_URL = "https://api.telegram.org/bot"
 
     def __init__(self, settings: Settings) -> None:
-        """Сохранить настройки уведомлений.
+        """Save notification settings.
 
-        :param settings: настройки каналов.
+        :param settings: channel settings.
         """
         super().__init__(settings)
         self.tg = settings.telegram
 
     def is_enabled(self) -> bool:
-        """Проверить доступность настроенного канала.
+        """Check the configured channel availability.
 
-        :return: достаточно ли настроек для отправки.
+        :return: whether the settings are sufficient for sending.
         """
         return self.tg.bot_token is not None and self.tg.chat_id is not None
 
     def send(self, results: TestResults) -> None:
-        """Отправить сообщения о неудачных тестах.
+        """Send messages about failed tests.
 
-        :param results: результаты прогона.
+        :param results: run results.
         """
         all_failures = results.failures + results.errors
         for _, failure in enumerate(all_failures, 1):

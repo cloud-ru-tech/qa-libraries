@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 
 @dataclass
 class SSHResult:
-    """Результат выполнения SSH команды."""
+    """SSH command result."""
 
     stdout: str = ""
     stderr: str = ""
@@ -16,7 +16,7 @@ class SSHResult:
 
 @dataclass
 class LiveSSHResult:
-    """Результат выполнения SSH команды с возможностью получения данных в реальном времени."""
+    """SSH command result with real-time data access."""
 
     stdout_lines: list[str] = field(default_factory=list)
     stderr_lines: list[str] = field(default_factory=list)

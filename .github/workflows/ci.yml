@@ -7,14 +7,14 @@ on:
 permissions:
   contents: read
 
-# Новый запуск ждёт завершения текущего, а не отменяет его.
+# Let the current run finish before starting the next one.
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 env:
   UV_NO_PROGRESS: '1'
-  # Python ставит setup-python; uv не должен тихо скачивать другую версию.
+  # setup-python installs Python; prevent uv from silently downloading another version.
   UV_PYTHON_DOWNLOADS: never
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
         with:
           go-version: '1.25'
           cache: false
-      # Go сверяет скачанный модуль с публичной базой контрольных сумм sum.golang.org.
+      # Go verifies downloaded modules against the public sum.golang.org checksum database.
       - run: go install github.com/checkmake/checkmake/cmd/checkmake@v0.3.2
       - run: make sync
       - run: make lint lint-make format-check typecheck stubtest
@@ -86,9 +86,8 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # Ставит каждую библиотеку отдельно в пустое окружение и импортирует её.
-  # Ловит зависимости, которые библиотека использует, но забыла объявить в pyproject.toml:
-  # в общем окружении репозитория их незаметно ставят соседние библиотеки.
+  # Separate environments catch dependencies missing from a library's pyproject.toml:
+  # other libraries may install them in the shared repository environment.
   install-wheels:
     needs: build
     runs-on: ubuntu-24.04

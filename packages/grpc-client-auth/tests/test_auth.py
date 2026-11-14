@@ -20,7 +20,7 @@ UNAUTHENTICATED_CODE = 16
 
 
 def test_sends_token_received_from_iam(service_addr: str, httpx_mock: HTTPXMock) -> None:
-    """Полученный от IAM токен уходит в заголовке авторизации."""
+    """The token received from IAM is sent in the authorization header."""
     access_token = uuid4().hex
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response(access_token))
 
@@ -38,7 +38,7 @@ def test_sends_token_received_from_iam(service_addr: str, httpx_mock: HTTPXMock)
 
 
 def test_requests_token_from_public_api(service_addr: str, httpx_mock: HTTPXMock) -> None:
-    """Токен запрашивается через публичное API IAM."""
+    """The token is requested through the public IAM API."""
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("public-api-token"))
 
     with (
@@ -55,7 +55,7 @@ def test_requests_token_from_public_api(service_addr: str, httpx_mock: HTTPXMock
 
 
 def test_requests_token_from_openid_api(service_addr: str, httpx_mock: HTTPXMock) -> None:
-    """С клиентом OpenID токен запрашивается через openid API IAM."""
+    """The OpenID client requests tokens through the IAM openid API."""
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("openid-token"))
 
     with (
@@ -72,7 +72,7 @@ def test_requests_token_from_openid_api(service_addr: str, httpx_mock: HTTPXMock
 
 
 def test_requests_token_once_for_several_requests(service_addr: str, httpx_mock: HTTPXMock) -> None:
-    """Для нескольких запросов токен запрашивается в IAM один раз."""
+    """Multiple requests fetch a token from IAM only once."""
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("cached-token"))
 
     with (
@@ -90,7 +90,7 @@ def test_requests_token_once_for_several_requests(service_addr: str, httpx_mock:
 
 
 def test_requests_new_token_when_stored_one_expired(service_addr: str, httpx_mock: HTTPXMock) -> None:
-    """Истекший токен из хранилища не используется, вместо него запрашивается новый."""
+    """An expired stored token is replaced by a newly requested one."""
     store = InMemoryAuthStore()
     store.set("key-id", Token("stale-token", datetime.now(UTC) - timedelta(seconds=1)))
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("fresh-token"))
@@ -109,7 +109,7 @@ def test_requests_new_token_when_stored_one_expired(service_addr: str, httpx_moc
 
 
 def test_reuses_token_from_store(service_addr: str, httpx_mock: HTTPXMock) -> None:
-    """Действующий токен из хранилища используется без обращения в IAM."""
+    """A valid stored token is used without contacting IAM."""
     store = InMemoryAuthStore()
     store.set("key-id", Token.with_lifetime("stored-token", 3600))
 
@@ -127,7 +127,7 @@ def test_reuses_token_from_store(service_addr: str, httpx_mock: HTTPXMock) -> No
 
 
 def test_saves_received_token_to_store(service_addr: str, httpx_mock: HTTPXMock) -> None:
-    """Полученный от IAM токен сохраняется в хранилище."""
+    """The token received from IAM is saved in storage."""
     store = InMemoryAuthStore()
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("token-to-store"))
 
@@ -145,7 +145,7 @@ def test_saves_received_token_to_store(service_addr: str, httpx_mock: HTTPXMock)
 
 
 def test_requests_new_token_after_unauthenticated(service_addr: str, httpx_mock: HTTPXMock) -> None:
-    """После ответа UNAUTHENTICATED токен запрашивается в IAM заново."""
+    """The token is requested from IAM again after an UNAUTHENTICATED response."""
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("first-token"))
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("second-token"))
 
@@ -163,7 +163,7 @@ def test_requests_new_token_after_unauthenticated(service_addr: str, httpx_mock:
 
 
 def test_returns_unauthenticated_when_new_token_is_rejected(service_addr: str, httpx_mock: HTTPXMock) -> None:
-    """Если сервис отверг и новый токен, возвращается статус ошибки."""
+    """If the service also rejects the new token, an error status is returned."""
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("first-token"))
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("second-token"))
 
@@ -181,7 +181,7 @@ def test_returns_unauthenticated_when_new_token_is_rejected(service_addr: str, h
 
 
 def test_keeps_token_for_other_errors(service_addr: str, httpx_mock: HTTPXMock) -> None:
-    """Ошибки, не связанные с авторизацией, не приводят к новому походу в IAM."""
+    """Errors unrelated to authentication do not trigger another IAM request."""
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("stable-token"))
 
     with (
@@ -198,7 +198,7 @@ def test_keeps_token_for_other_errors(service_addr: str, httpx_mock: HTTPXMock) 
 
 
 def test_sends_key_id_to_iam(service_addr: str, httpx_mock: HTTPXMock) -> None:
-    """Идентификатор ключа уходит в запросе на получение токена."""
+    """The key identifier is sent in the token request."""
     key_id = "delivery-key-id"
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("token"))
 
@@ -216,10 +216,10 @@ def test_sends_key_id_to_iam(service_addr: str, httpx_mock: HTTPXMock) -> None:
 
 
 def test_issues_single_token_for_concurrent_refresh() -> None:
-    """Потоки, одновременно отвергнутые с одним токеном, вызывают один поход в IAM.
+    """Threads whose shared token is rejected concurrently make one IAM request.
 
-    Потоки синхронизированы барьером, а клиент IAM отвечает с задержкой: без блокировки
-    внутри объекта авторизации каждый поток успел бы запросить собственный токен.
+    Threads are synchronized by a barrier and the IAM client responds with a delay: without a lock
+    inside the authentication object, every thread would request its own token.
     """
     iam_client = SlowIamClient()
     auth = IAM_GrpcAuth("key-id", "key-secret", iam_client)
@@ -231,7 +231,7 @@ def test_issues_single_token_for_concurrent_refresh() -> None:
 
 
 def test_returns_same_token_to_concurrent_refresh() -> None:
-    """Все одновременно обновляющиеся потоки получают один и тот же токен."""
+    """All threads refreshing concurrently receive the same token."""
     auth = IAM_GrpcAuth("key-id", "key-secret", SlowIamClient())
     rejected = auth.token()
 
@@ -241,12 +241,12 @@ def test_returns_same_token_to_concurrent_refresh() -> None:
 
 
 def _refresh_concurrently(auth: IAM_GrpcAuth, rejected_token: str, threads_count: int) -> list[str]:
-    """Обновить токен из нескольких потоков одновременно.
+    """Refresh a token concurrently from multiple threads.
 
-    :param auth: источник токенов
-    :param rejected_token: токен, который сервис отверг
-    :param threads_count: количество потоков
-    :return: токены, полученные каждым потоком
+    :param auth: token provider
+    :param rejected_token: token rejected by the service
+    :param threads_count: number of threads
+    :return: tokens received by each thread
     """
     barrier = threading.Barrier(threads_count)
     results: list[str] = []
@@ -268,7 +268,7 @@ def _refresh_concurrently(auth: IAM_GrpcAuth, rejected_token: str, threads_count
 
 
 def test_issues_new_token_for_repeatedly_rejected_token(httpx_mock: HTTPXMock) -> None:
-    """Если отвергнут уже обновленный токен, выпускается следующий."""
+    """If an already refreshed token is rejected, another token is issued."""
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("token-one"))
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("token-two"))
     httpx_mock.add_response(status_code=codes.OK, json=iam_auth_response("token-three"))
@@ -282,10 +282,10 @@ def test_issues_new_token_for_repeatedly_rejected_token(httpx_mock: HTTPXMock) -
 
 
 def test_issues_single_token_when_iam_repeats_same_value() -> None:
-    """Обновление распознаётся, даже если IAM вернул прежний текст токена.
+    """A refresh is recognized even when IAM returns the same token text.
 
-    По тексту такое обновление неотличимо от старого токена, поэтому объект авторизации
-    считает поколения: иначе в IAM ушёл бы каждый ожидающий.
+    Such a refresh is indistinguishable from the old token text, so the authentication object
+    counts generations; otherwise every waiting caller would contact IAM.
     """
     iam_client = ConstantIamClient()
     auth = IAM_GrpcAuth("key-id", "key-secret", iam_client)

@@ -2,7 +2,7 @@ import logging
 import os
 from dataclasses import dataclass
 
-# Ограничение на длину тела сообщения в логе по умолчанию.
+# Default limit on logged message body length.
 DEFAULT_PAYLOAD_LOG_MAXLENGTH = 4096
 
 _TRUE_VALUES = ("true", "y", "yes", "on", "1")
@@ -10,21 +10,21 @@ _TRUE_VALUES = ("true", "y", "yes", "on", "1")
 
 @dataclass(kw_only=True)
 class LoggingConfig:
-    """Параметры логирования gRPC-запросов и ответов."""
+    """gRPC request and response logging options."""
 
-    # Уровень логирования запросов и ответов.
+    # Request and response logging level.
     log_level: int = logging.INFO
 
-    # Уровень логирования запросов, завершившихся ошибкой.
+    # Failed request logging level.
     err_log_level: int = logging.ERROR
 
-    # Ширина отступа при форматировании JSON свойств.
+    # Indentation width for formatting JSON properties.
     json_indent: int | None = None
 
-    # Разносить ли свойства лога по строкам.
+    # Whether to put log properties on separate lines.
     use_line_breaks: bool = False
 
-    # Максимальная длина тела сообщения в логе. `None` — без ограничения.
+    # Maximum logged message body length. `None` means unlimited.
     payload_log_maxlength: int | None = DEFAULT_PAYLOAD_LOG_MAXLENGTH
 
 
@@ -39,15 +39,15 @@ def configure_logging(
     use_line_breaks: bool = False,
     payload_log_maxlength: int | None = DEFAULT_PAYLOAD_LOG_MAXLENGTH,
 ) -> None:
-    """Сконфигурировать параметры логирования.
+    """Configure logging options.
 
-    Значения из переменных окружения имеют приоритет над аргументами.
+    Environment variable values take precedence over arguments.
 
-    :param log_level: уровень логирования запросов и ответов, по умолчанию INFO
-    :param err_log_level: уровень логирования запросов с ошибкой, по умолчанию ERROR
-    :param json_indent: ширина отступа при форматировании JSON свойств, по умолчанию отступа нет
-    :param use_line_breaks: разносить ли свойства лога по строкам, по умолчанию нет
-    :param payload_log_maxlength: максимальная длина тела сообщения в логе, по умолчанию 4096 символов
+    :param log_level: request and response logging level, defaults to INFO
+    :param err_log_level: failed request logging level, defaults to ERROR
+    :param json_indent: indentation width for JSON property formatting, defaults to no indentation
+    :param use_line_breaks: whether to put log properties on separate lines, defaults to false
+    :param payload_log_maxlength: maximum logged message body length, defaults to 4096 characters
     """
     LOGGING_CONFIG.log_level = _env_int("GRPC_CLIENT_LOG_LEVEL", log_level)
     LOGGING_CONFIG.err_log_level = _env_int("GRPC_CLIENT_ERR_LOG_LEVEL", err_log_level)

@@ -12,10 +12,10 @@ AsyncPredicate = Callable[[], object | Awaitable[object]]
 
 
 class Unset(Enum):
-    """Маркер «аргумент не передан».
+    """Marker for an omitted argument.
 
-    Нужен там, где None — осмысленное значение и его нельзя использовать как признак
-    отсутствия аргумента.
+    Used where None is meaningful and cannot serve as a marker
+    for an omitted argument.
     """
 
     TOKEN = auto()

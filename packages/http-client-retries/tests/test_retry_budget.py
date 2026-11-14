@@ -1,4 +1,4 @@
-"""Обе опции повторов работают в одном цикле с общим бюджетом попыток."""
+"""Both retry options share one loop and attempt budget."""
 
 from typing import cast
 
@@ -20,7 +20,7 @@ def is_server_error(response: httpx.Response) -> bool:
 
 
 def alternating_failures(httpx_mock: HTTPXMock) -> None:
-    """Две сетевые ошибки, затем 503 — и так по кругу, сколько бы попыток ни случилось."""
+    """Two network errors, then a 503, repeating for any number of attempts."""
     served = {"count": 0}
 
     def respond(_request: httpx.Request) -> httpx.Response:

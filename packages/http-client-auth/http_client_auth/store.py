@@ -8,21 +8,21 @@ DEFAULT_EXPIRY_LEEWAY = timedelta(seconds=30)
 
 @dataclass(frozen=True, slots=True)
 class Token:
-    """Токен доступа со временем истечения."""
+    """Access token with an expiration time."""
 
     access_token: str
     expires_at: datetime
 
     @classmethod
     def with_lifetime(cls, access_token: str, expires_in: int) -> Self:
-        """Создать токен, зная его время жизни в секундах.
+        """Create a token from its lifetime in seconds.
 
-        Из срока вычитается запас, чтобы токен не протух в пути между отправкой и обработкой запроса.
-        Для короткоживущих токенов запас урезается до половины срока, иначе токен был бы просрочен сразу.
+        Subtract a safety margin so the token does not expire between sending and processing the request.
+        Limit the margin to half the lifetime for short-lived tokens so they do not expire immediately.
 
-        :param access_token: значение токена доступа
-        :param expires_in: время жизни токена в секундах по данным IAM
-        :return: токен с вычисленным временем истечения
+        :param access_token: Access token value
+        :param expires_in: Token lifetime in seconds reported by IAM
+        :return: Token with a calculated expiration time
         """
         lifetime = timedelta(seconds=expires_in)
         leeway = min(DEFAULT_EXPIRY_LEEWAY, lifetime / 2)
@@ -30,80 +30,80 @@ class Token:
 
     @property
     def is_expired(self) -> bool:
-        """Истек ли токен."""
+        """Check whether the token has expired."""
         return datetime.now(UTC) >= self.expires_at
 
 
 class AuthStore(ABC):
-    """Интерфейс синхронного хранилища токенов."""
+    """Synchronous token store interface."""
 
     @abstractmethod
     def get(self, key: str) -> Token | None:
-        """Получить токен по ключу."""
+        """Get a token by key."""
 
     @abstractmethod
     def set(self, key: str, token: Token) -> None:
-        """Сохранить токен по ключу."""
+        """Store a token by key."""
 
 
 class AsyncAuthStore(ABC):
-    """Интерфейс асинхронного хранилища токенов.
+    """Asynchronous token store interface.
 
-    Отдельный интерфейс нужен, чтобы обращение к внешнему хранилищу не блокировало event loop.
+    Use a separate interface to avoid blocking the event loop when accessing external storage.
     """
 
     @abstractmethod
     async def get(self, key: str) -> Token | None:
-        """Получить токен по ключу."""
+        """Get a token by key."""
 
     @abstractmethod
     async def set(self, key: str, token: Token) -> None:
-        """Сохранить токен по ключу."""
+        """Store a token by key."""
 
 
 class InMemoryAuthStore(AuthStore):
-    """Синхронное хранилище токенов в памяти."""
+    """Synchronous in-memory token store."""
 
     def __init__(self) -> None:
-        """Инициализировать объект."""
+        """Initialize the object."""
         self._tokens: dict[str, Token] = {}
 
     def get(self, key: str) -> Token | None:
-        """Получить сохранённый токен.
+        """Get a stored token.
 
-        :param key: идентификатор ключа авторизации.
-        :return: токен или None, если ключ не найден.
+        :param key: Authentication key ID.
+        :return: Token, or None if the key is not found.
         """
         return self._tokens.get(key)
 
     def set(self, key: str, token: Token) -> None:
-        """Сохранить токен авторизации.
+        """Store an authentication token.
 
-        :param key: идентификатор ключа авторизации.
-        :param token: сохраняемый токен.
+        :param key: Authentication key ID.
+        :param token: Token to store.
         """
         self._tokens[key] = token
 
 
 class InMemoryAsyncAuthStore(AsyncAuthStore):
-    """Асинхронное хранилище токенов в памяти."""
+    """Asynchronous in-memory token store."""
 
     def __init__(self) -> None:
-        """Инициализировать объект."""
+        """Initialize the object."""
         self._tokens: dict[str, Token] = {}
 
     async def get(self, key: str) -> Token | None:
-        """Получить сохранённый токен.
+        """Get a stored token.
 
-        :param key: идентификатор ключа авторизации.
-        :return: токен или None, если ключ не найден.
+        :param key: Authentication key ID.
+        :return: Token, or None if the key is not found.
         """
         return self._tokens.get(key)
 
     async def set(self, key: str, token: Token) -> None:
-        """Сохранить токен авторизации.
+        """Store an authentication token.
 
-        :param key: идентификатор ключа авторизации.
-        :param token: сохраняемый токен.
+        :param key: Authentication key ID.
+        :param token: Token to store.
         """
         self._tokens[key] = token

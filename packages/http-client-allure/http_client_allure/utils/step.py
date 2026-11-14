@@ -6,9 +6,9 @@ from .body import encode_query_params, sanitize_query_params
 
 
 def build_step_message(request: httpx.Request, settings: StepSettings) -> str:
-    """Собрать заголовок Allure шага для запроса.
+    """Build an Allure step title for the request.
 
-    Query параметры маскируются так же, как во вложениях: заголовок шага виден в отчете.
+    Mask query parameters as in attachments: the step title is visible in the report.
     """
     step_message = f"[{request.method}] "
 

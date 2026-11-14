@@ -1,4 +1,4 @@
-"""Учёт заголовка ответа `Retry-After` при выборе паузы между попытками."""
+"""Use the response `Retry-After` header to choose delays between attempts."""
 
 import math
 from datetime import UTC, datetime
@@ -14,13 +14,13 @@ RETRY_AFTER_HEADER = "Retry-After"
 
 
 def parse_retry_after(value: str, now: datetime | None = None) -> float | None:
-    """Разобрать значение `Retry-After`: либо секунды, либо HTTP-дата.
+    """Parse `Retry-After` as seconds or an HTTP date.
 
-    Возвращает паузу в секундах или `None`, если значение нечитаемо. Отрицательное число
-    секунд считается нечитаемым: по спецификации задержка неотрицательна, и подставлять
-    вместо неё немедленный повтор было бы самодеятельностью.
+    Return a delay in seconds, or `None` for an unparseable value. A negative number of
+    seconds is invalid: the specification requires a nonnegative delay, and substituting
+    an immediate retry would invent behavior.
 
-    :param now: точка отсчёта для HTTP-даты. Дата без часового пояса трактуется как UTC.
+    :param now: Reference time for an HTTP date. Interpret dates without a timezone as UTC.
     """
     raw = value.strip()
     if not raw:
@@ -55,22 +55,22 @@ def _parse_http_date(raw: str, now: datetime) -> float | None:
     except (TypeError, ValueError):
         return None
 
-    # Дата в прошлом — валидное «можно повторять прямо сейчас», в отличие от отрицательных секунд.
+    # A past date validly means retry immediately, unlike negative seconds.
     return max(0.0, (_as_aware(deadline) - now).total_seconds())
 
 
-class wait_retry_after(wait_base):  # noqa: N801 - соглашение об именовании стратегий tenacity
-    """Ждать столько, сколько просит сервер, иначе — по запасной стратегии.
+class wait_retry_after(wait_base):  # noqa: N801 - tenacity strategy naming convention
+    """Wait as requested by the server, or use the fallback strategy.
 
-    Пауза из `Retry-After` ограничена сверху: сервер может попросить и час,
-    а держать вызывающий код заблокированным всё это время нельзя.
+    Cap the `Retry-After` delay: the server may request an hour,
+    but the caller cannot remain blocked that long.
     """
 
     def __init__(self, fallback: WaitBaseT, maximum: float) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param fallback: значение настройки ``fallback``.
-        :param maximum: значение настройки ``maximum``.
+        :param fallback: Value of ``fallback``.
+        :param maximum: Value of ``maximum``.
         """
         if not math.isfinite(maximum) or maximum < 0:
             message = f"Верхняя граница паузы должна быть конечным неотрицательным числом, получено {maximum!r}"
@@ -80,10 +80,10 @@ class wait_retry_after(wait_base):  # noqa: N801 - соглашение об и�
         self._maximum = maximum
 
     def __call__(self, retry_state: RetryCallState) -> float:
-        """Определить паузу перед следующей попыткой.
+        """Determine the delay before the next attempt.
 
-        :param retry_state: состояние последней попытки.
-        :return: пауза в секундах.
+        :param retry_state: State of the latest attempt.
+        :return: Delay in seconds.
         """
         requested = self._requested_delay(retry_state)
         if requested is None:

@@ -5,10 +5,10 @@ from structlog.stdlib import BoundLogger
 
 
 class LogEntry:
-    """Запись, попавшая в логгер."""
+    """Record received by the logger."""
 
     def __init__(self, level: int, event: str, params: dict[str, object]) -> None:
-        """Создать экземпляр с указанными настройками."""
+        """Create an instance with the supplied settings."""
         self.level = level
         self.event = event
         self.params = params
@@ -18,10 +18,10 @@ class LogEntry:
 
 
 class FakeStructLogger(BoundLogger):
-    """Логгер, который запоминает записи вместо того, чтобы их выводить."""
+    """Logger that stores records instead of displaying them."""
 
     def __init__(self) -> None:
-        """Создать экземпляр с указанными настройками."""
+        """Create an instance with the supplied settings."""
         context: dict[str, object] = {}
         super().__init__(logger=None, processors=[], context=context)
         self.entries: list[LogEntry] = []

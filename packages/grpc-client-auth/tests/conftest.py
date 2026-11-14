@@ -24,10 +24,10 @@ _ENV_SERVICE_ADDR = os.getenv("SERVICE_ADDR")
 
 
 def _check_grpcbin(ip: str, port: int) -> bool:
-    """Проверить готовность grpcbin настоящим gRPC вызовом.
+    """Check grpcbin readiness using a real gRPC call.
 
-    Открытого TCP-порта мало: контейнер успевает принять соединение раньше, чем сервис
-    начинает отвечать, и первый запрос теста падает на ровном месте.
+    An open TCP port is insufficient: the container may accept connections before the service
+    starts responding, causing the first test request to fail unexpectedly.
     """
     try:
         with socket.create_connection((ip, port), timeout=1), grpc.insecure_channel(f"{ip}:{port}") as channel:
@@ -41,13 +41,13 @@ def _check_grpcbin(ip: str, port: int) -> bool:
 
 @pytest.fixture(scope="session")
 def docker_compose_file() -> list[str]:
-    """Путь к docker-compose файлу с grpcbin для тестов."""
+    """Path to the docker-compose file with grpcbin for tests."""
     return [str(Path(__file__).parent / "docker-compose.yml")]
 
 
 @pytest.fixture(scope="session")
 def grpcbin_docker(docker_services: DockerServices, docker_ip: str) -> str:
-    """Дождаться готовности тестового gRPC сервиса."""
+    """Wait for the test gRPC service to become ready."""
     public_port = docker_services.port_for(_GRPCBIN_SERVICE, _GRPCBIN_PORT)
     docker_services.wait_until_responsive(timeout=60, pause=0.1, check=lambda: _check_grpcbin(docker_ip, public_port))
     return f"{docker_ip}:{public_port}"
@@ -55,11 +55,11 @@ def grpcbin_docker(docker_services: DockerServices, docker_ip: str) -> str:
 
 @pytest.fixture(scope="session")
 def service_addr(request: pytest.FixtureRequest) -> str:
-    """Адрес сервиса grpcbin.
+    """Address of the grpcbin service.
 
-    Если переменная окружения SERVICE_ADDR задана — используется она, иначе поднимается контейнер.
+    Use the SERVICE_ADDR environment variable if set; otherwise start a container.
 
-    :return: адрес grpcbin в формате host:port
+    :return: grpcbin address in host:port format
     """
     if _ENV_SERVICE_ADDR:
         return _ENV_SERVICE_ADDR
@@ -67,11 +67,11 @@ def service_addr(request: pytest.FixtureRequest) -> str:
 
 
 def iam_auth_response(access_token: str, expires_in: int = 3600) -> dict[str, object]:
-    """Собрать тело успешного ответа сервиса IAM.
+    """Build a successful IAM service response body.
 
-    :param access_token: токен доступа, который вернет IAM
-    :param expires_in: время жизни токена в секундах
-    :return: тело ответа
+    :param access_token: access token returned by IAM
+    :param expires_in: token lifetime in seconds
+    :return: response body
     """
     return {
         "access_token": access_token,

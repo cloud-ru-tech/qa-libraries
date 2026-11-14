@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 @dataclass(slots=True)
 class Scenario:
-    """Клиент, запрос и ожидаемый заголовок шага для одного кейса."""
+    """Client, request and expected step title for one case."""
 
     client: HttpClient
     request: httpx.Request
@@ -244,12 +244,12 @@ def _create_json_request_with_sensitive_data(client: HttpClient) -> Scenario:
 
 
 def _prepare_multipart_snapshot(src: str) -> str:
-    # Убираем абсолютный путь к файлу из filename и оставляем только имя файла
+    # Remove the absolute path from filename, keeping only the file name
     result = re.sub(r'filename="[^"]*/([^"]*)"', r'filename="\1"', src)
 
-    # Заменяем boundary в заголовке
+    # Replace the boundary in the header
     result = re.sub(r"boundary=[a-f0-9]{32}", "boundary=<boundary>", result)
 
-    # Также заменяем boundary в --form части
+    # Also replace the boundary in the --form section
     result = re.sub(r"--[a-f0-9]{32}", "--<boundary>", result)
     return re.sub(r"--[a-f0-9]{32}--", "--<boundary>--", result)

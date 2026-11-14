@@ -11,7 +11,7 @@ pytestmark = allure.feature("Ошибки в отчете")
 
 
 def check_status_inside_stream(client: HttpClient) -> None:
-    """Прочитать поток и упасть на статусе ответа, не выходя из шага."""
+    """Read the stream and fail on the response status within the step."""
     with client.stream("GET", "/status/503") as response:
         response.read()
         response.raise_for_status()

@@ -3,7 +3,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class CamelCaseBaseModel(BaseModel):
-    """Модель, использующая camelCase при сериализации полей."""
+    """Model that serializes fields in camelCase."""
 
     model_config = ConfigDict(
         alias_generator=camelize,
@@ -13,7 +13,7 @@ class CamelCaseBaseModel(BaseModel):
 
 
 class PascalCaseBaseModel(BaseModel):
-    """Модель, использующая PascalCase при сериализации полей."""
+    """Model that serializes fields in PascalCase."""
 
     model_config = ConfigDict(
         alias_generator=pascalize,

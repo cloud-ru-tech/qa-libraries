@@ -5,10 +5,10 @@ from .types import MetadataItems, MetadataType, MetadataValue
 
 
 def as_metadata_items(metadata: MetadataType | None) -> MetadataItems:
-    """Привести метаданные к последовательности пар.
+    """Normalize metadata to a sequence of pairs.
 
-    :param metadata: метаданные в любом поддерживаемом виде
-    :return: последовательность пар ключ-значение
+    :param metadata: metadata in any supported form
+    :return: sequence of key-value pairs
     """
     if metadata is None:
         return ()
@@ -20,12 +20,12 @@ def as_metadata_items(metadata: MetadataType | None) -> MetadataItems:
 
 
 def aio_metadata_items(metadata: object) -> MetadataItems:
-    """Привести метаданные асинхронного вызова к последовательности пар.
+    """Normalize asynchronous call metadata to a sequence of pairs.
 
-    `grpc.aio` отдает собственный тип метаданных: он итерируется парами, но не является Sequence.
+    `grpc.aio` has its own metadata type: it iterates over pairs but is not a Sequence.
 
-    :param metadata: метаданные асинхронного вызова
-    :return: последовательность пар ключ-значение
+    :param metadata: asynchronous call metadata
+    :return: sequence of key-value pairs
     """
     if metadata is None:
         return ()
@@ -33,10 +33,10 @@ def aio_metadata_items(metadata: object) -> MetadataItems:
 
 
 def merge_metadata(*sources: MetadataType | None) -> MetadataItems:
-    """Объединить метаданные из нескольких источников с сохранением порядка.
+    """Merge metadata from multiple sources while preserving order.
 
-    :param sources: наборы метаданных, каждый следующий дописывается в конец
-    :return: последовательность пар ключ-значение
+    :param sources: metadata sets, each appended after the previous one
+    :return: sequence of key-value pairs
     """
     merged: list[tuple[str, MetadataValue]] = []
     for source in sources:
@@ -45,31 +45,31 @@ def merge_metadata(*sources: MetadataType | None) -> MetadataItems:
 
 
 def contains_key(metadata: MetadataType | None, key: str) -> bool:
-    """Проверить наличие ключа в метаданных без учета регистра.
+    """Check whether metadata contains a key, ignoring case.
 
-    :param metadata: метаданные запроса
-    :param key: искомый ключ
-    :return: True, если ключ присутствует
+    :param metadata: request metadata
+    :param key: key to find
+    :return: True if the key is present
     """
     normalized = key.lower()
     return any(name.lower() == normalized for name, _ in as_metadata_items(metadata))
 
 
 class Metadata(Mapping[str, MetadataValue]):
-    """Метаданные gRPC, сохраняющие порядок и повторяющиеся ключи.
+    """gRPC metadata that preserves order and repeated keys.
 
-    Ведет себя как словарь: по ключу отдает первое значение. Все значения ключа доступны через `get_all()`.
-    Ключи сравниваются без учета регистра, как того требует HTTP/2.
+    Behaves like a dictionary: key access returns the first value. All values are available through `get_all()`.
+    Keys are compared case-insensitively as required by HTTP/2.
     """
 
     __slots__ = ("_items",)
 
     def __init__(self, metadata: MetadataType | None = None) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._items: tuple[tuple[str, MetadataValue], ...] = tuple(as_metadata_items(metadata))
 
     def __getitem__(self, key: str) -> MetadataValue:
-        """Вернуть первое значение ключа метаданных."""
+        """Return the first value of a metadata key."""
         normalized = key.lower()
         for name, value in self._items:
             if name.lower() == normalized:
@@ -77,7 +77,7 @@ class Metadata(Mapping[str, MetadataValue]):
         raise KeyError(key)
 
     def __iter__(self) -> Iterator[str]:
-        """Получить итератор значений."""
+        """Get an iterator of values."""
         seen: set[str] = set()
         for name, _ in self._items:
             normalized = name.lower()
@@ -86,25 +86,25 @@ class Metadata(Mapping[str, MetadataValue]):
                 yield name
 
     def __len__(self) -> int:
-        """Получить число уникальных ключей метаданных."""
+        """Get the number of unique metadata keys."""
         return sum(1 for _ in iter(self))
 
     def __repr__(self) -> str:
-        """Вернуть строковое представление метаданных."""
+        """Return the string representation of metadata."""
         return f"{type(self).__name__}({list(self._items)!r})"
 
     def get_all(self, key: str) -> tuple[MetadataValue, ...]:
-        """Получить все значения ключа.
+        """Get all values for a key.
 
-        :param key: имя ключа метаданных
-        :return: значения в порядке получения, пустой кортеж — если ключа нет
+        :param key: metadata key name
+        :return: values in arrival order, or an empty tuple if the key is absent
         """
         normalized = key.lower()
         return tuple(value for name, value in self._items if name.lower() == normalized)
 
     def pairs(self) -> tuple[tuple[str, MetadataValue], ...]:
-        """Получить все пары ключ-значение, включая повторяющиеся ключи.
+        """Get all key-value pairs, including repeated keys.
 
-        В отличие от `items()`, здесь сохраняются все значения повторяющихся ключей.
+        Unlike `items()`, this preserves all values of repeated keys.
         """
         return self._items

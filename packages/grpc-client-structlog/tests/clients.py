@@ -27,7 +27,7 @@ class SyncEchoStub(Protocol):
     bidirectional_stream: grpc.StreamStreamMultiCallable[Struct, Struct]
 
     def __init__(self, channel: grpc.Channel) -> None:
-        """Создать stub тестового сервиса."""
+        """Create a test service stub."""
 
 
 class AsyncEchoStub(Protocol):
@@ -37,18 +37,18 @@ class AsyncEchoStub(Protocol):
     bidirectional_stream: grpc.aio.StreamStreamMultiCallable[Struct, Struct]
 
     def __init__(self, channel: grpc.aio.Channel) -> None:
-        """Создать stub тестового сервиса."""
+        """Create a test service stub."""
 
 
 class EchoStub:
-    """Stub тестового сервиса, собранный вручную вместо генерации из proto-файла.
+    """Test service stub built manually instead of generated from a proto file.
 
-    Один и тот же класс работает поверх синхронного и асинхронного канала: типы вызовов
-    у них разные, поэтому методы не аннотированы конкретным типом multicallable.
+    The same class works over synchronous and asynchronous channels with different call types,
+    so methods are not annotated with a specific multicallable type.
     """
 
     def __init__(self, channel: grpc.Channel | grpc.aio.Channel) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self.unary: object = channel.unary_unary(
             UNARY_METHOD,
             request_serializer=Struct.SerializeToString,
@@ -72,80 +72,80 @@ class EchoStub:
 
 
 class EchoClient(GRPCClient[SyncEchoStub]):
-    """Синхронный клиент тестового сервиса."""
+    """Synchronous client for the test service."""
 
     @property
     def stub_class(self) -> type[SyncEchoStub]:
         return cast("type[SyncEchoStub]", EchoStub)
 
     def echo(self, msg: Struct, metadata: MetadataType | None = None) -> GRPCResponse[Struct]:
-        """Отправить сообщение и получить его же в ответ.
+        """Send a message and receive the same message in response.
 
-        :param msg: сообщение серверу
-        :param metadata: метаданные запроса
-        :returns: ответ с тем же сообщением
+        :param msg: message to the server
+        :param metadata: request metadata
+        :returns: response with the same message
         """
         return self.send_unary_unary_request(msg, self.stub.unary, metadata)
 
     def download(self, msg: Struct, metadata: MetadataType | None = None) -> GRPCStreamResponse[Struct]:
-        """Отправить сообщение и получить поток сообщений.
+        """Send a message and receive a message stream.
 
-        :param msg: сообщение серверу
-        :param metadata: метаданные запроса
-        :returns: поток ответных сообщений
+        :param msg: message to the server
+        :param metadata: request metadata
+        :returns: response message stream
         """
         return self.send_unary_stream_request(msg, self.stub.server_stream, metadata)
 
     def upload(self, messages: Iterator[Struct], metadata: MetadataType | None = None) -> GRPCResponse[Struct]:
-        """Отправить поток сообщений и получить одно в ответ.
+        """Send a message stream and receive one response.
 
-        :param messages: поток сообщений
-        :param metadata: метаданные запроса
-        :returns: ответ с количеством принятых сообщений
+        :param messages: message stream
+        :param metadata: request metadata
+        :returns: response with the number of received messages
         """
         return self.send_stream_unary_request(messages, self.stub.client_stream, metadata)
 
     def chat(self, messages: Iterator[Struct], metadata: MetadataType | None = None) -> GRPCStreamResponse[Struct]:
-        """Отправить поток сообщений и получить поток в ответ.
+        """Send a message stream and receive a stream in response.
 
-        :param messages: поток сообщений
-        :param metadata: метаданные запроса
-        :returns: поток ответных сообщений
+        :param messages: message stream
+        :param metadata: request metadata
+        :returns: response message stream
         """
         return self.send_stream_stream_request(messages, self.stub.bidirectional_stream, metadata)
 
 
 class AsyncEchoClient(AsyncGRPCClient[AsyncEchoStub]):
-    """Асинхронный клиент тестового сервиса."""
+    """Asynchronous client for the test service."""
 
     @property
     def stub_class(self) -> type[AsyncEchoStub]:
         return cast("type[AsyncEchoStub]", EchoStub)
 
     async def echo(self, msg: Struct, metadata: MetadataType | None = None) -> GRPCResponse[Struct]:
-        """Отправить сообщение и получить его же в ответ.
+        """Send a message and receive the same message in response.
 
-        :param msg: сообщение серверу
-        :param metadata: метаданные запроса
-        :returns: ответ с тем же сообщением
+        :param msg: message to the server
+        :param metadata: request metadata
+        :returns: response with the same message
         """
         return await self.send_unary_unary_request(msg, self.stub.unary, metadata)
 
     async def download(self, msg: Struct, metadata: MetadataType | None = None) -> AsyncGRPCStreamResponse[Struct]:
-        """Отправить сообщение и получить поток сообщений.
+        """Send a message and receive a message stream.
 
-        :param msg: сообщение серверу
-        :param metadata: метаданные запроса
-        :returns: поток ответных сообщений
+        :param msg: message to the server
+        :param metadata: request metadata
+        :returns: response message stream
         """
         return await self.send_unary_stream_request(msg, self.stub.server_stream, metadata)
 
     async def upload(self, messages: Iterator[Struct], metadata: MetadataType | None = None) -> GRPCResponse[Struct]:
-        """Отправить поток сообщений и получить одно в ответ.
+        """Send a message stream and receive one response.
 
-        :param messages: поток сообщений
-        :param metadata: метаданные запроса
-        :returns: ответ с количеством принятых сообщений
+        :param messages: message stream
+        :param metadata: request metadata
+        :returns: response with the number of received messages
         """
         return await self.send_stream_unary_request(messages, self.stub.client_stream, metadata)
 
@@ -154,10 +154,10 @@ class AsyncEchoClient(AsyncGRPCClient[AsyncEchoStub]):
         messages: Iterator[Struct],
         metadata: MetadataType | None = None,
     ) -> AsyncGRPCStreamResponse[Struct]:
-        """Отправить поток сообщений и получить поток в ответ.
+        """Send a message stream and receive a stream in response.
 
-        :param messages: поток сообщений
-        :param metadata: метаданные запроса
-        :returns: поток ответных сообщений
+        :param messages: message stream
+        :param metadata: request metadata
+        :returns: response message stream
         """
         return await self.send_stream_stream_request(messages, self.stub.bidirectional_stream, metadata)

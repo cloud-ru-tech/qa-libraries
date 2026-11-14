@@ -17,17 +17,17 @@ if TYPE_CHECKING:
 
 
 class GRPCClient(BaseGRPCClient[TStub], metaclass=ABCMeta):
-    """Базовый класс синхронного gRPC-клиента.
+    """Base class for synchronous gRPC clients.
 
-    Клиент можно создать как по адресу сервиса, так и поверх готового канала. Канал, созданный
-    клиентом, закрывается вместе с ним; переданный извне остается на попечении вызывающего кода.
+    Create a client from a service address or an existing channel. A channel created
+    by the client closes with it; externally supplied channels remain the caller's responsibility.
     """
 
     def __init__(self, target: str | grpc.Channel, *options: ClientOption) -> None:
-        """Инициализатор.
+        """Initialize the object.
 
-        :param target: адрес сервиса вида `example.com:443` либо готовый канал
-        :param options: опции клиента из модуля `grpc_client.options`
+        :param target: service address such as `example.com:443` or an existing channel
+        :param options: client options from `grpc_client.options`
         """
         super().__init__()
         self._apply(options)
@@ -44,28 +44,28 @@ class GRPCClient(BaseGRPCClient[TStub], metaclass=ABCMeta):
 
     @classmethod
     def from_addr(cls, addr: str, *options: ClientOption) -> Self:
-        """Создать клиент по адресу сервиса.
+        """Create a client using a service address.
 
-        :param addr: адрес сервиса вида `example.com:443`
-        :param options: опции клиента из модуля `grpc_client.options`
-        :return: gRPC-клиент
+        :param addr: service address such as `example.com:443`
+        :param options: client options from `grpc_client.options`
+        :return: gRPC client
         """
         return cls(addr, *options)
 
     @classmethod
     def from_channel(cls, channel: grpc.Channel, *options: ClientOption) -> Self:
-        """Создать клиент поверх готового канала.
+        """Create a client over an existing channel.
 
-        Канал не закрывается клиентом: его жизненным циклом управляет вызывающий код.
+        The client does not close the channel: its lifecycle is managed by the caller.
 
-        :param channel: готовый канал
-        :param options: опции клиента из модуля `grpc_client.options`
-        :return: gRPC-клиент
+        :param channel: existing channel
+        :param options: client options from `grpc_client.options`
+        :return: gRPC client
         """
         return cls(channel, *options)
 
     def __enter__(self) -> Self:
-        """Вернуть клиент для блока with."""
+        """Return the client for a with block."""
         return self
 
     def __exit__(
@@ -74,16 +74,16 @@ class GRPCClient(BaseGRPCClient[TStub], metaclass=ABCMeta):
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        """Закрыть принадлежащий клиенту канал."""
+        """Close the channel owned by the client."""
         self.close()
 
     @property
     def channel(self) -> grpc.Channel:
-        """Канал, через который отправляются запросы."""
+        """Channel used to send requests."""
         return self._channel
 
     def close(self) -> None:
-        """Закрыть канал, если он был создан клиентом."""
+        """Close the channel if it was created by the client."""
         if self._owns_channel:
             self._channel.close()
 
@@ -94,13 +94,13 @@ class GRPCClient(BaseGRPCClient[TStub], metaclass=ABCMeta):
         metadata: MetadataType | None = None,
         options: CallOptions | None = None,
     ) -> GRPCResponse[TResponse]:
-        """Отправить унарный запрос и дождаться ответа.
+        """Send a unary request and wait for the response.
 
-        :param msg: сообщение запроса
-        :param method: метод сервиса из `self.stub`
-        :param metadata: метаданные запроса
-        :param options: параметры вызова, переопределяющие настройки клиента
-        :return: ответ на запрос
+        :param msg: request message
+        :param method: service method from `self.stub`
+        :param metadata: request metadata
+        :param options: call options that override client settings
+        :return: request response
         """
         call_options = self._call_options(metadata, options)
         try:
@@ -117,13 +117,13 @@ class GRPCClient(BaseGRPCClient[TStub], metaclass=ABCMeta):
         metadata: MetadataType | None = None,
         options: CallOptions | None = None,
     ) -> GRPCResponse[TResponse]:
-        """Отправить поток сообщений и дождаться одного ответа.
+        """Send a message stream and wait for one response.
 
-        :param stream: итератор сообщений запроса
-        :param method: метод сервиса из `self.stub`
-        :param metadata: метаданные запроса
-        :param options: параметры вызова, переопределяющие настройки клиента
-        :return: ответ на запрос
+        :param stream: request message iterator
+        :param method: service method from `self.stub`
+        :param metadata: request metadata
+        :param options: call options that override client settings
+        :return: request response
         """
         call_options = self._call_options(metadata, options)
         try:
@@ -140,16 +140,16 @@ class GRPCClient(BaseGRPCClient[TStub], metaclass=ABCMeta):
         metadata: MetadataType | None = None,
         options: CallOptions | None = None,
     ) -> GRPCStreamResponse[TResponse]:
-        """Отправить запрос и получить поток ответных сообщений.
+        """Send a request and receive a stream of response messages.
 
-        Сообщения читаются лениво. Чтобы получить их списком вместе с итоговым статусом,
-        вызовите `collect()` у возвращенного объекта.
+        Messages are read lazily. To receive them as a list with the final status,
+        call `collect()` on the returned object.
 
-        :param msg: сообщение запроса
-        :param method: метод сервиса из `self.stub`
-        :param metadata: метаданные запроса
-        :param options: параметры вызова, переопределяющие настройки клиента
-        :return: поток ответных сообщений
+        :param msg: request message
+        :param method: service method from `self.stub`
+        :param metadata: request metadata
+        :param options: call options that override client settings
+        :return: response message stream
         """
         call_options = self._call_options(metadata, options)
         call = method(msg, **self._call_kwargs(call_options))
@@ -162,13 +162,13 @@ class GRPCClient(BaseGRPCClient[TStub], metaclass=ABCMeta):
         metadata: MetadataType | None = None,
         options: CallOptions | None = None,
     ) -> GRPCStreamResponse[TResponse]:
-        """Отправить поток сообщений и получить поток ответных сообщений.
+        """Send a message stream and receive a stream of response messages.
 
-        :param stream: итератор сообщений запроса
-        :param method: метод сервиса из `self.stub`
-        :param metadata: метаданные запроса
-        :param options: параметры вызова, переопределяющие настройки клиента
-        :return: поток ответных сообщений
+        :param stream: request message iterator
+        :param method: service method from `self.stub`
+        :param metadata: request metadata
+        :param options: call options that override client settings
+        :return: response message stream
         """
         call_options = self._call_options(metadata, options)
         call = method(stream, **self._call_kwargs(call_options))
@@ -190,13 +190,13 @@ class GRPCClient(BaseGRPCClient[TStub], metaclass=ABCMeta):
 
     @staticmethod
     def _call_error(error: grpc.RpcError) -> grpc.RpcError:
-        """Превратить ошибку вызова в ответ.
+        """Convert a call error into a response.
 
-        Ошибки, не реализующие интерфейс `grpc.Call`, пробрасываются дальше: по ним нельзя
-        восстановить ни код статуса, ни метаданные.
+        Errors not implementing `grpc.Call` are propagated: they cannot provide
+        neither status code nor metadata.
 
-        :param error: ошибка gRPC
-        :return: ответ без сообщения с кодом статуса ошибки
+        :param error: gRPC error
+        :return: response without a message and with an error status code
         """
         if not isinstance(cast("object", error), grpc.Call):
             raise error

@@ -29,24 +29,24 @@ def wait_until[T](
     clock: Clock = time.monotonic,
     sleeper: Sleeper = time.sleep,
 ) -> T:
-    """Ожидать, пока предикат не вернёт значение, отличное от falsy.
+    """Wait until the predicate returns a non-falsy value.
 
-    Первая попытка выполняется всегда. Повторная попытка выполняется только если её
-    успеваем начать до дедлайна; сам предикат при наступлении дедлайна не прерывается.
+    The first attempt always runs. A retry runs only if it can start before the deadline;
+    the predicate itself is not interrupted when the deadline passes.
 
-    :param predicate: функция-предикат.
-    :param options: параметры ожидания; None использует значения по умолчанию.
-    :param cancel_event: событие отмены; когда задано, пауза выполняется через него,
-        поэтому параметр ``sleeper`` не используется.
-    :param clock: источник монотонного времени.
-    :param sleeper: функция сна между попытками.
-    :return: значение, которое вернул предикат.
-    :raises TimeoutExpiredError: если истекло время ожидания.
-    :raises AttemptsExhaustedError: если исчерпаны попытки, заданные ``max_attempts``.
-    :raises WaitCancelledError: если ожидание отменено через ``cancel_event``.
-    :raises InvalidPredicateError: если предикат вернул awaitable: объект корутины всегда
-        truthy и завершил бы ожидание «успешно», не выполнив тело предиката.
-        Для корутинного предиката предназначена ``async_wait_until``.
+    :param predicate: predicate function.
+    :param options: wait parameters; None uses the defaults.
+    :param cancel_event: cancellation event; when set, it handles pauses,
+        so the ``sleeper`` parameter is not used.
+    :param clock: monotonic time source.
+    :param sleeper: sleep function between attempts.
+    :return: value returned by the predicate.
+    :raises TimeoutExpiredError: if the wait times out.
+    :raises AttemptsExhaustedError: if ``max_attempts`` is exhausted.
+    :raises WaitCancelledError: if the wait is canceled through ``cancel_event``.
+    :raises InvalidPredicateError: if the predicate returns an awaitable: a coroutine object is
+        always truthy and would satisfy the wait without running the predicate body.
+        Use ``async_wait_until`` for coroutine predicates.
     """
     options = WaitOptions() if options is None else options
     loop = _build_loop(
@@ -74,22 +74,22 @@ def wait_or_none[T](
     clock: Clock = time.monotonic,
     sleeper: Sleeper = time.sleep,
 ) -> T | None:
-    """Ожидать, пока предикат не вернёт значение, отличное от falsy, и вернуть None при неудаче.
+    """Wait until the predicate returns a non-falsy value, returning None on failure.
 
-    Ошибка остановки не перехватывается по типу, поэтому ``TimeoutExpiredError``,
-    выброшенный самим предикатом или вложенным ожиданием, не будет проглочен.
+    The stopping error is not caught by type, so a ``TimeoutExpiredError``
+    raised by the predicate or a nested wait is not swallowed.
 
-    :param predicate: функция-предикат.
-    :param options: параметры ожидания; None использует значения по умолчанию.
-    :param cancel_event: событие отмены; когда задано, пауза выполняется через него,
-        поэтому параметр ``sleeper`` не используется.
-    :param clock: источник монотонного времени.
-    :param sleeper: функция сна между попытками.
-    :return: значение, которое вернул предикат, либо None если дождаться не удалось.
-    :raises WaitCancelledError: если ожидание отменено через ``cancel_event``.
-    :raises InvalidPredicateError: если предикат вернул awaitable: объект корутины всегда
-        truthy и завершил бы ожидание «успешно», не выполнив тело предиката.
-        Для корутинного предиката предназначена ``async_wait_or_none``.
+    :param predicate: predicate function.
+    :param options: wait parameters; None uses the defaults.
+    :param cancel_event: cancellation event; when set, it handles pauses,
+        so the ``sleeper`` parameter is not used.
+    :param clock: monotonic time source.
+    :param sleeper: sleep function between attempts.
+    :return: predicate value, or None if the condition was not satisfied.
+    :raises WaitCancelledError: if the wait is canceled through ``cancel_event``.
+    :raises InvalidPredicateError: if the predicate returns an awaitable: a coroutine object is
+        always truthy and would satisfy the wait without running the predicate body.
+        Use ``async_wait_or_none`` for coroutine predicates.
     """
     options = WaitOptions() if options is None else options
     loop = _build_loop(
@@ -115,20 +115,20 @@ def wait_while(
     clock: Clock = time.monotonic,
     sleeper: Sleeper = time.sleep,
 ) -> None:
-    """Ожидать, пока предикат не перестанет возвращать truthy-значение.
+    """Wait until the predicate stops returning a truthy value.
 
-    :param predicate: функция-предикат.
-    :param options: параметры ожидания; None использует значения по умолчанию.
-    :param cancel_event: событие отмены; когда задано, пауза выполняется через него,
-        поэтому параметр ``sleeper`` не используется.
-    :param clock: источник монотонного времени.
-    :param sleeper: функция сна между попытками.
-    :raises TimeoutExpiredError: если истекло время ожидания.
-    :raises AttemptsExhaustedError: если исчерпаны попытки, заданные ``max_attempts``.
-    :raises WaitCancelledError: если ожидание отменено через ``cancel_event``.
-    :raises InvalidPredicateError: если предикат вернул awaitable: объект корутины всегда
-        truthy и ожидание не закончилось бы никогда, не выполнив тело предиката.
-        Для корутинного предиката предназначена ``async_wait_while``.
+    :param predicate: predicate function.
+    :param options: wait parameters; None uses the defaults.
+    :param cancel_event: cancellation event; when set, it handles pauses,
+        so the ``sleeper`` parameter is not used.
+    :param clock: monotonic time source.
+    :param sleeper: sleep function between attempts.
+    :raises TimeoutExpiredError: if the wait times out.
+    :raises AttemptsExhaustedError: if ``max_attempts`` is exhausted.
+    :raises WaitCancelledError: if the wait is canceled through ``cancel_event``.
+    :raises InvalidPredicateError: if the predicate returns an awaitable: a coroutine object is
+        always truthy and would keep the wait running forever without running the predicate body.
+        Use ``async_wait_while`` for coroutine predicates.
     """
     options = WaitOptions() if options is None else options
     loop = _build_loop(
@@ -203,7 +203,7 @@ def _run_attempt[T](loop: WaitLoop[T], predicate: Callable[[], T | None], altern
             raise
         loop.record_exception(error)
         return
-    # Проверка вне try: её TypeError не должен попасть под expected_exceptions.
+    # Check outside try so its TypeError cannot be caught by expected_exceptions.
     reject_awaitable(value, alternative=alternative)
     loop.record_result(value)
 

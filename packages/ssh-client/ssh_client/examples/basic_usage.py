@@ -1,4 +1,4 @@
-"""Примеры команд с проверкой ключа сервера и освобождением соединения."""
+"""Command examples with host key verification and connection cleanup."""
 
 from __future__ import annotations
 
@@ -17,14 +17,14 @@ logger = logging.getLogger(__name__)
 
 
 def sync_example() -> None:
-    """Выполнить команду с ключом из SSH-агента и стандартным known_hosts."""
+    """Run a command with an SSH agent key and the default known_hosts."""
     with SyncSSHClient("localhost", 22, options.with_private_key("qa-user", "/path/to/private/key")) as client:
         result = client.execute("uname -a", timeout=10, raise_for_status=True)
         logger.info("Remote system: %s", result.stdout)
 
 
 async def async_example() -> None:
-    """Выполнить асинхронную команду с явным списком доверенных серверов."""
+    """Run an asynchronous command with an explicit list of trusted servers."""
     async with AsyncSSHClient(
         "localhost",
         22,
@@ -37,7 +37,7 @@ async def async_example() -> None:
 
 
 def advanced_sync_example() -> None:
-    """Передать строки команды обработчику и ограничить повторные подключения."""
+    """Pass command lines to a handler and limit reconnects."""
     with SyncSSHClient(
         "localhost",
         22,
@@ -50,7 +50,7 @@ def advanced_sync_example() -> None:
 
 
 async def advanced_async_example() -> None:
-    """Переопределить настройки одной команды отдельной копией клиента."""
+    """Override settings for one command using a separate client copy."""
     async with AsyncSSHClient(
         "localhost",
         22,
@@ -62,7 +62,7 @@ async def advanced_async_example() -> None:
 
 
 def structlog_example() -> None:
-    """Логировать команду через structlog с маскированием заданного текста."""
+    """Log a command through structlog with the specified text masked."""
     structured = cast("StructuredLogger", structlog.get_logger())
     with SyncSSHClient(
         "localhost",

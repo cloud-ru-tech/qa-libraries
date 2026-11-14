@@ -18,7 +18,7 @@ else:
 
 
 class LogEntryAssertions(_Builder):
-    """Проверки записи структурированного лога HTTP-клиента."""
+    """Assertions for a structured HTTP client log record."""
 
     def has_event(self, expected: str) -> Self:
         actual = self._entry().event
@@ -138,5 +138,5 @@ class LogEntryAssertions(_Builder):
 
 
 def assert_that(val: object, description: str = "") -> LogEntryAssertions:
-    """Точка входа для проверок: понимает и записи лога, и обычные значения."""
+    """Start assertions for either log records or ordinary values."""
     return LogEntryAssertions(val, description)

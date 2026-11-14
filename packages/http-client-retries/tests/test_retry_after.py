@@ -1,4 +1,4 @@
-"""Пауза между попытками по заголовку ответа `Retry-After`."""
+"""Delay between attempts based on the response `Retry-After` header."""
 
 from datetime import UTC, datetime, timedelta
 
@@ -52,7 +52,7 @@ def test_rejects_infinite_delay() -> None:
 
 
 def test_reads_http_date_given_without_timezone() -> None:
-    now = datetime(2026, 3, 1, 12, 0, 0)  # noqa: DTZ001 - дата без пояса и есть предмет проверки
+    now = datetime(2026, 3, 1, 12, 0, 0)  # noqa: DTZ001 - The test specifically checks a date without a timezone
     deadline = now + timedelta(seconds=30)
 
     assert_that(parse_retry_after(deadline.strftime("%a, %d %b %Y %H:%M:%S GMT"), now)).is_equal_to(30.0)

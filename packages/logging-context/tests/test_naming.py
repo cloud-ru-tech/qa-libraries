@@ -13,10 +13,10 @@ PATH_SEPARATORS = ("/", "\\", "\0")
 
 class FakeCallspec:
     def __init__(self, id_: str, params: dict[str, object]) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param id_: значение настройки ``id_``.
-        :param params: значение настройки ``params``.
+        :param id_: ``id_`` setting value.
+        :param params: ``params`` setting value.
         """
         self.id = id_
         self.params = params
@@ -30,12 +30,12 @@ class FakeItem:
         original_name: str | None = None,
         callspec: FakeCallspec | None = None,
     ) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param name: значение настройки ``name``.
-        :param nodeid: значение настройки ``nodeid``.
-        :param original_name: значение настройки ``original_name``.
-        :param callspec: значение настройки ``callspec``.
+        :param name: ``name`` setting value.
+        :param nodeid: ``nodeid`` setting value.
+        :param original_name: ``original_name`` setting value.
+        :param callspec: ``callspec`` setting value.
         """
         self.name = name
         self.nodeid = nodeid

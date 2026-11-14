@@ -9,20 +9,20 @@ from .base import NotifierBase
 
 
 class ConsoleNotifier(NotifierBase):
-    """Нотификатор для вывода результатов в терминал."""
+    """Notifier that outputs results to the terminal."""
 
     def is_enabled(self) -> bool:
-        """Проверить доступность настроенного канала.
+        """Check the configured channel availability.
 
-        :return: достаточно ли настроек для отправки.
+        :return: whether the settings are sufficient for sending.
         """
-        return True  # Нотификация в терминал всегда доступна
+        return True  # Terminal notifications are always available.
 
     def send(self, results: TestResults) -> None:
-        """Вывести информацию об упавших тестах в консоль."""
+        """Print information about failed tests to the console."""
         console = Console()
 
-        # Заголовок
+        # Header
         parts = []
         if results.failed:
             parts.append(f"Failed tests: {results.failed}")
@@ -34,7 +34,7 @@ class ConsoleNotifier(NotifierBase):
 
         all_failures = results.failures + results.errors
         for idx, failure in enumerate(all_failures, 1):
-            # Информация о тесте
+            # Test information
             table = Table(show_header=False, box=None)
             table.add_row("[bold]Test:[/bold]", f"[cyan]{failure.nodeid}[/cyan]")
             table.add_row("[bold]File:[/bold]", failure.file_path)

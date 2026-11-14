@@ -1,48 +1,50 @@
-# Авторизация для gRPC-клиента
+# Authorization for the gRPC client
 
 [![PyPI](https://img.shields.io/pypi/v/cloudru-qa-grpc-client-auth)](https://pypi.org/project/cloudru-qa-grpc-client-auth/)
 [![Python](https://img.shields.io/pypi/pyversions/cloudru-qa-grpc-client-auth)](https://pypi.org/project/cloudru-qa-grpc-client-auth/)
 [![License](https://img.shields.io/pypi/l/cloudru-qa-grpc-client-auth)](https://github.com/cloud-ru-tech/qa-libraries/blob/master/LICENSE)
 
-Получение и обновление токенов доступа IAM для [gRPC-клиента](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/grpc-client).
+English | [Русский](README.ru.md)
 
-- [Авторизация для gRPC-клиента](#авторизация-для-grpc-клиента)
-  - [Установка](#установка)
-  - [Скиллы для AI-агентов](#скиллы-для-ai-агентов)
-  - [Использование](#использование)
-    - [Синхронный клиент](#синхронный-клиент)
-    - [Асинхронный клиент](#асинхронный-клиент)
-    - [Что делает библиотека](#что-делает-библиотека)
-    - [Хранилище токенов](#хранилище-токенов)
-    - [Маскирование секретов в логах](#маскирование-секретов-в-логах)
-    - [Компоненты](#компоненты)
-  - [Разработка](#разработка)
+Issue and refresh IAM access tokens for the [gRPC client](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/grpc-client).
 
-## Установка
+- [Authorization for the gRPC client](#authorization-for-the-grpc-client)
+  - [Installation](#installation)
+  - [Skills for AI agents](#skills-for-ai-agents)
+  - [Usage](#usage)
+    - [Synchronous client](#synchronous-client)
+    - [Asynchronous client](#asynchronous-client)
+    - [What the library does](#what-the-library-does)
+    - [Token store](#token-store)
+    - [Masking secrets in logs](#masking-secrets-in-logs)
+    - [Components](#components)
+  - [Development](#development)
 
-Требуется Python 3.13 или новее.
+## Installation
+
+Requires Python 3.13 or later.
 
 ```shell
 pip install cloudru-qa-grpc-client-auth
 ```
 
-Библиотека импортируется как модуль `grpc_client_auth`.
+Import the library as the `grpc_client_auth` module.
 
-## Скиллы для AI-агентов
+## Skills for AI agents
 
-У этой библиотеки собственного скилла пока нет. Если в проекте установлены другие
-библиотеки набора со [скиллами для AI-агентов](https://github.com/cloud-ru-tech/qa-libraries#скиллы-для-ai-агентов),
-выбрать и подключить их можно из корня проекта (нужен [`uv`](https://docs.astral.sh/uv/)):
+This library does not have its own skill yet. If your project has other
+libraries from this collection with [skills for AI agents](https://github.com/cloud-ru-tech/qa-libraries#skills-for-ai-agents),
+select and install them from the project root (requires [`uv`](https://docs.astral.sh/uv/)):
 
 ```shell
 uvx library-skills
 ```
 
-Для Claude Code добавьте `--claude`.
+For Claude Code, add `--claude`.
 
-## Использование
+## Usage
 
-### Синхронный клиент
+### Synchronous client
 
 ```python
 from grpc_client import options
@@ -60,9 +62,9 @@ client.close()
 iam_client.close()
 ```
 
-`IAM_GrpcAuth` реализует контракт `grpc_client.ClientAuth`, поэтому подключается штатной опцией `options.with_auth`.
+`IAM_GrpcAuth` implements `grpc_client.ClientAuth`, so connect it with the standard `options.with_auth` option.
 
-### Асинхронный клиент
+### Asynchronous client
 
 ```python
 from grpc_client import options
@@ -80,26 +82,26 @@ await client.close()
 await iam_client.aclose()
 ```
 
-### Что делает библиотека
+### What the library does
 
-- получает токен в IAM и хранит его до истечения срока;
-- выпускает новый, когда срок истёк или сервис ответил `UNAUTHENTICATED`;
-- не идёт в IAM повторно, если токен уже обновил параллельный запрос.
+- obtains an IAM token and stores it until expiry;
+- issues a new token when it expires or the service returns `UNAUTHENTICATED`;
+- avoids another IAM call if a concurrent request has already refreshed the token.
 
-Подстановкой заголовка `authorization` и повтором запроса занимается сам gRPC-клиент — см. раздел «Авторизация» в его README.
+The gRPC client itself adds the `authorization` header and retries the request; see "Authorization" in its README.
 
-Создавайте один объект авторизации на набор учётных данных и переиспользуйте его для всех клиентов: экономия обращений в IAM работает в пределах одного объекта.
+Create one authorization object per set of credentials and reuse it across clients: IAM call deduplication works within one object.
 
-Для авторизации доступны два API IAM:
+Two IAM APIs are available for authorization:
 
-| Клиент | Маршрут |
+| Client | Route |
 | --- | --- |
 | `IAM_HttpClient`, `IAM_AsyncHttpClient` | `POST /api/v1/auth/token` |
 | `IAM_OpenID_HttpClient`, `IAM_OpenID_AsyncHttpClient` | `POST /auth/system/openid/token` |
 
-### Хранилище токенов
+### Token store
 
-По умолчанию токены хранятся в памяти процесса. Если нужно разделить их между процессами, реализуйте интерфейс `AuthStore` (или `AsyncAuthStore` для асинхронного варианта):
+By default, tokens are stored in process memory. To share them across processes, implement `AuthStore` (or `AsyncAuthStore` for asynchronous usage):
 
 ```python
 from datetime import datetime
@@ -108,7 +110,7 @@ from grpc_client_auth import AuthStore, Token
 
 
 class RedisAuthStore(AuthStore):
-    """Хранилище токенов в Redis."""
+    """Redis token store."""
 
     def __init__(self, redis_client):
         self._redis = redis_client
@@ -132,11 +134,11 @@ class RedisAuthStore(AuthStore):
 auth = IAM_GrpcAuth("my_key_id", "my_key_secret", iam_client, store=RedisAuthStore(...))
 ```
 
-`Token` хранит само значение и момент, начиная с которого токен считается непригодным. Срок берётся из поля `expires_in` ответа IAM, из него вычитается небольшой запас, чтобы токен не протух в пути.
+`Token` stores the token value and the time from which it is considered unusable. Its lifetime comes from the IAM response's `expires_in` field, minus a small margin to prevent expiry in transit.
 
-### Маскирование секретов в логах
+### Masking secrets in logs
 
-Если HTTP-клиент IAM логирует запросы, добавьте в маскирование ключи, специфичные для IAM, — иначе секретный ключ из запроса OpenID и JWT из ответа попадут в лог целиком:
+If the IAM HTTP client logs requests, add IAM-specific masking keys; otherwise the OpenID request's secret key and the response JWT appear in full in the log:
 
 ```python
 from http_client import options as http_options
@@ -148,32 +150,32 @@ iam_client = IAM_HttpClient(
 )
 ```
 
-### Компоненты
+### Components
 
-HTTP-клиенты IAM, хранилище токенов и модель токена берутся из библиотеки [`cloudru-qa-http-client-auth`](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/http-client-auth) и реэкспортируются отсюда, чтобы не приходилось держать в голове, что откуда импортируется.
+IAM HTTP clients, the token store, and the token model come from [`cloudru-qa-http-client-auth`](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/http-client-auth) and are re-exported here to keep imports simple.
 
-Там же есть `IAM_Auth` и `IAM_AsyncAuth` — это авторизация для HTTP-клиента (`httpx.Auth`), другой контракт. Для gRPC-клиента нужны `IAM_GrpcAuth` и `IAM_GrpcAsyncAuth` из этой библиотеки.
+That library also provides `IAM_Auth` and `IAM_AsyncAuth`, which authorize the HTTP client (`httpx.Auth`) and follow a different contract. For the gRPC client, use this library's `IAM_GrpcAuth` and `IAM_GrpcAsyncAuth`.
 
-## Разработка
+## Development
 
-Библиотека развивается в монорепозитории [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries)
-вместе с остальными библиотеками `cloudru-qa-*`. Нужны [`uv`](https://docs.astral.sh/uv/), GNU Make
-и [`checkmake`](https://github.com/checkmake/checkmake),
-команды запускаются из корня репозитория:
+The library is developed in the [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries) monorepo
+alongside the other `cloudru-qa-*` libraries. You need [`uv`](https://docs.astral.sh/uv/), GNU Make,
+and [`checkmake`](https://github.com/checkmake/checkmake).
+Run commands from the repository root:
 
 ```shell
-make sync                          # зависимости всех библиотек строго по uv.lock
-make test-grpc-client-auth         # тесты этой библиотеки
-make typecheck-grpc-client-auth    # mypy для этой библиотеки
-make check                         # форматирование, ruff, mypy и тесты всего набора
+make sync                          # install dependencies for all libraries from uv.lock
+make test-grpc-client-auth         # tests for this library
+make typecheck-grpc-client-auth    # mypy for this library
+make check                         # formatting, ruff, mypy, and tests for the entire workspace
 ```
 
-Тестам нужен запущенный Docker: контейнер с сервисом [grpcbin](https://grpcb.in/) поднимается
-автоматически, а тестовый API генерируется из `proto/` перед запуском. Запросы в IAM в тестах
-перехватываются через `pytest-httpx`.
+Tests require Docker running: the [grpcbin](https://grpcb.in/) service container is started
+automatically, and the test API is generated from `proto/` before execution. IAM requests in tests
+are intercepted with `pytest-httpx`.
 
-Тесты прогоняются на Python 3.13 и 3.14. Окружение для другой версии создаётся отдельно:
+Tests run on Python 3.13 and 3.14. Create a separate environment for another version:
 `make sync test-grpc-client-auth PYTHON_VERSION=3.14`.
 
-Релиз выпускается git-тегом `grpc-client-auth/v<версия>`. Версия в теге должна совпадать с версией
-в `packages/grpc-client-auth/pyproject.toml`.
+Publish a release with the git tag `grpc-client-auth/v<version>`. The tag version must match the version
+in `packages/grpc-client-auth/pyproject.toml`.

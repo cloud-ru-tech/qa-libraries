@@ -9,7 +9,7 @@ from google.rpc import status_pb2
 from .metadata import as_metadata_items
 from .types import MetadataType
 
-# Ключ метаданных, в котором сервисы передают расширенный статус ошибки google.rpc.Status.
+# Metadata key used by services to send rich google.rpc.Status errors.
 STATUS_DETAILS_KEY = "grpc-status-details-bin"
 
 TDetail = TypeVar("TDetail", bound=Message)
@@ -17,26 +17,26 @@ TDetail = TypeVar("TDetail", bound=Message)
 
 @dataclass(frozen=True, slots=True)
 class ErrorStatus:
-    """Расширенный статус ошибки, переданный сервисом в google.rpc.Status.
+    """Rich error status sent by the service in google.rpc.Status.
 
-    Помимо кода и текста ошибки сервисы кладут сюда типизированные подробности:
-    какое поле не прошло валидацию, через сколько повторить запрос, какая квота исчерпана.
+    Besides the error code and text, services include typed details:
+    which field failed validation, when to retry, and which quota was exhausted.
     """
 
-    # Числовой код состояния из google.rpc.Code.
+    # Numeric status code from google.rpc.Code.
     code: int
 
-    # Текст ошибки, заданный сервисом.
+    # Error text provided by the service.
     message: str
 
-    # Разобранные подробности ошибки. Неизвестные библиотеке типы остаются в виде object.
+    # Parsed error details. Types unknown to the library remain as object.
     details: tuple[Message, ...]
 
     def of_type(self, detail_type: type[TDetail]) -> TDetail | None:
-        """Получить первую подробность ошибки указанного типа.
+        """Get the first error detail of the specified type.
 
-        :param detail_type: класс сообщения из сгенерированных pb2 модулей
-        :return: подробность ошибки либо None, если подробностей такого типа нет
+        :param detail_type: message class from generated pb2 modules
+        :return: error detail, or None if no detail of this type is present
         """
         for detail in self.details:
             if isinstance(detail, detail_type):
@@ -44,19 +44,19 @@ class ErrorStatus:
         return None
 
     def all_of_type(self, detail_type: type[TDetail]) -> tuple[TDetail, ...]:
-        """Получить все подробности ошибки указанного типа.
+        """Get all error details of the specified type.
 
-        :param detail_type: класс сообщения из сгенерированных pb2 модулей
-        :return: подробности ошибки в порядке получения
+        :param detail_type: message class from generated pb2 modules
+        :return: error details in arrival order
         """
         return tuple(detail for detail in self.details if isinstance(detail, detail_type))
 
 
 def error_status_from_metadata(metadata: MetadataType | None) -> ErrorStatus | None:
-    """Разобрать расширенный статус ошибки из метаданных ответа.
+    """Parse the rich error status from response metadata.
 
-    :param metadata: trailing-метаданные ответа
-    :return: расширенный статус либо None, если сервис его не передал или значение не разбирается
+    :param metadata: trailing response metadata
+    :return: rich status, or None if absent or unparseable
     """
     payload = _find_status_payload(metadata)
     if payload is None:
@@ -65,7 +65,7 @@ def error_status_from_metadata(metadata: MetadataType | None) -> ErrorStatus | N
     status = status_pb2.Status()
     try:
         status.MergeFromString(payload)
-    except Exception:  # noqa: BLE001 — при любом сбое разбора расширенный статус просто недоступен
+    except Exception:  # noqa: BLE001 - any parsing failure makes rich status unavailable
         return None
 
     return ErrorStatus(
@@ -76,7 +76,7 @@ def error_status_from_metadata(metadata: MetadataType | None) -> ErrorStatus | N
 
 
 def _find_status_payload(metadata: MetadataType | None) -> bytes | None:
-    """Найти в метаданных двоичное значение расширенного статуса."""
+    """Find the binary rich status value in metadata."""
     for key, value in as_metadata_items(metadata):
         if key.lower() == STATUS_DETAILS_KEY and isinstance(value, bytes):
             return value
@@ -84,13 +84,13 @@ def _find_status_payload(metadata: MetadataType | None) -> bytes | None:
 
 
 def _unpack(detail: AnyMessage) -> Message:
-    """Развернуть подробность ошибки в конкретное сообщение.
+    """Unpack an error detail into a concrete message.
 
-    Тип ищется в реестре protobuf, который наполняется импортом сгенерированных pb2 модулей.
-    Если тип неизвестен, подробность остается в исходном виде.
+    Look up the type in the protobuf registry populated by importing generated pb2 modules.
+    If the type is unknown, the detail remains in its original form.
 
-    :param detail: подробность ошибки в виде object
-    :return: разобранное сообщение либо исходный object
+    :param detail: error detail as object
+    :return: parsed message or the original object
     """
     type_name = detail.type_url.rsplit("/", 1)[-1]
 

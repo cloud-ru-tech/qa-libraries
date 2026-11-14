@@ -13,10 +13,10 @@ DEFAULT_ENCODING = "utf-8"
 
 
 def request_method(response: Response) -> str:
-    """Вернуть HTTP-метод запроса, на который получен ответ.
+    """Return the HTTP method of the request that produced the response.
 
-    :param response: ответ на запрос
-    :returns: метод запроса или `?`, если ответ создан вручную и запрос в нём не проставлен
+    :param response: Response to the request
+    :returns: Request method, or `?` for a manually created response without a request
     """
     try:
         return response.request.method
@@ -25,10 +25,10 @@ def request_method(response: Response) -> str:
 
 
 def request_url(response: Response) -> str:
-    """Вернуть URL запроса, на который получен ответ.
+    """Return the URL of the request that produced the response.
 
-    :param response: ответ на запрос
-    :returns: URL запроса или `?`, если ответ создан вручную и запрос в нём не проставлен
+    :param response: Response to the request
+    :returns: Request URL, or `?` for a manually created response without a request
     """
     try:
         return str(response.url)
@@ -37,11 +37,11 @@ def request_url(response: Response) -> str:
 
 
 def body_preview(response: Response, limit: int) -> str:
-    """Вернуть тело ответа для подстановки в сообщение об ошибке.
+    """Return a response body preview for an error message.
 
-    :param response: ответ на запрос
-    :param limit: максимальный размер тела в результате, в байтах
-    :returns: тело ответа, обрезанное до `limit` байт, или заглушка для непрочитанного стрима
+    :param response: Response to the request
+    :param limit: Maximum body size in the result, in bytes
+    :returns: Body truncated to `limit` bytes, or a placeholder for an unread stream
     """
     try:
         content = response.content
@@ -52,7 +52,7 @@ def body_preview(response: Response, limit: int) -> str:
     if len(content) <= limit:
         return content.decode(encoding, errors="replace")
 
-    # Режем байты до декодирования: `response.text` развернул бы в память всё тело целиком
-    # ради нескольких сотен символов. errors="replace" гасит символ, разрезанный по границе.
+    # Truncate bytes before decoding: `response.text` would load the entire body into memory
+    # for a few hundred characters. errors="replace" handles characters split at the boundary.
     head = content[:limit].decode(encoding, errors="replace")
     return f"{head}... (обрезано, всего {len(content)} байт)"

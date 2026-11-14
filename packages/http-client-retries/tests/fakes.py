@@ -1,4 +1,4 @@
-"""Фейки вместо моков: ведут себя как настоящие зависимости, но предсказуемо."""
+"""Fakes rather than mocks: behave like real dependencies, but predictably."""
 
 import io
 from collections.abc import AsyncIterator, Awaitable, Iterator, Sequence
@@ -12,13 +12,13 @@ from tenacity import RetryCallState, Retrying
 
 
 class FlakyEndpoint:
-    """Отдаёт заранее заданную последовательность исходов.
+    """Return a predefined sequence of outcomes.
 
-    Исключения возбуждаются, ответы возвращаются. Считает, сколько раз его позвали.
+    Raise exceptions and return responses while counting calls.
     """
 
     def __init__(self, *outcomes: httpx.Response | Exception) -> None:
-        """Инициализировать объект."""
+        """Initialize the object."""
         self._outcomes = list(outcomes)
         self.attempts = 0
 
@@ -39,12 +39,12 @@ class FlakyEndpoint:
 
 
 class RespondingEndpoint:
-    """Всегда отдаёт один и тот же ответ, считая обращения."""
+    """Return the same response every time while counting calls."""
 
     def __init__(self, response: httpx.Response) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param response: значение настройки ``response``.
+        :param response: Value of ``response``.
         """
         self._response = response
         self.attempts = 0
@@ -58,10 +58,10 @@ class RespondingEndpoint:
 
 
 class AsyncCallableEndpoint:
-    """Объект с `async def __call__`: не функция, но полноценный асинхронный вызываемый."""
+    """Object with `async def __call__`: not a function, but a valid asynchronous callable."""
 
     def __init__(self, *outcomes: httpx.Response | Exception) -> None:
-        """Инициализировать объект."""
+        """Initialize the object."""
         self._outcomes = list(outcomes)
         self.attempts = 0
 
@@ -75,10 +75,10 @@ class AsyncCallableEndpoint:
 
 
 class CoroutineReturningHook:
-    """Обычная функция-хук, которая возвращает корутину. Тип RetryHookT это разрешает."""
+    """Regular hook function that returns a coroutine, as allowed by RetryHookT."""
 
     def __init__(self) -> None:
-        """Инициализировать объект."""
+        """Initialize the object."""
         self.calls: list[int] = []
 
     def __call__(self, retry_state: RetryCallState) -> Awaitable[None]:
@@ -89,16 +89,16 @@ class CoroutineReturningHook:
 
 
 class CorrelationRecorder:
-    """Транспортный обработчик, снимающий значение заголовка в момент отправки.
+    """Transport handler that captures a header value at send time.
 
-    Читать заголовки постфактум из `httpx_mock.get_requests()` бесполезно: повторы идут
-    по одному и тому же объекту `httpx.Request`, поэтому там окажется только последнее значение.
+    Reading headers afterward from `httpx_mock.get_requests()` is useless: retries use
+    the same `httpx.Request` object, so only the latest value remains there.
     """
 
     def __init__(self, header: str, *outcomes: httpx.Response | Exception) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param header: значение настройки ``header``.
+        :param header: Value of ``header``.
         """
         self._header = header
         self._outcomes = list(outcomes)
@@ -114,14 +114,14 @@ class CorrelationRecorder:
 
 
 class ScriptedTransport(httpx.BaseTransport):
-    """Транспорт, отвечающий по сценарию и читающий тело так же, как настоящий.
+    """Transport with scripted responses that reads bodies like a real transport.
 
-    `httpx.MockTransport` для проверок тела запроса не годится: он вызывает `request.read()`
-    и незаметно буферизует любое тело, из-за чего проблемы переотправки не воспроизводятся.
+    `httpx.MockTransport` cannot test request bodies: it calls `request.read()`
+    and silently buffers every body, hiding replay problems.
     """
 
     def __init__(self, *outcomes: httpx.Response | Exception) -> None:
-        """Инициализировать объект."""
+        """Initialize the object."""
         self._outcomes = list(outcomes)
         self.bodies: list[bytes | str] = []
 
@@ -145,10 +145,10 @@ class ScriptedTransport(httpx.BaseTransport):
 
 
 class AsyncScriptedTransport(httpx.AsyncBaseTransport):
-    """Асинхронный вариант :class:`ScriptedTransport`."""
+    """Asynchronous version of :class:`ScriptedTransport`."""
 
     def __init__(self, *outcomes: httpx.Response | Exception) -> None:
-        """Инициализировать объект."""
+        """Initialize the object."""
         self._outcomes = list(outcomes)
         self.bodies: list[bytes | str] = []
 
@@ -172,17 +172,17 @@ class AsyncScriptedTransport(httpx.AsyncBaseTransport):
 
 
 class DisguisedStream(httpx.SyncByteStream):
-    """Одноразовый поток, притворяющийся multipart: у него есть атрибут `fields`.
+    """One-shot stream pretending to be multipart by exposing a `fields` attribute.
 
-    Проверяет, что классификация тела опирается на тип потока, а не на наличие атрибута.
+    Check that body classification uses the stream type rather than the presence of an attribute.
     """
 
     fields: tuple[object, ...] = ()
 
     def __init__(self, payload: bytes) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param payload: значение настройки ``payload``.
+        :param payload: Value of ``payload``.
         """
         self._payload = payload
         self._used = False
@@ -196,12 +196,12 @@ class DisguisedStream(httpx.SyncByteStream):
 
 
 class UnseekableFile(io.RawIOBase):
-    """Файловый объект без перемотки — так ведут себя пайпы и сетевые потоки."""
+    """Non-seekable file object, like pipes and network streams."""
 
     def __init__(self, payload: bytes) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param payload: значение настройки ``payload``.
+        :param payload: Value of ``payload``.
         """
         self._buffer = io.BytesIO(payload)
 
@@ -216,13 +216,13 @@ class UnseekableFile(io.RawIOBase):
 
 
 class ClosableStream(httpx.SyncByteStream):
-    """Тело ответа, считающее закрытия."""
+    """Response body that counts close calls."""
 
     def __init__(self, ledger: dict[str, int], content: bytes = b"payload") -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param ledger: значение настройки ``ledger``.
-        :param content: значение настройки ``content``.
+        :param ledger: Value of ``ledger``.
+        :param content: Value of ``content``.
         """
         self._ledger = ledger
         self._content = content
@@ -236,13 +236,13 @@ class ClosableStream(httpx.SyncByteStream):
 
 
 class ClosableAsyncStream(httpx.AsyncByteStream):
-    """Асинхронное тело ответа, считающее закрытия."""
+    """Asynchronous response body that counts close calls."""
 
     def __init__(self, ledger: dict[str, int], content: bytes = b"payload") -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param ledger: значение настройки ``ledger``.
-        :param content: значение настройки ``content``.
+        :param ledger: Value of ``ledger``.
+        :param content: Value of ``content``.
         """
         self._ledger = ledger
         self._content = content
@@ -269,11 +269,11 @@ def attach_transport(
     client: HttpClient | AsyncHttpClient,
     transport: httpx.BaseTransport | httpx.AsyncBaseTransport,
 ) -> AbstractContextManager[HttpClient] | AbstractAsyncContextManager[AsyncHttpClient]:
-    """Подключить сценарный транспорт через публичные обработчики HTTPX.
+    """Attach a scripted transport through public HTTPX handlers.
 
-    :param client: готовый клиент с проверяемыми опциями повторов.
-    :param transport: сценарий HTTP-ответов.
-    :return: контекст клиента с гарантированным закрытием транспорта.
+    :param client: Ready client with the retry options under test.
+    :param transport: Scripted HTTP responses.
+    :return: Client context that guarantees transport closure.
     """
     if isinstance(client, HttpClient) and isinstance(transport, httpx.BaseTransport):
         return _sync_transport(client, transport)
@@ -307,12 +307,12 @@ async def _async_transport(
 
 
 class CountingCondition:
-    """Условие повтора, отвечающее по заранее заданному списку решений."""
+    """Retry condition that returns a predefined sequence of decisions."""
 
     def __init__(self, decisions: Sequence[bool]) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param decisions: значение настройки ``decisions``.
+        :param decisions: Value of ``decisions``.
         """
         self._decisions = list(decisions)
         self.calls = 0
@@ -323,7 +323,7 @@ class CountingCondition:
 
 
 def retry_state_after(response: httpx.Response) -> RetryCallState:
-    """Состояние попытки, завершившейся ответом сервера."""
+    """State of an attempt that received a server response."""
     state = RetryCallState(Retrying(), None, (), dict[str, object]())
     state.set_result(response)
 
@@ -331,7 +331,7 @@ def retry_state_after(response: httpx.Response) -> RetryCallState:
 
 
 def retry_state_after_error(error: BaseException) -> RetryCallState:
-    """Состояние попытки, завершившейся исключением."""
+    """State of an attempt that raised an exception."""
     state = RetryCallState(Retrying(), None, (), dict[str, object]())
     state.set_exception((type(error), error, error.__traceback__))
 
@@ -339,10 +339,10 @@ def retry_state_after_error(error: BaseException) -> RetryCallState:
 
 
 class RecordingHook:
-    """Синхронный before_sleep_hook, запоминающий каждый вызов."""
+    """Synchronous before_sleep_hook that records each call."""
 
     def __init__(self) -> None:
-        """Инициализировать объект."""
+        """Initialize the object."""
         self.calls: list[RetryCallState] = []
 
     def __call__(self, retry_state: RetryCallState) -> None:
@@ -350,10 +350,10 @@ class RecordingHook:
 
 
 class RecordingAsyncHook:
-    """Асинхронный before_sleep_hook, запоминающий каждый вызов."""
+    """Asynchronous before_sleep_hook that records each call."""
 
     def __init__(self) -> None:
-        """Инициализировать объект."""
+        """Initialize the object."""
         self.calls: list[RetryCallState] = []
 
     async def __call__(self, retry_state: RetryCallState) -> None:
@@ -361,10 +361,10 @@ class RecordingAsyncHook:
 
 
 class GenericEndpoint:
-    """Функция с произвольным типизированным результатом и одним сетевым сбоем."""
+    """Function with an arbitrary typed result and one network failure."""
 
     def __init__(self) -> None:
-        """Начать сценарий до первой попытки."""
+        """Initialize the scenario before the first attempt."""
         self.attempts = 0
 
     def __call__(self, request: httpx.Request, *, label: str) -> tuple[str, int]:

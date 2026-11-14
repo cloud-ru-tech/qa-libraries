@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 def test_json_settings(tmp_path: Path) -> None:
-    """Тест загрузки настроек из json файла."""
+    """Test loading settings from a json file."""
     json_content: str = """
     {
         "name": "test_app",
@@ -40,7 +40,7 @@ def test_json_settings(tmp_path: Path) -> None:
 
 
 def test_json_settings_submodels(tmp_path: Path) -> None:
-    """Тест загрузки настроек из json файла с вложенными моделями."""
+    """Test loading settings from a json file with nested models."""
     json_content: str = """
     {
         "name": "test_app",
@@ -77,7 +77,7 @@ def test_json_settings_submodels(tmp_path: Path) -> None:
 
 
 def test_json_settings_multiple_files(tmp_path: Path) -> None:
-    """Тест загрузки настроек из нескольких json файлов."""
+    """Test loading settings from multiple json files."""
     json_content_main: str = """
     {
         "name": "test_app",
@@ -120,7 +120,7 @@ def test_json_settings_multiple_files(tmp_path: Path) -> None:
 
 
 def test_json_settings_with_env(tmp_path: Path) -> None:
-    """Тест загрузки настроек из json файла с переопределением через переменные окружения."""
+    """Test loading settings from a json file with environment variable overrides."""
     json_content: str = """
     {
         "name": "test_app",
@@ -165,7 +165,7 @@ def test_json_settings_with_env(tmp_path: Path) -> None:
 
 
 def test_json_settings_raises_error_when_file_not_specified() -> None:
-    """Тест проверяет, что при отсутствии объявления json_file возникает ошибка."""
+    """Test that a missing json_file declaration raises an error."""
 
     class TestSettings(JsonBaseSettings):
         app_name: str = Field(default="")
@@ -176,7 +176,7 @@ def test_json_settings_raises_error_when_file_not_specified() -> None:
 
 
 def test_json_settings_raises_error_when_file_not_found() -> None:
-    """Тест проверяет, что при отсутствии файла возникает ошибка."""
+    """Test that a missing file raises an error."""
 
     class TestSettings(JsonBaseSettings):
         app_name: str = Field(default="")
@@ -187,7 +187,7 @@ def test_json_settings_raises_error_when_file_not_found() -> None:
 
 
 def test_json_settings_raises_error_when_json_is_list(tmp_path: Path) -> None:
-    """Тест проверяет, что когда json содержит список, то возникает ошибка."""
+    """Test that a json list raises an error."""
     json_content: str = """
     [
         "item1",
@@ -208,7 +208,7 @@ def test_json_settings_raises_error_when_json_is_list(tmp_path: Path) -> None:
 
 
 def test_json_settings_validation_error_on_invalid_type(tmp_path: Path) -> None:
-    """Тест проверяет валидацию типов данных."""
+    """Test data type validation."""
     json_content: str = """
     {
         "port": "not_a_number"
@@ -226,7 +226,7 @@ def test_json_settings_validation_error_on_invalid_type(tmp_path: Path) -> None:
 
 
 def test_json_settings_uses_custom_encoding(tmp_path: Path) -> None:
-    """Тест проверяет работу с пользовательской кодировкой файла."""
+    """Test using a custom file encoding."""
     json_content: str = """
     {
         "message": "привет мир"
@@ -249,7 +249,7 @@ def test_json_settings_uses_custom_encoding(tmp_path: Path) -> None:
 
 
 def test_json_settings_raises_error_on_unknown_keys(tmp_path: Path) -> None:
-    """Тест проверяет, что лишние ключи в json вызывают ошибку."""
+    """Test that extra json keys raise an error."""
     json_content: str = """
     {
         "name": "test_app",
@@ -268,7 +268,7 @@ def test_json_settings_raises_error_on_unknown_keys(tmp_path: Path) -> None:
 
 
 def test_json_settings_raises_error_on_missing_required_keys(tmp_path: Path) -> None:
-    """Тест проверяет, что отсутствие обязательного ключа в json вызывает ошибку."""
+    """Test that a missing required json key raises an error."""
     json_content: str = """
     {
         "debug": true
@@ -287,7 +287,7 @@ def test_json_settings_raises_error_on_missing_required_keys(tmp_path: Path) -> 
 
 
 def test_json_settings_raises_error_on_multiple_missing_required_keys(tmp_path: Path) -> None:
-    """Тест проверяет, что перечисляются все отсутствующие обязательные ключи."""
+    """Test that all missing required keys are listed."""
     json_content: str = """
     {
         "debug": true
@@ -307,7 +307,7 @@ def test_json_settings_raises_error_on_multiple_missing_required_keys(tmp_path: 
 
 
 def test_json_settings_skips_unknown_keys_validation_when_disabled(tmp_path: Path) -> None:
-    """Тест проверяет отключение валидации неизвестных ключей."""
+    """Test disabling unknown key validation."""
     json_content: str = """
     {
         "name": "test_app",
@@ -330,7 +330,7 @@ def test_json_settings_skips_unknown_keys_validation_when_disabled(tmp_path: Pat
 
 
 def test_json_settings_skips_required_keys_validation_when_disabled(tmp_path: Path) -> None:
-    """Тест проверяет отключение валидации обязательных ключей."""
+    """Test disabling required key validation."""
     json_content: str = """
     {
         "debug": true
@@ -356,7 +356,7 @@ def test_json_settings_skips_required_keys_validation_when_disabled(tmp_path: Pa
 def test_json_settings_raises_validation_error_for_required_without_default_when_check_disabled(
     tmp_path: Path,
 ) -> None:
-    """Тест проверяет, что pydantic валидирует required поле без default."""
+    """Test that pydantic validates a required field without a default."""
     json_content: str = """
     {
         "debug": true

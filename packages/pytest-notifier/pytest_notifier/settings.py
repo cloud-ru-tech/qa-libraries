@@ -10,7 +10,7 @@ DEFAULT_TIMEOUT_SECONDS = 10.0
 
 
 class Destinations(Flag):
-    """Пункты назначения отправки нотфикаций."""
+    """Notification destinations."""
 
     console = 0x1
     mattermost = 0x2
@@ -18,7 +18,7 @@ class Destinations(Flag):
 
 
 class MattermostSettings(BaseModel):
-    """Настройки webhook Mattermost."""
+    """Mattermost webhook settings."""
 
     webhook_url: AnyUrl | None = None
     icon_emoji: str | None = None
@@ -30,7 +30,7 @@ class MattermostSettings(BaseModel):
 
 
 class TelegramSettings(BaseModel):
-    """Настройки уведомлений Telegram."""
+    """Telegram notification settings."""
 
     bot_token: SecretStr | None = None
     chat_id: str | None = None
@@ -40,7 +40,7 @@ class TelegramSettings(BaseModel):
 
 
 class Settings(BaseSettings):
-    """Настройки каналов уведомления из окружения."""
+    """Notification channel settings from the environment."""
 
     destinations: Destinations = Destinations.console
     mattermost: MattermostSettings = MattermostSettings()
@@ -56,11 +56,11 @@ class Settings(BaseSettings):
     @field_validator("destinations", mode="before")
     @classmethod
     def parse_destinations(cls, v: object) -> Destinations:
-        """Прочитать битовую маску каналов.
+        """Read the channel bitmask.
 
-        :param v: целое число, строка с числом или готовая маска.
-        :return: выбранные каналы.
-        :raises ValueError: если значение не является битовой маской.
+        :param v: integer, numeric string, or an existing mask.
+        :return: selected channels.
+        :raises ValueError: if the value is not a bitmask.
         """
         if isinstance(v, Destinations):
             return v

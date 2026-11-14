@@ -3,75 +3,75 @@ from typing import Protocol, runtime_checkable
 
 import grpc
 
-# Значение метаданных gRPC.
+# gRPC metadata value.
 #
-# Двоичные значения допустимы только для ключей с суффиксом `-bin`, остальные должны быть строками.
+# Binary values are allowed only for keys ending in `-bin`; all others must be strings.
 MetadataValue = str | bytes
 
-# Метаданные в виде последовательности пар, допускающей повторяющиеся ключи.
+# Metadata as a sequence of pairs that supports repeated keys.
 MetadataItems = Sequence[tuple[str, MetadataValue]]
 
-# Метаданные запроса: словарь либо последовательность пар.
+# Request metadata: a dictionary or sequence of pairs.
 MetadataType = Mapping[str, MetadataValue] | MetadataItems
 
-# Низкоуровневые настройки канала grpcio.
+# Low-level grpcio channel options.
 ChannelOptions = Sequence[tuple[str, object]]
 
 
 @runtime_checkable
 class GRPCStub(Protocol):
-    """Сгенерированный Stub сервиса, работающий поверх синхронного канала."""
+    """Generated service stub using a synchronous channel."""
 
     def __init__(self, channel: grpc.Channel) -> None:
-        """Создать stub поверх синхронного канала."""
+        """Create a stub over a synchronous channel."""
 
 
 @runtime_checkable
 class AsyncGRPCStub(Protocol):
-    """Сгенерированный Stub сервиса, работающий поверх асинхронного канала."""
+    """Generated service stub using an asynchronous channel."""
 
     def __init__(self, channel: grpc.aio.Channel) -> None:
-        """Создать stub поверх асинхронного канала."""
+        """Create a stub over an asynchronous channel."""
 
 
 class ClientAuth(Protocol):
-    """Источник токена доступа для синхронного клиента.
+    """Access token provider for the synchronous client.
 
-    Протокол объявлен без `runtime_checkable`: `isinstance()` проверяет лишь наличие методов
-    и не отличает синхронную реализацию от асинхронной, поэтому такая проверка вводила бы
-    в заблуждение. Клиент различает их по тому, объявлен ли `token()` корутиной.
+    The protocol has no `runtime_checkable`: `isinstance()` only checks method presence
+    and does not distinguish synchronous and asynchronous implementations, making this check
+    misleading. The client distinguishes them by whether `token()` is a coroutine.
 
-    Реализация отвечает только за выдачу токена: кеширование, срок жизни и поход во внешний сервис —
-    ее забота. Подстановку токена в метаданные и повтор запроса после `UNAUTHENTICATED` берет на себя клиент.
+    Implementations only supply tokens: caching, expiry, and external service calls are
+    their responsibility. The client adds tokens to metadata and retries after `UNAUTHENTICATED`.
     """
 
     def token(self) -> str:
-        """Получить действующий токен доступа."""
+        """Get a valid access token."""
         ...
 
     def refresh(self, rejected_token: str) -> str:
-        """Выпустить новый токен взамен отвергнутого сервисом.
+        """Issue a new token to replace the one rejected by the service.
 
-        Отвергнутый токен передается, чтобы реализация могла отличить «токен действительно протух»
-        от «пока мы ждали, его уже обновил кто-то другой» и не ходила во внешний сервис лишний раз.
+        The rejected token lets implementations distinguish an actually expired token
+        from one already refreshed by another caller while waiting, avoiding unnecessary external calls.
 
-        :param rejected_token: токен, который сервис отверг с ошибкой UNAUTHENTICATED
-        :return: действующий токен доступа
+        :param rejected_token: token rejected by the service with UNAUTHENTICATED
+        :return: valid access token
         """
         ...
 
 
 class AsyncClientAuth(Protocol):
-    """Источник токена доступа для асинхронного клиента."""
+    """Access token provider for the asynchronous client."""
 
     async def token(self) -> str:
-        """Получить действующий токен доступа."""
+        """Get a valid access token."""
         ...
 
     async def refresh(self, rejected_token: str) -> str:
-        """Выпустить новый токен взамен отвергнутого сервисом.
+        """Issue a new token to replace the one rejected by the service.
 
-        :param rejected_token: токен, который сервис отверг с ошибкой UNAUTHENTICATED
-        :return: действующий токен доступа
+        :param rejected_token: token rejected by the service with UNAUTHENTICATED
+        :return: valid access token
         """
         ...

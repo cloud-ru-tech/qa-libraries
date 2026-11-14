@@ -8,7 +8,7 @@ from .models import ExampleRequest, ExampleResponse
 
 
 def parse_details(response: Response) -> dict[str, str]:
-    """Разобрать построчный ответ вида `ключ: значение` в словарь."""
+    """Parse a line-based `key: value` response into a dictionary."""
     result: dict[str, str] = {}
     for line in response.text.split("\n"):
         key, value = line.split(":", maxsplit=1)
@@ -17,10 +17,10 @@ def parse_details(response: Response) -> dict[str, str]:
 
 
 class ExampleClient(HttpClient):
-    """Тестовый HTTP-клиент."""
+    """HTTP client for tests."""
 
     def get_users(self, request: ExampleRequest) -> JsonResponse[ExampleResponse]:
-        """Отправить простой get запрос на получение списка пользователей в JSON формате."""
+        """Send a simple GET request for a JSON user list."""
         response = self.get(
             url="/users",
             params=cast("dict[str, str | int]", request.model_dump(exclude_none=True)),
@@ -31,7 +31,7 @@ class ExampleClient(HttpClient):
         )
 
     def download_details(self, user_id: int) -> GenericResponse[dict[str, str]]:
-        """Отправить запрос, получающий строковые данные, которые будут преобразованы в dict."""
+        """Send a request for string data to be converted to a dict."""
         response = self.get(f"/user/{user_id}/details")
         return GenericResponse(
             response=response,
@@ -40,10 +40,10 @@ class ExampleClient(HttpClient):
 
 
 class AsyncExampleClient(AsyncHttpClient):
-    """Тестовый асинхронный HTTP-клиент."""
+    """Asynchronous HTTP client for tests."""
 
     async def get_users(self, request: ExampleRequest) -> JsonResponse[ExampleResponse]:
-        """Отправить простой get запрос на получение списка пользователей в JSON формате."""
+        """Send a simple GET request for a JSON user list."""
         response = await self.get(
             url="/users",
             params=cast("dict[str, str | int]", request.model_dump(exclude_none=True)),
@@ -54,7 +54,7 @@ class AsyncExampleClient(AsyncHttpClient):
         )
 
     async def download_details(self, user_id: int) -> GenericResponse[dict[str, str]]:
-        """Отправить запрос, получающий строковые данные, которые будут преобразованы в dict."""
+        """Send a request for string data to be converted to a dict."""
         response = await self.get(f"/user/{user_id}/details")
         return GenericResponse(
             response=response,

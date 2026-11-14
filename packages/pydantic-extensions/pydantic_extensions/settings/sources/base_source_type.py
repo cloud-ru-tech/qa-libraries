@@ -1,4 +1,4 @@
-"""Базовый класс настроек pydantic-settings с загрузкой значений из файла."""
+"""Base pydantic-settings class that loads values from a file."""
 
 from __future__ import annotations
 
@@ -12,31 +12,31 @@ from pydantic_settings.sources.utils import _get_alias_names
 
 
 class FileSettingsConfigDict(SettingsConfigDict, total=False):
-    """Настройки файловых источников с дополнительными проверками ключей."""
+    """File source settings with additional key validation."""
 
     validate_required_keys: bool
     validate_unknown_keys: bool
 
 
 class UnknownKeysFilteringMixin:
-    """Mixin для опциональной фильтрации неизвестных ключей из source-данных."""
+    """Mixin for optional filtering of unknown keys from source data."""
 
     drop_unknown_keys: bool = False
     allowed_keys_filter: set[str] | None = None
 
     def set_unknown_keys_filter(self, allowed_keys: set[str]) -> None:
-        """Ограничить источник известными ключами модели.
+        """Limit the source to known model keys.
 
-        :param allowed_keys: ключи, разрешённые для загрузки.
+        :param allowed_keys: keys allowed for loading.
         """
         self.drop_unknown_keys = True
         self.allowed_keys_filter = allowed_keys
 
     def apply_unknown_keys_filter(self, data: dict[str, object]) -> dict[str, object]:
-        """Удалить неизвестные ключи, если фильтр включён.
+        """Remove unknown keys if filtering is enabled.
 
-        :param data: значения файлового источника.
-        :return: значения, допустимые для модели.
+        :param data: file source values.
+        :return: values allowed by the model.
         """
         if self.drop_unknown_keys and self.allowed_keys_filter is not None:
             return {key: value for key, value in data.items() if key in self.allowed_keys_filter}
@@ -44,39 +44,39 @@ class UnknownKeysFilteringMixin:
 
 
 class SupportsUnknownKeysFiltering(Protocol):
-    """Источник, умеющий отбрасывать неизвестные ключи."""
+    """Source capable of dropping unknown keys."""
 
     def set_unknown_keys_filter(self, allowed_keys: set[str]) -> None:
-        """Задать допустимые ключи.
+        """Set the allowed keys.
 
-        :param allowed_keys: ключи полей модели.
+        :param allowed_keys: model field keys.
         """
         ...
 
 
 class FileTypeBaseSettings(BaseSettings, ABC):
-    """Базовый класс настроек из файла с кастомным приоритетом источников.
+    """Base file settings class with custom source priority.
 
-    Класс использует встроенные файловые источники `pydantic-settings`, но добавляет
-    проектные правила валидации и собственный порядок источников:
+    The class uses built-in `pydantic-settings` file sources but adds
+    project-specific validation rules and a custom source order:
     ``env -> dotenv -> secrets -> file -> init``.
 
-    Путь к файлу берётся из ``settings_cls.model_config`` по ключу ``_paths_config_key``
-    (например, ``json_file``).
+    Read the file path from ``settings_cls.model_config`` using ``_paths_config_key``
+    (for example, ``json_file``).
 
-    Основные особенности:
-        1. Проверяет, что путь к конфигу задан в ``model_config``.
-        2. Поддерживает один путь или список путей, разворачивает ``~``.
-        3. Падает с ``FileNotFoundError``, если хотя бы один файл отсутствует.
-        4. Проверяет файл на неизвестные ключи (лишние относительно модели).
-        5. Проверяет файл на отсутствие обязательных ключей модели.
-           Обе проверки можно отключить через ``model_config``.
-        6. Учитывает алиасы полей и режимы ``populate_by_name`` / ``validate_by_name``.
+    Key features:
+        1. Check that the configuration path is set in ``model_config``.
+        2. Support one path or a list of paths and expand ``~``.
+        3. Raise ``FileNotFoundError`` if any file is missing.
+        4. Check the file for unknown keys (extra keys relative to the model).
+        5. Check the file for missing required model keys.
+           Both checks can be disabled through ``model_config``.
+        6. Respect field aliases and ``populate_by_name`` / ``validate_by_name`` modes.
 
     Attributes:
-        _paths_config_key: Ключ в ``model_config`` с путём или списком путей к файлу.
-        _encoding_config_key: Ключ в ``model_config`` с кодировкой или ``None``.
-        _missing_paths_error: Текст ошибки, если путь к файлу не задан.
+        _paths_config_key: ``model_config`` key containing a file path or list of paths.
+        _encoding_config_key: ``model_config`` key containing the encoding, or ``None``.
+        _missing_paths_error: Error text if no file path is set.
 
     """
 
@@ -93,30 +93,30 @@ class FileTypeBaseSettings(BaseSettings, ABC):
         settings_cls: type[BaseSettings],
         raw_config: dict[str, object],
     ) -> PydanticBaseSettingsSource:
-        """Создаёт файловый источник для конкретного формата.
+        """Create a file source for a specific format.
 
         Args:
-            settings_cls: Конкретный класс настроек, который сейчас инициализируется.
-            raw_config: ``settings_cls.model_config`` в виде обычного словаря.
+            settings_cls: Concrete settings class currently being initialized.
+            raw_config: ``settings_cls.model_config`` as a regular dictionary.
 
         Returns:
-            Готовый экземпляр файлового источника.
+            Ready-to-use file source instance.
 
         """
         ...
 
     @classmethod
     def _normalize_paths(cls, paths: object) -> list[Path]:
-        """Нормализует путь(и) в список объектов ``Path`` с ``expanduser()``.
+        """Normalize paths into a list of ``Path`` objects using ``expanduser()``.
 
         Args:
-            paths: Один путь или последовательность путей.
+            paths: Single path or sequence of paths.
 
         Returns:
-            Список нормализованных ``Path``.
+            List of normalized ``Path`` objects.
 
         Raises:
-            TypeError: Если передан не путь и не список путей.
+            TypeError: If neither a path nor a list of paths is supplied.
 
         """
         if isinstance(paths, (str, Path)):
@@ -136,14 +136,14 @@ class FileTypeBaseSettings(BaseSettings, ABC):
 
     @classmethod
     def _validate_paths_exist(cls, paths: list[Path], paths_key: str) -> None:
-        """Проверяет, что все пути к конфигам существуют.
+        """Check that all configuration paths exist.
 
         Args:
-            paths: Нормализованный список путей к файлам конфигурации.
-            paths_key: Ключ из ``model_config``, из которого взяты пути.
+            paths: Normalized list of configuration file paths.
+            paths_key: ``model_config`` key from which paths were obtained.
 
         Raises:
-            FileNotFoundError: Если хотя бы один файл не найден.
+            FileNotFoundError: If any file is missing.
 
         """
         missing = [str(path) for path in paths if not path.is_file()]
@@ -153,15 +153,15 @@ class FileTypeBaseSettings(BaseSettings, ABC):
 
     @classmethod
     def _model_key_sets(cls, settings_cls: type[BaseSettings]) -> tuple[set[str], set[str]]:
-        """Собирает множества допустимых и обязательных ключей модели.
+        """Collect sets of allowed and required model keys.
 
         Args:
-            settings_cls: Класс настроек с описанием полей модели.
+            settings_cls: Settings class defining the model fields.
 
         Returns:
-            Кортеж ``(allowed_keys, required_keys)``:
-            - ``allowed_keys``: алиасы и, при включении, имена полей;
-            - ``required_keys``: ключи обязательных полей без ``default/default_factory``.
+            A tuple of ``(allowed_keys, required_keys)``:
+            - ``allowed_keys``: aliases and, when enabled, field names;
+            - ``required_keys``: required field keys without ``default/default_factory``.
 
         """
         allowed: set[str] = set()
@@ -187,19 +187,19 @@ class FileTypeBaseSettings(BaseSettings, ABC):
         required_keys: set[str],
         provided_keys: set[str],
     ) -> None:
-        """Проверяет, что обязательные ключи модели заданы в файле или другом источнике.
+        """Check that required model keys are set in the file or another source.
 
-        Ключ считается отсутствующим только если его нет ни в файле, ни в одном из
-        не-файловых источников (env / dotenv / secrets / init). Это позволяет задавать
-        часть обязательных полей через переменные окружения, не дублируя их в файле.
+        A key is missing only if absent from both the file and all
+        non-file sources (env / dotenv / secrets / init). This allows setting
+        some required fields through environment variables without duplicating them in the file.
 
         Args:
-            source_data: Распарсенные данные файлового источника.
-            required_keys: Множество обязательных ключей модели.
-            provided_keys: Ключи, предоставленные не-файловыми источниками.
+            source_data: Parsed file source data.
+            required_keys: Set of required model keys.
+            provided_keys: Keys provided by non-file sources.
 
         Raises:
-            ValueError: Если обязательные ключи отсутствуют во всех источниках.
+            ValueError: If required keys are missing from every source.
 
         """
         missing_keys = sorted(required_keys - set(source_data) - provided_keys)
@@ -213,14 +213,14 @@ class FileTypeBaseSettings(BaseSettings, ABC):
         source_data: dict[str, object],
         allowed_keys: set[str],
     ) -> None:
-        """Проверяет, что в файле нет неизвестных ключей.
+        """Check that the file contains no unknown keys.
 
         Args:
-            source_data: Распарсенные данные файлового источника.
-            allowed_keys: Множество допустимых ключей модели.
+            source_data: Parsed file source data.
+            allowed_keys: Set of allowed model keys.
 
         Raises:
-            ValueError: Если в файле присутствуют неизвестные ключи.
+            ValueError: If the file contains unknown keys.
 
         """
         unknown_keys = sorted(set(source_data) - allowed_keys)
@@ -233,16 +233,16 @@ class FileTypeBaseSettings(BaseSettings, ABC):
         cls,
         sources: Sequence[PydanticBaseSettingsSource],
     ) -> set[str]:
-        """Собирает ключи верхнего уровня, заданные не-файловыми источниками.
+        """Collect top-level keys provided by non-file sources.
 
-        Нужно, чтобы обязательные поля, переданные через env / dotenv / secrets / init,
-        не считались отсутствующими при проверке файлового конфига.
+        Ensure required fields supplied through env / dotenv / secrets / init
+        are not considered missing when validating the file configuration.
 
         Args:
-            sources: Не-файловые источники настроек.
+            sources: Non-file settings sources.
 
         Returns:
-            Множество ключей, которые предоставляют переданные источники.
+            Set of keys provided by the supplied sources.
 
         """
         provided: set[str] = set()
@@ -260,17 +260,17 @@ class FileTypeBaseSettings(BaseSettings, ABC):
         validate_unknown_keys: bool,
         provided_keys: set[str],
     ) -> None:
-        """Проверяет целостность ключей в файле: обязательные и неизвестные.
+        """Validate required and unknown keys in the file.
 
         Args:
-            settings_cls: Класс настроек, относительно которого валидируются ключи.
-            file_source: Файловый источник, который возвращает распарсенные данные.
-            validate_required_keys: Включена ли проверка обязательных ключей.
-            validate_unknown_keys: Включена ли проверка неизвестных ключей.
-            provided_keys: Ключи, предоставленные не-файловыми источниками.
+            settings_cls: Settings class used to validate keys.
+            file_source: File source that returns parsed data.
+            validate_required_keys: Whether required key validation is enabled.
+            validate_unknown_keys: Whether unknown key validation is enabled.
+            provided_keys: Keys provided by non-file sources.
 
         Raises:
-            ValueError: Если отсутствуют обязательные ключи или есть неизвестные.
+            ValueError: If required keys are missing or unknown keys are present.
 
         """
         source_data = cast("dict[str, object]", file_source())
@@ -289,17 +289,17 @@ class FileTypeBaseSettings(BaseSettings, ABC):
         dotenv_settings: PydanticBaseSettingsSource,
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
-        """Собрать источники по приоритету и проверить файловый конфиг.
+        """Arrange sources by priority and validate the file configuration.
 
-        :param settings_cls: конкретный класс настроек.
-        :param init_settings: значения из конструктора модели.
-        :param env_settings: значения переменных окружения.
-        :param dotenv_settings: значения из dotenv-файлов.
-        :param file_secret_settings: секреты из каталога.
-        :return: источники в порядке env, dotenv, secrets, file, init.
-        :raises ValueError: если путь не задан или ключи файла не соответствуют модели.
-        :raises FileNotFoundError: если файл настроек отсутствует.
-        :raises TypeError: если путь имеет неподдерживаемый тип.
+        :param settings_cls: concrete settings class.
+        :param init_settings: values from the model constructor.
+        :param env_settings: environment variable values.
+        :param dotenv_settings: values from dotenv files.
+        :param file_secret_settings: secrets from a directory.
+        :return: sources in env, dotenv, secrets, file, init order.
+        :raises ValueError: if no path is set or file keys do not match the model.
+        :raises FileNotFoundError: if the settings file is missing.
+        :raises TypeError: if a path has an unsupported type.
         """
         paths_key = cls._paths_config_key
 

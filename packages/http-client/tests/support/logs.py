@@ -1,4 +1,4 @@
-"""Перехват лога HTTP-клиента и матчеры для его проверки."""
+"""HTTP client log capture and assertion matchers."""
 
 import logging
 import re
@@ -9,19 +9,19 @@ from assertpy.assertpy import AssertionBuilder
 
 TRACE_ID = re.compile(r"id=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
 
-# Порядок частей лога фиксирован: значение каждой части тянется до метки следующей.
+# Log sections have a fixed order: each value extends to the next section label.
 PART_ORDER = ("Request", "Response", "Method", "Status", "QueryParams", "Headers", "Body")
 
 
 @dataclass(frozen=True)
 class LogEntry:
-    """Одна запись лога HTTP-клиента."""
+    """Single HTTP client log record."""
 
     level: int
     message: str
 
     def part(self, name: str) -> str | None:
-        """Значение части лога по её метке или None, если части нет."""
+        """Value of a log section by its label, or None if it is absent."""
         marker = f"{name}: "
         start = self.message.find(marker)
         if start < 0:
@@ -36,16 +36,16 @@ class LogEntry:
         return self.message[value_at : min(following, default=len(self.message))].rstrip("\n ")
 
     def trace_id(self) -> str | None:
-        """Идентификатор, связывающий лог запроса с логом ответа."""
+        """ID correlating the request and response logs."""
         found = TRACE_ID.search(self.message)
         return found.group(1) if found else None
 
 
 class RecordingHandler(logging.Handler):
-    """Handler, складывающий записи в память вместо вывода."""
+    """Handler that stores records in memory instead of displaying them."""
 
     def __init__(self) -> None:
-        """Создать handler с пустым списком записей."""
+        """Create a handler with an empty record list."""
         super().__init__()
         self.records: list[logging.LogRecord] = []
 
@@ -55,9 +55,9 @@ class RecordingHandler(logging.Handler):
 
 @dataclass(frozen=True)
 class RecordedLog:
-    """Настоящий логгер с перехватом записей — фейк вместо мока.
+    """Real logger with captured records: a fake rather than a mock.
 
-    На один HTTP-обмен клиент пишет две записи: сначала запрос, затем ответ.
+    The client writes two records per HTTP exchange: the request, then the response.
     """
 
     logger: logging.Logger
@@ -90,7 +90,7 @@ else:
 
 
 class LogAssertions(_LogEntryAssertions):
-    """Проверки записи лога HTTP-клиента."""
+    """Check an HTTP client log record."""
 
     def has_trace_id(self) -> Self:
         if self.val.trace_id() is None:
@@ -174,5 +174,5 @@ class LogAssertions(_LogEntryAssertions):
 
 
 def assert_that(value: LogEntry) -> LogAssertions:
-    """Проверки записи лога HTTP-клиента."""
+    """Check an HTTP client log record."""
     return LogAssertions(value)

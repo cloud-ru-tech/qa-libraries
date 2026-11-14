@@ -1,52 +1,54 @@
-# Структурированные логи для gRPC-клиента
+# Structured logs for the gRPC client
 
 [![PyPI](https://img.shields.io/pypi/v/cloudru-qa-grpc-client-structlog)](https://pypi.org/project/cloudru-qa-grpc-client-structlog/)
 [![Python](https://img.shields.io/pypi/pyversions/cloudru-qa-grpc-client-structlog)](https://pypi.org/project/cloudru-qa-grpc-client-structlog/)
 [![License](https://img.shields.io/pypi/l/cloudru-qa-grpc-client-structlog)](https://github.com/cloud-ru-tech/qa-libraries/blob/master/LICENSE)
 
-Опция `with_structlogger` для [gRPC-клиента](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/grpc-client),
-которая пишет все запросы и ответы через [structlog](https://www.structlog.org/en/stable/index.html).
+English | [Русский](README.ru.md)
 
-Штатный логгер grpc-client складывает запрос в одну текстовую строку. Здесь метод, тело,
-метаданные и статус уходят в лог отдельными полями — их видно в консоли при отладке и по ним
-можно искать и фильтровать в собранных логах.
+The `with_structlogger` option for the [gRPC client](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/grpc-client)
+logs all requests and responses through [structlog](https://www.structlog.org/en/stable/index.html).
 
-- [Установка](#установка)
-- [Скиллы для AI-агентов](#скиллы-для-ai-агентов)
-- [Использование](#использование)
-- [Асинхронный клиент](#асинхронный-клиент)
-- [Поля лога](#поля-лога)
-- [Маскирование секретов](#маскирование-секретов)
-- [Параметры](#параметры)
-- [Разработка](#разработка)
+The standard grpc-client logger puts the request in one text string. This option logs the method, body,
+metadata, and status as separate fields, visible in the console during debugging and available
+for searching and filtering in collected logs.
 
-## Установка
+- [Installation](#installation)
+- [Skills for AI agents](#skills-for-ai-agents)
+- [Usage](#usage)
+- [Asynchronous client](#asynchronous-client)
+- [Log fields](#log-fields)
+- [Masking secrets](#masking-secrets)
+- [Parameters](#parameters)
+- [Development](#development)
 
-Требуется Python 3.13 или новее.
+## Installation
+
+Requires Python 3.13 or later.
 
 ```shell
 pip install cloudru-qa-grpc-client-structlog
 ```
 
-Библиотека импортируется как модуль `grpc_client_structlog`. Подходящая версия
+Import the library as `grpc_client_structlog`. A compatible version of
 [`cloudru-qa-grpc-client`](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/grpc-client)
-устанавливается вместе с ней.
+is installed with it.
 
-## Скиллы для AI-агентов
+## Skills for AI agents
 
-В пакет включён скилл [`grpc-client-structlog-usage`](https://github.com/cloud-ru-tech/qa-libraries/blob/master/.agents/skills/grpc-client-structlog-usage/SKILL.md)
-с примерами и правилами использования библиотеки для AI-агентов. Установите библиотеку
-в окружение своего проекта, затем из его корня выполните (нужен [`uv`](https://docs.astral.sh/uv/)):
+The package includes the [`grpc-client-structlog-usage`](https://github.com/cloud-ru-tech/qa-libraries/blob/master/.agents/skills/grpc-client-structlog-usage/SKILL.md) skill
+with examples and usage rules for AI agents. Install the library
+in your project environment, then run this from its root (requires [`uv`](https://docs.astral.sh/uv/)):
 
 ```shell
 uvx library-skills install --skill grpc-client-structlog-usage --yes
 ```
 
-Для Claude Code добавьте `--claude`. Инструкции поставляются вместе с версией библиотеки.
+For Claude Code, add `--claude`. The instructions are shipped with the library version.
 
-## Использование
+## Usage
 
-Передайте опцию в конструктор клиента — дальше логируется всё само:
+Pass the option to the client constructor; logging is then automatic:
 
 ```python
 import structlog
@@ -73,13 +75,13 @@ with OrdersClient.from_addr(
     client.get_order("42")
 ```
 
-Запрос попадёт в лог событием `grpc request sent`, ответ — `grpc response received`.
-Общее поле `trace_id` связывает их между собой.
+The request is logged as a `grpc request sent` event, the response as `grpc response received`.
+A shared `trace_id` field links them.
 
-## Асинхронный клиент
+## Asynchronous client
 
-Опция та же, ничего дополнительно настраивать не нужно: нужный интерцептор выбирается
-по типу клиента:
+Use the same option without extra configuration: the interceptor is selected
+based on the client type:
 
 ```python
 from grpc_client import AsyncGRPCClient
@@ -98,52 +100,52 @@ async with AsyncOrdersClient.from_addr("orders.example.com:443", with_structlogg
     await client.get_order("42")
 ```
 
-Итоговая запись о потоке ответных сообщений пишется отдельной задачей, поэтому асинхронный
-клиент нужно закрывать: `close()` дожидается таких задач.
+The final response-stream record is written in a separate task, so close the asynchronous
+client: `close()` waits for these tasks.
 
-## Поля лога
+## Log fields
 
-До двух записей на вызов, связанных общим `trace_id`: запрос и ответ.
+Up to two records per call, linked by a shared `trace_id`: request and response.
 
-| Поле | Событие | Значение |
+| Field | Event | Value |
 |---|---|---|
-| `method` | оба | полное имя метода вида `/package.Service/Method` |
-| `body` | оба | тело сообщения в виде JSON-строки; у ответа — только у успешного унарного вызова |
-| `metadata` | оба | метаданные в виде JSON-строки; поля нет, если метаданных не было |
-| `status_code` | ответ | имя кода статуса: `OK`, `NOT_FOUND`, … |
-| `details` | ответ | текст ошибки от сервиса; поле есть только у неуспешного вызова |
-| `messages_count` | ответ | количество сообщений, полученных из потока; поле есть только у потоковых вызовов |
-| `trace_id` | оба | UUID4, сгенерированный на запрос |
+| `method` | both | full method name such as `/package.Service/Method` |
+| `body` | both | message body as a JSON string; responses include it only for successful unary calls |
+| `metadata` | both | metadata as a JSON string; omitted if no metadata was present |
+| `status_code` | response | status code name: `OK`, `NOT_FOUND`, … |
+| `details` | response | service error text; present only for failed calls |
+| `messages_count` | response | number of messages received from the stream; present only for streaming calls |
+| `trace_id` | both | UUID4 generated per request |
 
-В `status_code` пишется **имя** кода, а не его номер. Имя читается без справочника и по нему
-удобно фильтровать записи; номер добавил бы в поле второе значение, и искать по строке
-`5 (NOT_FOUND)` пришлось бы подстрокой.
+`status_code` contains the code **name**, not its number. Names are readable without a reference
+and easy to filter. Including the number would give the field two values and require
+substring searches for `5 (NOT_FOUND)`.
 
-Составные значения — `body` и `metadata` — попадают в лог уже сериализованными в JSON-строку,
-а не вложенными структурами: иначе их поля смешивались бы с полями контекста приложения.
+Compound values, `body` and `metadata`, are serialized as JSON strings before logging,
+rather than nested structures, to avoid mixing their fields with application context fields.
 
-Тело потока в лог не попадает — ни запросов, ни ответов: вычитывание потока ради лога изменило бы
-поведение вызова. У запроса-потока в `body` стоит `<streamed content>`, а о потоке ответов
-пишется итоговый статус и `messages_count`.
+Neither request nor response stream bodies are logged: consuming a stream for logging would change
+call behavior. A streaming request uses `<streamed content>` in `body`, while a response stream
+logs its final status and `messages_count`.
 
-Длинное тело обрезается: по умолчанию — по 4096 символов, дальше в `body` дописывается
-`... <обрезано>`. Предел задаётся параметром `payload_maxlength`. Если тело не удалось подготовить —
-например, из-за неверного glom-пути в `sanitize_keys` — в `body` попадёт
-`<не удалось подготовить тело сообщения>`, а сам запрос всё равно уйдёт: лог собирается так,
-чтобы не ронять вызов.
+Long bodies are truncated at 4096 characters by default, followed by
+`... <обрезано>` in `body`. Set the limit with `payload_maxlength`. If preparing the body fails,
+for example because of an invalid glom path in `sanitize_keys`, `body` contains
+`<не удалось подготовить тело сообщения>`. The request still goes through: logging is designed
+to avoid breaking calls.
 
-## Маскирование секретов
+## Masking secrets
 
-Поля с типовыми именами секретов маскируются **по умолчанию и на любой глубине**, включая
-вложенные сообщения и элементы массивов:
+Fields with common secret names are masked **by default at every depth**, including
+nested messages and array items:
 
 `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-api-key`, `api-key`, `api_key`,
 `access_token`, `refresh_token`, `password`, `secret`, `token`.
 
-Имя сравнивается без учёта стиля записи, поэтому `accessToken` в теле сообщения тоже будет скрыт.
+Names match across naming styles, so `accessToken` in a message body is also hidden.
 
-Свои поля добавляйте через `sanitize_keys`. Ключ без разделителей считается именем поля
-и маскируется на любом уровне вложенности, ключ с точкой, звёздочкой или скобками — путём
+Add your own fields with `sanitize_keys`. A key without separators is treated as a field name
+and masked at every depth; a key with a dot, star, or brackets is treated as a path
 [glom](https://glom.readthedocs.io/en/latest/):
 
 ```python
@@ -153,64 +155,64 @@ with_structlogger(
 )
 ```
 
-Отключить список по умолчанию можно только явно: `use_default_sanitize_keys=False`.
+Disable the default list explicitly with `use_default_sanitize_keys=False`.
 
-Маскирование не трогает само сообщение: `****` существует только в логе.
+Masking leaves the original message unchanged: `****` appears only in the log.
 
-Поле `details` — текст ошибки от сервиса — не маскируется и не обрезается: это свободная строка,
-а маскирование работает по именам полей и путям. Если сервис кладёт в статус что-то
-конфиденциальное, оно попадёт в лог как есть. Так же ведёт себя штатная `options.with_logger`.
+The `details` field, containing service error text, is neither masked nor truncated: it is free text,
+while masking works with field names and paths. If the service puts confidential information
+in the status, it appears in the log unchanged. The standard `options.with_logger` behaves the same way.
 
-## Параметры
+## Parameters
 
-| Параметр | Тип | Назначение |
+| Parameter | Type | Purpose |
 |---|---|---|
-| `logger` | `BoundLogger \| FilteringBoundLogger` | куда писать |
-| `sanitize_keys` | `Sequence[str] \| None` | имена полей и glom-пути, значения которых заменяются на `****` |
-| `json_indent` | `int \| None` | ширина отступа при сериализации JSON-свойств |
-| `log_level` | `int \| None` | уровень успешной записи, по умолчанию `INFO` |
-| `err_log_level` | `int \| None` | уровень записи о неуспешном вызове, по умолчанию `ERROR` |
-| `payload_maxlength` | `int \| None` | предел длины тела в логе, по умолчанию 4096 символов |
-| `use_default_sanitize_keys` | `bool` | маскировать ли типовые секреты на любой глубине, по умолчанию `True` |
+| `logger` | `BoundLogger \| FilteringBoundLogger` | where to write |
+| `sanitize_keys` | `Sequence[str] \| None` | field names and glom paths whose values are replaced with `****` |
+| `json_indent` | `int \| None` | indentation width for JSON properties |
+| `log_level` | `int \| None` | level for successful records; `INFO` by default |
+| `err_log_level` | `int \| None` | level for failed calls; `ERROR` by default |
+| `payload_maxlength` | `int \| None` | maximum logged body length; 4096 characters by default |
+| `use_default_sanitize_keys` | `bool` | mask common secrets at every depth; `True` by default |
 
-Уровни, отступ и предел длины тела можно задать сразу для всего проекта вызовом
-`grpc_client.configure_logging(...)`. То, что передали в `with_structlogger`, важнее общей настройки.
+Set levels, indentation, and body length limits for the whole project with
+`grpc_client.configure_logging(...)`. Values passed to `with_structlogger` override shared settings.
 
-Переменные окружения `GRPC_CLIENT_*` сами по себе ничего не меняют: их читает `configure_logging(...)`
-в момент вызова. Без этого вызова значения остаются библиотечными по умолчанию.
+`GRPC_CLIENT_*` environment variables have no effect on their own: `configure_logging(...)` reads them
+when called. Without that call, the library defaults remain in effect.
 
-`log_level` и `err_log_level` принимают только `DEBUG`, `INFO`, `WARNING`, `ERROR` и `CRITICAL`:
-bound-логгер structlog выбирает метод по имени уровня, а имена есть только у этих пяти.
-Промежуточное значение вроде `15` даст `ValueError` сразу, а не на первом запросе.
+`log_level` and `err_log_level` accept only `DEBUG`, `INFO`, `WARNING`, `ERROR`, and `CRITICAL`:
+structlog's bound logger selects a method by level name, and only these five names are available.
+An intermediate value such as `15` raises `ValueError` immediately, rather than on the first request.
 
-Уровень фильтрует сам structlog: если порог logger-а выше, чем `log_level`, запись не дойдёт
-до вывода, и опция будет выглядеть сломанной.
+structlog filters levels itself: if the logger threshold is above `log_level`, the record does not
+reach the output and the option may appear broken.
 
-## Разработка
+## Development
 
-Библиотека развивается в монорепозитории [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries)
-вместе с остальными библиотеками `cloudru-qa-*`. Нужны [`uv`](https://docs.astral.sh/uv/), GNU Make
-и [`checkmake`](https://github.com/checkmake/checkmake),
-команды запускаются из корня репозитория:
+The library is developed in the [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries) monorepo
+alongside the other `cloudru-qa-*` libraries. You need [`uv`](https://docs.astral.sh/uv/), GNU Make,
+and [`checkmake`](https://github.com/checkmake/checkmake).
+Run commands from the repository root:
 
 ```shell
-make sync                               # зависимости всех библиотек строго по uv.lock
-make test-grpc-client-structlog         # тесты этой библиотеки
-make typecheck-grpc-client-structlog    # mypy для этой библиотеки
-make check                              # форматирование, ruff, mypy и тесты всего набора
+make sync                               # install dependencies for all libraries from uv.lock
+make test-grpc-client-structlog         # tests for this library
+make typecheck-grpc-client-structlog    # mypy for this library
+make check                              # formatting, ruff, mypy, and tests for the entire workspace
 ```
 
-Тестам нужен запущенный Docker: gRPC сервис поднимается контейнером из `tests/docker-compose.yml`,
-образ собирается при первом прогоне. Если сервис уже поднят, контейнер можно не запускать —
-достаточно передать его адрес:
+Tests require Docker running: the gRPC service starts in a container from `tests/docker-compose.yml`,
+and its image is built on the first run. If the service is already running, skip starting the container
+by passing its address:
 
 ```shell
 uv run --no-sync python packages/grpc-client-structlog/tests/service.py &
 SERVICE_ADDR=localhost:50051 make test-grpc-client-structlog
 ```
 
-Тесты прогоняются на Python 3.13 и 3.14. Окружение для другой версии создаётся отдельно:
+Tests run on Python 3.13 and 3.14. Create a separate environment for another version:
 `make sync test-grpc-client-structlog PYTHON_VERSION=3.14`.
 
-Релиз выпускается git-тегом `grpc-client-structlog/v<версия>`. Версия в теге должна совпадать
-с версией в `packages/grpc-client-structlog/pyproject.toml`.
+Publish a release with the git tag `grpc-client-structlog/v<version>`. The tag version must match
+the version in `packages/grpc-client-structlog/pyproject.toml`.

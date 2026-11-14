@@ -1,59 +1,61 @@
-# Явные ожидания
+# Explicit waits
 
 [![PyPI](https://img.shields.io/pypi/v/cloudru-qa-explicit-wait)](https://pypi.org/project/cloudru-qa-explicit-wait/)
 [![Python](https://img.shields.io/pypi/pyversions/cloudru-qa-explicit-wait)](https://pypi.org/project/cloudru-qa-explicit-wait/)
 [![License](https://img.shields.io/pypi/l/cloudru-qa-explicit-wait)](https://github.com/cloud-ru-tech/qa-libraries/blob/master/LICENSE)
 
-Функции для явного ожидания событий в автотестах: синхронные и асинхронные, с диагностикой
-причины таймаута и без внешних зависимостей.
+English | [Русский](README.ru.md)
 
-- [Явные ожидания](#явные-ожидания)
-  - [Установка](#установка)
-  - [Скиллы для AI-агентов](#скиллы-для-ai-агентов)
-  - [Быстрый старт](#быстрый-старт)
-  - [Функции ожидания](#функции-ожидания)
-  - [Параметры](#параметры)
+Functions for explicit waits in automated tests: synchronous and asynchronous, with timeout
+diagnostics and no external dependencies.
+
+- [Explicit waits](#explicit-waits)
+  - [Installation](#installation)
+  - [Skills for AI agents](#skills-for-ai-agents)
+  - [Quick start](#quick-start)
+  - [Wait functions](#wait-functions)
+  - [Parameters](#parameters)
     - [`timeout_seconds`](#timeout_seconds)
     - [`sleep_seconds`](#sleep_seconds)
     - [`max_attempts`](#max_attempts)
     - [`message`](#message)
-    - [`expected_exceptions` и `retry_on_exception`](#expected_exceptions-и-retry_on_exception)
-    - [`on_attempt`, `on_timeout` и `on_attempts_exhausted`](#on_attempt-on_timeout-и-on_attempts_exhausted)
+    - [`expected_exceptions` and `retry_on_exception`](#expected_exceptions-and-retry_on_exception)
+    - [`on_attempt`, `on_timeout`, and `on_attempts_exhausted`](#on_attempt-on_timeout-and-on_attempts_exhausted)
     - [`cancel_event`](#cancel_event)
-    - [`clock` и `sleeper`](#clock-и-sleeper)
-  - [Диагностика таймаута](#диагностика-таймаута)
-  - [Иерархия исключений](#иерархия-исключений)
-  - [Агрегация предикатов](#агрегация-предикатов)
-  - [Асинхронные ожидания](#асинхронные-ожидания)
-  - [Декораторы](#декораторы)
-  - [Конфигурация](#конфигурация)
-  - [Логирование и отчёты](#логирование-и-отчёты)
-  - [Расширение](#расширение)
-  - [Разработка](#разработка)
+    - [`clock` and `sleeper`](#clock-and-sleeper)
+  - [Timeout diagnostics](#timeout-diagnostics)
+  - [Exception hierarchy](#exception-hierarchy)
+  - [Combining predicates](#combining-predicates)
+  - [Asynchronous waits](#asynchronous-waits)
+  - [Decorators](#decorators)
+  - [Configuration](#configuration)
+  - [Logging and reports](#logging-and-reports)
+  - [Extending the library](#extending-the-library)
+  - [Development](#development)
 
-## Установка
+## Installation
 
-Требуется Python 3.13 или новее.
+Requires Python 3.13 or later.
 
 ```shell
 pip install cloudru-qa-explicit-wait
 ```
 
-Библиотека импортируется как модуль `explicit_wait`.
+Import the library as the `explicit_wait` module.
 
-## Скиллы для AI-агентов
+## Skills for AI agents
 
-В пакет включён скилл [`explicit-wait-usage`](https://github.com/cloud-ru-tech/qa-libraries/blob/master/.agents/skills/explicit-wait-usage/SKILL.md)
-с примерами и правилами использования библиотеки для AI-агентов. Установите библиотеку
-в окружение своего проекта, затем из его корня выполните (нужен [`uv`](https://docs.astral.sh/uv/)):
+The package includes the [`explicit-wait-usage`](https://github.com/cloud-ru-tech/qa-libraries/blob/master/.agents/skills/explicit-wait-usage/SKILL.md) skill
+with examples and usage rules for AI agents. Install the library
+in your project environment, then run this from its root (requires [`uv`](https://docs.astral.sh/uv/)):
 
 ```shell
 uvx library-skills install --skill explicit-wait-usage --yes
 ```
 
-Для Claude Code добавьте `--claude`. Инструкции поставляются вместе с версией библиотеки.
+For Claude Code, add `--claude`. The instructions are shipped with the library version.
 
-## Быстрый старт
+## Quick start
 
 ```python
 from explicit_wait import WaitOptions
@@ -62,45 +64,45 @@ from explicit_wait import wait_until
 
 
 def get_users() -> list[User]:
-    """Получаем список пользователей."""
+    """Get the list of users."""
     response = client.send(...)
     return response.model()
 
 
-# Ждём, пока в списке не появится 2 пользователя
+# Wait until the list contains 2 users
 wait_until(
     lambda: len(get_users()) == 2,
-    options=WaitOptions(timeout_seconds=30, message="в списке появится 2 пользователя"),
+    options=WaitOptions(timeout_seconds=30, message="the list contains 2 users"),
 )
 ```
 
-Все параметры, кроме предиката, передаются только по имени — так вызов нельзя прочитать
-неправильно, а таймаут невозможно случайно передать как паузу.
+All parameters except the predicate are keyword-only. This makes calls unambiguous
+and prevents accidentally passing the timeout as the sleep interval.
 
-## Функции ожидания
+## Wait functions
 
-| Функция | Что делает | Что возвращает |
+| Function | Behavior | Returns |
 | --- | --- | --- |
-| `wait_until` | ждёт, пока предикат не вернёт значение, отличное от falsy | значение предиката |
-| `wait_or_none` | то же, но не падает при неудаче | значение предиката или `None` |
-| `wait_while` | ждёт, пока предикат не перестанет возвращать truthy | `None` |
-| `async_wait_until` | `wait_until` в event loop | значение предиката |
-| `async_wait_or_none` | `wait_or_none` в event loop | значение предиката или `None` |
-| `async_wait_while` | `wait_while` в event loop | `None` |
-| `wait_for` | декоратор: вызывает функцию до первого truthy-результата | значение функции |
-| `async_wait_for` | то же для корутинной функции | значение функции |
+| `wait_until` | waits until the predicate returns a non-falsy value | predicate value |
+| `wait_or_none` | the same, but does not raise on failure | predicate value or `None` |
+| `wait_while` | waits until the predicate stops returning a truthy value | `None` |
+| `async_wait_until` | `wait_until` in an event loop | predicate value |
+| `async_wait_or_none` | `wait_or_none` in an event loop | predicate value or `None` |
+| `async_wait_while` | `wait_while` in an event loop | `None` |
+| `wait_for` | decorator: calls the function until its first truthy result | function value |
+| `async_wait_for` | the same for a coroutine function | function value |
 
-**Falsy значения** — это значения, которые ведут себя как ложь в логических операциях:
+**Falsy values** are values that act as false in boolean operations:
 `False`, `0`, `""`, `None`, `[]`, `{}`.
 
-## Параметры
+## Parameters
 
-Настройки одного ожидания передаются через `options=WaitOptions(...)`. Объект можно использовать повторно.
+Pass settings for a wait through `options=WaitOptions(...)`. You can reuse this object.
 
 ### `timeout_seconds`
 
-Максимальное время ожидания в секундах. `None` — взять значение из конфигурации
-(по умолчанию 64 секунды). Чтобы ждать бесконечно, нужно указать это явно:
+Maximum wait time in seconds. `None` uses the configuration value
+(64 seconds by default). To wait forever, request it explicitly:
 
 ```python
 from explicit_wait import WaitOptions
@@ -110,30 +112,30 @@ import math
 wait_until(predicate, options=WaitOptions(timeout_seconds=math.inf, max_attempts=100))
 ```
 
-Нуль, отрицательное значение и `NaN` отклоняются с `ValueError`.
+Zero, negative values, and `NaN` raise `ValueError`.
 
 ### `sleep_seconds`
 
-Пауза между попытками. Задаётся числом, кортежем или объектом `Backoff`:
+Pause between attempts. Set it with a number, a tuple, or a `Backoff` object:
 
 ```python
 from explicit_wait import WaitOptions
 
 from explicit_wait import Backoff, wait_until
 
-# Постоянный интервал 1 секунда
+# Constant 1-second interval
 wait_until(predicate, options=WaitOptions(sleep_seconds=1))
 
-# Рост с множителем 2 до максимума: 1, 2, 4, 8, 16, 32, 64, 100, 100, ...
+# Grow by a factor of 2 up to the maximum: 1, 2, 4, 8, 16, 32, 64, 100, 100, ...
 wait_until(predicate, options=WaitOptions(sleep_seconds=(1, 100)))
 
-# Рост с заданным множителем: 1, 3, 9, 27, 81, 100, 100, ...
+# Grow by a specified factor: 1, 3, 9, 27, 81, 100, 100, ...
 wait_until(predicate, options=WaitOptions(sleep_seconds=(1, 100, 3)))
 
-# Рост без ограничения сверху: 1, 2, 4, 8, 16, ...
+# Grow without an upper bound: 1, 2, 4, 8, 16, ...
 wait_until(predicate, options=WaitOptions(sleep_seconds=(1, None)))
 
-# Явная стратегия с джиттером: из каждой паузы случайно вычитается до 20%
+# Explicit strategy with jitter: randomly subtract up to 20% from each pause
 wait_until(
     predicate,
     options=WaitOptions(
@@ -147,58 +149,58 @@ wait_until(
 )
 ```
 
-Джиттер нужен, когда параллельные тесты опрашивают один и тот же сервис: без него их
-запросы выстраиваются в синхронные волны.
+Jitter helps when parallel tests poll the same service: without it,
+their requests arrive in synchronized waves.
 
-Значения проверяются при создании стратегии, а не «где-то потом» внутри `time.sleep`:
+Values are checked when the strategy is created, rather than later inside `time.sleep`:
 
-- начальный интервал — конечное число больше нуля;
-- максимум — конечное число не меньше начального интервала либо `None`;
-- множитель — конечное число не меньше 1;
-- джиттер — число в диапазоне `[0, 1)`;
-- кортеж — ровно 2 или 3 элемента, `None` допустим только в позиции максимума.
+- initial interval — a finite number greater than zero;
+- maximum — a finite number at least as large as the initial interval, or `None`;
+- multiplier — a finite number greater than or equal to 1;
+- jitter — a number in the range `[0, 1)`;
+- tuple — exactly 2 or 3 items; `None` is allowed only for the maximum.
 
 ### `max_attempts`
 
-Ограничение по числу попыток вместо или вместе с ограничением по времени. При исчерпании
-попыток выбрасывается `AttemptsExhaustedError`.
+Limit the number of attempts instead of, or together with, the time limit. Exhausting
+attempts raises `AttemptsExhaustedError`.
 
 ```python
 from explicit_wait import WaitOptions
 
 wait_until(predicate, options=WaitOptions(max_attempts=5, sleep_seconds=2))
 
-# Снять ограничение, заданное в конфигурации, для одного ожидания
+# Remove the configured limit for one wait
 wait_until(predicate, options=WaitOptions(max_attempts=None))
 ```
 
-Пропущенный аргумент означает «взять значение из конфигурации», явный `None` — «ограничения
-по числу попыток нет». То же различие действует в `configure` и `configured`.
+An omitted argument means "use the configuration value"; explicit `None` means "no limit
+on the number of attempts". The same distinction applies to `configure` and `configured`.
 
-Если дедлайн уже наступил, причиной остановки считается время, а не попытки: сначала
-проверяется дедлайн, затем лимит попыток, затем возможность вместить следующую паузу.
+If the deadline has already passed, time is the stopping reason, rather than attempts: first
+check the deadline, then the attempt limit, then whether the next pause fits.
 
 ### `message`
 
-Человекочитаемое описание того, чего ждём. Попадает в текст ошибки, поэтому упавший тест
-объясняет себя сам. Без `message` подставляется имя функции-предиката; для лямбды это
-малоинформативно, поэтому с лямбдами `message` стоит указывать всегда.
+A readable description of what you are waiting for. It appears in the error message, so a failed test
+explains itself. Without `message`, the predicate function's name is used; for a lambda this
+is not informative, so always provide `message` with lambdas.
 
-Адрес объекта и `repr` аргументов в сообщение не попадают — в логи не утекут ни бесполезные
-адреса, ни чувствительные данные из аргументов `functools.partial`.
+The object address and argument `repr` are excluded from the message, keeping useless
+addresses and sensitive data from `functools.partial` arguments out of logs.
 
-### `expected_exceptions` и `retry_on_exception`
+### `expected_exceptions` and `retry_on_exception`
 
-`expected_exceptions` — исключения предиката, которые считаются нормальной частью ожидания.
-`retry_on_exception` — дополнительный фильтр: повторять попытку или пробросить ошибку наружу.
+`expected_exceptions` lists predicate exceptions treated as a normal part of waiting.
+`retry_on_exception` adds a filter: retry or propagate the error.
 
 ```python
 from explicit_wait import WaitOptions
 
-# Ждём, пока сервис поднимется, игнорируя ошибки соединения
+# Wait for the service to start, ignoring connection errors
 wait_until(predicate, options=WaitOptions(expected_exceptions=(ConnectionError, TimeoutError)))
 
-# Ретраим только 5xx, а 4xx пробрасываем сразу
+# Retry only 5xx responses and propagate 4xx errors immediately
 wait_until(
     predicate,
     options=WaitOptions(
@@ -208,18 +210,18 @@ wait_until(
 )
 ```
 
-Фильтр получает исключение как `Exception`, поэтому обращаться к полям конкретного класса
-нужно после `isinstance`: типы `expected_exceptions` и `retry_on_exception` между собой
-не связаны.
+The filter receives the exception as `Exception`, so use `isinstance` before accessing
+class-specific fields: the types of `expected_exceptions` and `retry_on_exception`
+are not linked.
 
-Исключение, не попавшее в `expected_exceptions`, пробрасывается наружу без изменений вместе
-с исходным traceback. `KeyboardInterrupt`, `SystemExit` и `asyncio.CancelledError` не
-перехватываются никогда.
+An exception outside `expected_exceptions` propagates unchanged with its original
+traceback. `KeyboardInterrupt`, `SystemExit`, and `asyncio.CancelledError` are
+never caught.
 
-Ошибки самой библиотеки (`WaitError` и его наследники) не считаются ожидаемыми ни при каких
-`expected_exceptions`. Иначе таймаут вложенного ожидания молча превратился бы в очередную
-неудачную попытку внешнего. Если повтор по вложенному ожиданию всё же нужен, преобразуйте
-его в falsy-результат внутри предиката:
+The library's own errors (`WaitError` and its subclasses) are never expected, regardless of
+`expected_exceptions`. Otherwise, a nested wait's timeout would silently become another
+failed attempt in the outer wait. To retry a nested wait anyway, convert its error
+to a falsy result inside the predicate:
 
 ```python
 from explicit_wait import WaitOptions
@@ -227,9 +229,9 @@ from explicit_wait import WaitOptions
 wait_until(lambda: wait_or_none(inner_condition, options=WaitOptions(timeout_seconds=5)) is not None)
 ```
 
-### `on_attempt`, `on_timeout` и `on_attempts_exhausted`
+### `on_attempt`, `on_timeout`, and `on_attempts_exhausted`
 
-Хуки получают объект `Attempt`:
+Hooks receive an `Attempt` object:
 
 ```python
 from explicit_wait import WaitOptions
@@ -238,45 +240,45 @@ from explicit_wait import Attempt, wait_until
 
 
 def log_attempt(attempt: Attempt) -> None:
-    print(f"попытка {attempt.number}: {attempt.result!r}, прошло {attempt.elapsed_seconds:.1f}s")
+    print(f"attempt {attempt.number}: {attempt.result!r}, elapsed {attempt.elapsed_seconds:.1f}s")
 
 
 wait_until(predicate, options=WaitOptions(on_attempt=log_attempt))
 ```
 
-| Поле `Attempt` | Значение |
+| `Attempt` field | Value |
 | --- | --- |
-| `number` | номер попытки, начиная с 1 |
-| `elapsed_seconds` | время с начала ожидания |
-| `result` | результат предиката (`None`, если он завершился ожидаемым исключением) |
-| `exception` | ожидаемое исключение предиката или `None` |
-| `next_sleep_seconds` | пауза перед следующей попыткой или `None`, если она не запланирована |
-| `has_no_planned_sleep` | признак того, что на момент решения пауза не запланирована |
+| `number` | attempt number, starting at 1 |
+| `elapsed_seconds` | time since the wait started |
+| `result` | predicate result (`None` if it raised an expected exception) |
+| `exception` | expected predicate exception or `None` |
+| `next_sleep_seconds` | pause before the next attempt, or `None` if none is planned |
+| `has_no_planned_sleep` | whether no pause is planned at the time of the decision |
 
-`has_no_planned_sleep` — снимок плана, а не гарантия финальности: попытка может оказаться
-последней и при запланированной паузе, если ожидание отменят извне, пробуждение случится
-позже заказанного или время израсходует сам хук.
+`has_no_planned_sleep` is a snapshot of the plan, not a guarantee that the attempt is final:
+an attempt with a planned pause may still be the last if the wait is canceled externally,
+wakes up late, or the hook itself uses up the remaining time.
 
-`on_attempt` вызывается после каждой попытки, включая попытки с falsy-результатом и попытки
-с ожидаемым исключением. Он не вызывается, если предикат выбросил неожидаемое исключение:
-такое ожидание прекращается немедленно.
+`on_attempt` runs after each attempt, including falsy results and expected exceptions.
+It does not run if the predicate raises an unexpected exception:
+that stops the wait immediately.
 
-`on_timeout` срабатывает только при остановке по времени, `on_attempts_exhausted` — только
-при исчерпании `max_attempts`. При отмене через `cancel_event` не вызывается ни один из них.
+`on_timeout` runs only when the time limit stops the wait; `on_attempts_exhausted` runs only
+when `max_attempts` is exhausted. Neither runs on cancellation through `cancel_event`.
 
-Время, потраченное хуками, учитывается в дедлайне: если `on_attempt` израсходовал остаток
-бюджета, запланированная пауза не выполняется, а причиной остановки становится наступивший
-дедлайн — даже если до хука уже были исчерпаны попытки. Диагностика в исключении и объект
-`Attempt`, который получает терминальный хук, снимаются одним чтением часов до вызова хука,
-поэтому его собственное время в них не попадает.
+Time spent in hooks counts toward the deadline: if `on_attempt` uses up the remaining
+budget, the planned pause is skipped and the elapsed deadline becomes the stopping reason,
+even if attempts had already been exhausted before the hook. Exception diagnostics and the
+`Attempt` passed to the terminal hook come from a single clock reading before the hook,
+so they do not include the hook's own duration.
 
-Исключение из самого хука пробрасывается наружу и **не** смешивается с исключениями
-предиката, даже если его тип указан в `expected_exceptions`.
+An exception raised by the hook itself propagates and is **not** treated as a predicate
+exception, even if its type is listed in `expected_exceptions`.
 
 ### `cancel_event`
 
-Позволяет прервать долгое ожидание извне. Когда параметр задан, пауза между попытками
-выполняется через `Event.wait`, поэтому параметр `sleeper` не используется.
+Allows a long wait to be canceled externally. When set, the pause between attempts
+uses `Event.wait`, so the `sleeper` parameter is not used.
 
 ```python
 from explicit_wait import WaitOptions
@@ -284,24 +286,24 @@ from explicit_wait import WaitOptions
 from threading import Event
 
 cancel = Event()
-# из другого потока: cancel.set()
+# from another thread: cancel.set()
 
 wait_until(predicate, options=WaitOptions(timeout_seconds=600), cancel_event=cancel)
 ```
 
-При отмене выбрасывается `WaitCancelledError`. `wait_or_none` его не подавляет: отмена —
-это не «не дождались».
+Cancellation raises `WaitCancelledError`. `wait_or_none` does not suppress it: cancellation
+is different from failing to satisfy the condition.
 
-В асинхронном варианте отдельный параметр не нужен — работает штатная отмена задачи.
+The asynchronous version needs no separate parameter: standard task cancellation works.
 
-### `clock` и `sleeper`
+### `clock` and `sleeper`
 
-Источник времени и функция сна. Позволяют тестировать код с ожиданиями без реальных пауз.
-По умолчанию — `time.monotonic` и `time.sleep` (`asyncio.sleep` в асинхронных функциях).
+Time source and sleep function. These let you test waiting code without real pauses.
+Defaults are `time.monotonic` and `time.sleep` (`asyncio.sleep` in asynchronous functions).
 
-## Диагностика таймаута
+## Timeout diagnostics
 
-Ошибка остановки несёт всё, что нужно для разбора упавшего теста:
+The stopping error carries everything needed to investigate a failed test:
 
 ```python
 from explicit_wait import WaitOptions
@@ -310,73 +312,74 @@ from explicit_wait import TimeoutExpiredError, wait_until
 
 try:
     wait_until(
-        lambda: get_order().status == "ready", options=WaitOptions(timeout_seconds=30, message="заказ станет ready")
+        lambda: get_order().status == "ready",
+        options=WaitOptions(timeout_seconds=30, message="the order becomes ready"),
     )
 except TimeoutExpiredError as error:
-    print(error.attempts)  # сколько было попыток
-    print(error.elapsed_seconds)  # сколько реально прошло
-    print(error.last_result)  # что предикат вернул в последний раз
-    print(error.last_exception)  # какое ожидаемое исключение было последним
+    print(error.attempts)  # number of attempts
+    print(error.elapsed_seconds)  # actual elapsed time
+    print(error.last_result)  # last predicate result
+    print(error.last_exception)  # last expected exception
 ```
 
-Текст ошибки собирается из этих же полей. Чаще всего ожидание останавливается потому, что
-следующая пауза уже не помещается до дедлайна — тогда `deadline_reached` равно `False`:
+The error message uses the same fields. Most waits stop because the next pause
+would no longer fit before the deadline; in this case, `deadline_reached` is `False`:
 
 ```text
-No further attempt could start before the 30 second deadline waiting for заказ станет ready (attempts: 4, elapsed: 14.000s, last result: False)
+No further attempt could start before the 30 second deadline waiting for the order becomes ready (attempts: 4, elapsed: 14.000s, last result: False)
 ```
 
-Если дедлайн действительно наступил — например, его израсходовал сам предикат или пробуждение
-случилось позже заказанного, — сообщение другое, а `deadline_reached` равно `True`:
+If the deadline has actually passed, for example because the predicate used up the time or the wait
+woke up late, the message differs and `deadline_reached` is `True`:
 
 ```text
-Timeout of 30 seconds expired waiting for заказ станет ready (attempts: 3, elapsed: 30.500s, last result: False)
+Timeout of 30 seconds expired waiting for the order becomes ready (attempts: 3, elapsed: 30.500s, last result: False)
 ```
 
-Если попытки падали с ожидаемым исключением, оно попадает и в сообщение, и в `__cause__`,
-поэтому traceback показывает исходную причину:
+If attempts raised an expected exception, it appears in both the message and `__cause__`,
+so the traceback shows the original cause:
 
 ```text
-No further attempt could start before the 30 second deadline waiting for сервис ответит (attempts: 4, elapsed: 14.002s, last exception: ConnectionError: [Errno 61] Connection refused)
+No further attempt could start before the 30 second deadline waiting for the service responds (attempts: 4, elapsed: 14.002s, last exception: ConnectionError: [Errno 61] Connection refused)
 ```
 
-Слишком длинный `repr` последнего результата обрезается, чтобы не раздувать отчёт.
+An overly long `repr` of the last result is truncated to keep the report compact.
 
-## Иерархия исключений
+## Exception hierarchy
 
 ```text
 WaitError
-├── WaitStoppedError            — дождаться не удалось
-│   ├── TimeoutExpiredError     — истекло время (наследуется и от встроенного TimeoutError)
-│   └── AttemptsExhaustedError  — исчерпаны попытки max_attempts
-├── InvalidPredicateError       — предикат нарушил контракт (наследуется и от TypeError)
-└── WaitCancelledError          — ожидание прервано через cancel_event
+├── WaitStoppedError            — the condition was not satisfied
+│   ├── TimeoutExpiredError     — time expired (also inherits from built-in TimeoutError)
+│   └── AttemptsExhaustedError  — max_attempts exhausted
+├── InvalidPredicateError       — predicate violated the contract (also inherits from TypeError)
+└── WaitCancelledError          — wait interrupted through cancel_event
 ```
 
-`InvalidPredicateError` наследуется от `TypeError`, поэтому ловится привычным способом, и от
-`WaitError`, поэтому его нельзя случайно поглотить через `expected_exceptions`.
+`InvalidPredicateError` inherits from `TypeError`, so it can be caught as usual, and from
+`WaitError`, so `expected_exceptions` cannot accidentally swallow it.
 
-Все исключения переживают `pickle`, `copy` и `deepcopy` вместе со своими полями, заметками
-`add_note` и состоянием пользовательских наследников. Исключение не сериализуется, если
-несериализуем сам `last_result` или `last_exception`.
+All exceptions support `pickle`, `copy`, and `deepcopy`, including their fields, `add_note`
+notes, and custom subclass state. An exception cannot be serialized if its
+`last_result` or `last_exception` cannot be serialized.
 
-`TimeoutExpiredError` наследуется от встроенного `TimeoutError`, поэтому таймауты этой
-библиотеки и `asyncio` ловятся одним `except TimeoutError`. Таймауты httpx в эту иерархию
-не входят — `httpx.TimeoutException` наследуется от `httpx.TransportError`, и его нужно
-перехватывать отдельно:
+`TimeoutExpiredError` inherits from built-in `TimeoutError`, so one `except TimeoutError`
+catches timeouts from both this library and `asyncio`. httpx timeouts are outside this
+hierarchy: `httpx.TimeoutException` inherits from `httpx.TransportError` and must be
+caught separately:
 
 ```python
 except (TimeoutError, httpx.TimeoutException):
     ...
 ```
 
-Поле `deadline_reached` у `TimeoutExpiredError` различает две ситуации: дедлайн действительно
-наступил либо очередная пауза в него уже не помещалась и начинать попытку было бессмысленно.
+The `deadline_reached` field on `TimeoutExpiredError` distinguishes between a deadline
+that has actually passed and a next pause that could not fit before it, making another attempt pointless.
 
-## Агрегация предикатов
+## Combining predicates
 
-`AllOf` истинно, когда **все** предикаты истинны одновременно; `AnyOf` — когда истинен хотя
-бы один. Предикаты вызываются в порядке перечисления и вычисляются по короткой схеме.
+`AllOf` is true when **all** predicates are true at once; `AnyOf` is true when at least
+one is true. Predicates run in the listed order with short-circuit evaluation.
 
 ```python
 from explicit_wait import WaitOptions
@@ -385,24 +388,24 @@ from explicit_wait import AllOf, AnyOf, wait_until
 
 wait_until(
     AnyOf([lambda: get_status() == "ready", lambda: get_status() == "completed"]),
-    options=WaitOptions(timeout_seconds=30, message="статус станет ready или completed"),
+    options=WaitOptions(timeout_seconds=30, message="the status becomes ready or completed"),
 )
 
 wait_until(
     AllOf([users_loaded, settings_loaded, profile_loaded]),
-    options=WaitOptions(timeout_seconds=60, message="все данные загрузятся"),
+    options=WaitOptions(timeout_seconds=60, message="all data is loaded"),
 )
 ```
 
-Агрегаты не хранят состояние между вызовами: один и тот же объект можно переиспользовать в
-нескольких ожиданиях и вызывать из нескольких потоков. Композиция собирается операторами:
+Combinations keep no state between calls: reuse the same object across waits
+and call it from multiple threads. Build compositions with operators:
 
 ```python
 ready = AnyOf([status_is("ready"), status_is("completed")]) & AllOf([cache_warm, index_built])
 ```
 
-Для асинхронных предикатов есть `AsyncAllOf` и `AsyncAnyOf` — они дожидаются каждого предиката
-и тоже вычисляются по короткой схеме:
+For asynchronous predicates, use `AsyncAllOf` and `AsyncAnyOf`: they await each predicate
+and also use short-circuit evaluation:
 
 ```python
 from explicit_wait import WaitOptions
@@ -411,22 +414,22 @@ from explicit_wait import AsyncAllOf, async_wait_until
 
 await async_wait_until(
     AsyncAllOf([order_is_paid, invoice_is_issued]),
-    options=WaitOptions(timeout_seconds=30, message="заказ оплачен и счёт выставлен"),
+    options=WaitOptions(timeout_seconds=30, message="the order is paid and the invoice is issued"),
 )
 ```
 
-Синхронные `AllOf` и `AnyOf` асинхронные предикаты не принимают и падают с `TypeError`:
-корутина — truthy-объект, поэтому незамеченной она превратила бы ложное условие в успешное.
+Synchronous `AllOf` and `AnyOf` reject asynchronous predicates with `TypeError`:
+a coroutine is truthy, so accepting it would turn a false condition into a success.
 
-## Асинхронные ожидания
+## Asynchronous waits
 
-Пауза между попытками выполняется через `asyncio.sleep` и не блокирует event loop, поэтому
-фоновые задачи продолжают выполняться между попытками. Предикат может быть как корутинной,
-так и обычной функцией — обычная вызывается прямо в event loop, поэтому она сама и все хуки
-(`on_attempt`, `on_timeout`, `on_attempts_exhausted`) обязаны быть неблокирующими:
-`time.sleep`, файловый ввод-вывод или синхронный HTTP-клиент внутри них остановят весь loop.
+The pause between attempts uses `asyncio.sleep` without blocking the event loop, so
+background tasks continue between attempts. A predicate may be a coroutine
+or a regular function. Regular functions run directly in the event loop, so they and all hooks
+(`on_attempt`, `on_timeout`, `on_attempts_exhausted`) must be non-blocking:
+`time.sleep`, file I/O, or a synchronous HTTP client inside them blocks the entire loop.
 
-Если предикат возвращает awaitable, он всегда ожидается, а не считается конечным значением.
+If the predicate returns an awaitable, it is always awaited rather than treated as the final value.
 
 ```python
 from explicit_wait import WaitOptions
@@ -439,13 +442,13 @@ async def order_is_ready() -> bool:
     return response.json()["status"] == "ready"
 
 
-await async_wait_until(order_is_ready, options=WaitOptions(timeout_seconds=30, message="заказ станет ready"))
+await async_wait_until(order_is_ready, options=WaitOptions(timeout_seconds=30, message="the order becomes ready"))
 ```
 
-Отмена работает штатно: `asyncio.CancelledError` не перехватывается, поэтому
-`task.cancel()` прерывает ожидание даже при `expected_exceptions=Exception`.
+Cancellation works as usual: `asyncio.CancelledError` is not caught, so
+`task.cancel()` interrupts the wait even with `expected_exceptions=Exception`.
 
-## Декораторы
+## Decorators
 
 ```python
 from explicit_wait import WaitOptions
@@ -458,50 +461,50 @@ def deploy_finished() -> bool:
     return client.get("/deploy").json()["done"]
 
 
-deploy_finished()  # вернётся, когда деплой завершится
+deploy_finished()  # returns when deployment finishes
 ```
 
-Имя декорированной функции подставляется в сообщение об ошибке. Для корутинных функций —
+The decorated function's name appears in the error message. For coroutine functions, use
 `async_wait_for`.
 
-## Конфигурация
+## Configuration
 
 ```python
 from explicit_wait import configure, configured, get_config, reset_config
 
-# Значения по умолчанию для всех ожиданий в процессе
+# Defaults for all waits in the process
 configure(sleep_seconds=(2, 64), timeout_seconds=64)
 
-# Временное переопределение только внутри блока, снимается в том числе при исключении
+# Temporary override within the block, restored even if an exception occurs
 with configured(timeout_seconds=5):
     wait_until(predicate)
 
-# Текущие значения и возврат к исходным
+# Current values and reset to original defaults
 get_config()
 reset_config()
 ```
 
-Конфигурация — неизменяемый объект `WaitConfig`, поэтому «полуприменённого» состояния из
-несогласованных полей не бывает, а некорректные значения отклоняются сразу при вызове
-`configure`. Явно переданный аргумент функции ожидания всегда важнее конфигурации.
-Одновременные вызовы `configure` из разных потоков сериализуются блокировкой, поэтому
-обновления не теряются.
+Configuration is an immutable `WaitConfig` object. It cannot be left partly applied
+with inconsistent fields, and invalid values are rejected as soon as you call
+`configure`. An explicit wait function argument always overrides the configuration.
+Concurrent `configure` calls from different threads are serialized with a lock,
+so updates are not lost.
 
-Области видимости у `configure` и `configured` разные:
+`configure` and `configured` have different scopes:
 
-| Что | `configure` | `configured` |
+| Scope | `configure` | `configured` |
 | --- | --- | --- |
-| Текущий поток | видно | видно |
-| Другой поток, `ThreadPoolExecutor` | видно | **не видно** |
-| Задача `asyncio`, созданная внутри блока | видно | видно |
-| `asyncio.to_thread` | видно | видно |
+| Current thread | visible | visible |
+| Another thread, `ThreadPoolExecutor` | visible | **not visible** |
+| `asyncio` task created inside the block | visible | visible |
+| `asyncio.to_thread` | visible | visible |
 
-`configured` хранит переопределение в `contextvars`, поэтому оно наследуется контекстом
-корутин, но не обычными потоками. Задача, созданная внутри блока и пережившая выход из него,
-продолжит видеть переопределение — контекст фиксируется в момент создания задачи.
+`configured` stores the override in `contextvars`, so coroutine contexts inherit it,
+but regular threads do not. A task created inside the block that outlives it
+keeps the override: its context is captured when the task is created.
 
-В тестах глобальную конфигурацию стоит сбрасывать между тестами, иначе результат начнёт
-зависеть от порядка запуска:
+Reset global configuration between tests, otherwise results can depend
+on the test execution order:
 
 ```python
 import pytest
@@ -515,13 +518,13 @@ def reset_wait_config():
     reset_config()
 ```
 
-Значения можно собрать из переменных окружения — это удобно, чтобы поднять таймауты на
-медленном CI, не меняя код:
+Read values from environment variables to increase timeouts on slow CI
+without changing the code:
 
 ```python
 from explicit_wait import WaitConfig, configure
 
-config = WaitConfig.from_env()  # префикс по умолчанию EXPLICIT_WAIT_
+config = WaitConfig.from_env()  # default prefix is EXPLICIT_WAIT_
 configure(
     timeout_seconds=config.timeout_seconds,
     sleep_seconds=config.backoff,
@@ -529,16 +532,16 @@ configure(
 )
 ```
 
-| Переменная | Формат | Пример |
+| Variable | Format | Example |
 | --- | --- | --- |
-| `EXPLICIT_WAIT_TIMEOUT_SECONDS` | число | `120` |
-| `EXPLICIT_WAIT_SLEEP_SECONDS` | число или `начальная,максимальная[,множитель]` | `2,64,2` или `1,none` |
-| `EXPLICIT_WAIT_MAX_ATTEMPTS` | целое число | `10` |
+| `EXPLICIT_WAIT_TIMEOUT_SECONDS` | number | `120` |
+| `EXPLICIT_WAIT_SLEEP_SECONDS` | number or `initial,maximum[,multiplier]` | `2,64,2` or `1,none` |
+| `EXPLICIT_WAIT_MAX_ATTEMPTS` | integer | `10` |
 
-## Логирование и отчёты
+## Logging and reports
 
-Библиотека пишет каждую попытку в стандартный логгер на уровне `DEBUG` и не настраивает
-обработчики сама:
+The library logs each attempt at `DEBUG` level using the standard logger and does not
+configure handlers itself:
 
 ```python
 import logging
@@ -546,7 +549,7 @@ import logging
 logging.getLogger("explicit_wait").setLevel(logging.DEBUG)
 ```
 
-Шаги для Allure собираются из хука — отдельная зависимость для этого не нужна:
+Build Allure steps with a hook; no separate dependency is needed:
 
 ```python
 from explicit_wait import WaitOptions
@@ -556,18 +559,18 @@ from explicit_wait import Attempt, wait_until
 
 
 def report_attempt(attempt: Attempt) -> None:
-    with allure.step(f"Попытка {attempt.number}: {attempt.result!r}"):
+    with allure.step(f"Attempt {attempt.number}: {attempt.result!r}"):
         pass
 
 
-wait_until(predicate, options=WaitOptions(on_attempt=report_attempt, message="заказ станет ready"))
+wait_until(predicate, options=WaitOptions(on_attempt=report_attempt, message="the order becomes ready"))
 ```
 
-## Расширение
+## Extending the library
 
-Корень пакета экспортирует только стабильный API: функции ожидания, агрегаты, `Backoff`,
-`Attempt`, конфигурацию, исключения и маркер `UNSET`. Вспомогательные псевдонимы типов и
-абстрактные базовые классы доступны из своих модулей и стабильным API не считаются:
+The package root exports only the stable API: wait functions, combinations, `Backoff`,
+`Attempt`, configuration, exceptions, and the `UNSET` marker. Helper type aliases and
+abstract base classes are available from their own modules and are not part of the stable API:
 
 ```python
 from explicit_wait.aggregate import Aggregate, AsyncAggregate
@@ -575,39 +578,39 @@ from explicit_wait.backoff import SleepSecondsType
 from explicit_wait.types import AsyncPredicate, Clock, ExceptionFilter, ExceptionsType, Predicate, Sleeper
 ```
 
-Свой агрегат наследуется от `Aggregate` (или `AsyncAggregate`) и реализует `__call__`:
+To implement a custom combination, inherit from `Aggregate` (or `AsyncAggregate`) and implement `__call__`:
 
 ```python
 from explicit_wait.aggregate import Aggregate
 
 
 class MajorityOf(Aggregate):
-    """Истинно, когда истинно большинство предикатов."""
+    """True when most predicates are true."""
 
     def __call__(self) -> bool:
         passed = sum(1 for predicate in self.predicates if self.check(predicate))
         return passed * 2 > len(self.predicates)
 ```
 
-Предикаты в своём агрегате нужно вызывать только через `self.check(...)`: он отвергает
-асинхронный результат, который иначе молча превратил бы ложное условие в успешное.
+Call predicates in a custom combination only through `self.check(...)`: it rejects
+asynchronous results that would otherwise silently turn a false condition into a success.
 
-## Разработка
+## Development
 
-Библиотека развивается в монорепозитории [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries)
-вместе с остальными библиотеками `cloudru-qa-*`. Нужны [`uv`](https://docs.astral.sh/uv/), GNU Make
-и [`checkmake`](https://github.com/checkmake/checkmake),
-команды запускаются из корня репозитория:
+The library is developed in the [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries) monorepo
+alongside the other `cloudru-qa-*` libraries. You need [`uv`](https://docs.astral.sh/uv/), GNU Make,
+and [`checkmake`](https://github.com/checkmake/checkmake).
+Run commands from the repository root:
 
 ```shell
-make sync                        # зависимости всех библиотек строго по uv.lock
-make test-explicit-wait          # тесты этой библиотеки
-make typecheck-explicit-wait     # mypy для этой библиотеки
-make check                       # форматирование, ruff, mypy и тесты всего набора
+make sync                        # install dependencies for all libraries from uv.lock
+make test-explicit-wait          # tests for this library
+make typecheck-explicit-wait     # mypy for this library
+make check                       # formatting, ruff, mypy, and tests for the entire workspace
 ```
 
-Тесты прогоняются на Python 3.13 и 3.14. Окружение для другой версии создаётся отдельно:
+Tests run on Python 3.13 and 3.14. Create a separate environment for another version:
 `make sync test-explicit-wait PYTHON_VERSION=3.14`.
 
-Релиз выпускается git-тегом `explicit-wait/v<версия>`. Версия в теге должна совпадать с версией
-в `packages/explicit-wait/pyproject.toml`.
+Publish a release with the git tag `explicit-wait/v<version>`. The tag version must match the version
+in `packages/explicit-wait/pyproject.toml`.

@@ -18,10 +18,10 @@ NONE_ALIASES = frozenset({"", "none", "null"})
 
 @dataclass(frozen=True, slots=True)
 class WaitConfig:
-    """Значения по умолчанию для функций ожидания.
+    """Default values for wait functions.
 
-    Объект неизменяемый: заменить настройки можно только целиком, поэтому «полуприменённое»
-    состояние из двух несогласованных полей невозможно.
+    The object is immutable: settings can only be replaced together, preventing
+    a partially applied state with two inconsistent fields.
     """
 
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS
@@ -29,26 +29,26 @@ class WaitConfig:
     max_attempts: int | None = None
 
     def __post_init__(self) -> None:
-        """Проверить корректность значений конфигурации.
+        """Validate configuration values.
 
-        :raises TypeError: если время или число попыток имеют неверный тип.
-        :raises ValueError: если значения выходят за допустимые границы.
+        :raises TypeError: if the time or attempt count has an invalid type.
+        :raises ValueError: if values are outside the allowed bounds.
         """
         validate_timeout_seconds(self.timeout_seconds)
         validate_max_attempts(self.max_attempts)
 
     @classmethod
     def from_env(cls, prefix: str = ENV_PREFIX) -> "WaitConfig":
-        """Собрать конфигурацию из переменных окружения.
+        """Build configuration from environment variables.
 
-        Читает ``<prefix>TIMEOUT_SECONDS``, ``<prefix>SLEEP_SECONDS`` и
-        ``<prefix>MAX_ATTEMPTS``. Пауза задаётся числом (``1.5``) либо перечислением через
-        запятую (``2,64`` или ``2,64,3``); ``none`` в позиции максимума снимает ограничение.
-        Незаданные переменные оставляют значение по умолчанию.
+        Read ``<prefix>TIMEOUT_SECONDS``, ``<prefix>SLEEP_SECONDS``, and
+        ``<prefix>MAX_ATTEMPTS``. Specify the pause as a number (``1.5``) or comma-separated
+        values (``2,64`` or ``2,64,3``); ``none`` in the maximum position removes the limit.
+        Unset variables keep their default values.
 
-        :param prefix: префикс имён переменных окружения.
-        :return: конфигурация ожиданий.
-        :raises ValueError: если значение переменной нельзя разобрать.
+        :param prefix: environment variable name prefix.
+        :return: wait configuration.
+        :raises ValueError: if a variable's value cannot be parsed.
         """
         defaults = cls()
         timeout = _read_env_float(f"{prefix}TIMEOUT_SECONDS")
@@ -63,10 +63,10 @@ class WaitConfig:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class WaitOptions:
-    """Параметры одного ожидания, дополняющие действующую конфигурацию.
+    """Parameters for one wait, extending the current configuration.
 
-    ``None`` у времени и паузы использует значения ``WaitConfig``.
-    ``UNSET`` у числа попыток использует значение ``WaitConfig``.
+    ``None`` for the timeout and pause uses the ``WaitConfig`` values.
+    ``UNSET`` for the attempt count uses the ``WaitConfig`` value.
     """
 
     timeout_seconds: float | None = None
@@ -89,9 +89,9 @@ _override: ContextVar[WaitConfig | None] = ContextVar("explicit_wait_config", de
 
 
 def get_config() -> WaitConfig:
-    """Получить действующую конфигурацию ожиданий.
+    """Get the current wait configuration.
 
-    :return: временное переопределение из ``configured``, иначе процессный дефолт.
+    :return: temporary override from ``configured``, otherwise the process default.
     """
     override = _override.get()
     return _ConfigState.baseline if override is None else override
@@ -103,18 +103,18 @@ def configure(
     sleep_seconds: SleepSecondsType | Backoff | None = None,
     max_attempts: MaxAttempts = UNSET,
 ) -> WaitConfig:
-    """Задать значения по умолчанию для всех ожиданий в процессе.
+    """Set defaults for all waits in the process.
 
-    Незаданные параметры сохраняют текущие значения. Для временного переопределения
-    в рамках теста или блока кода используйте ``configured``.
+    Omitted parameters keep their current values. Use ``configured`` for a temporary
+    override within a test or code block.
 
-    :param timeout_seconds: максимальное время ожидания; ``math.inf`` — ждать бесконечно.
-    :param sleep_seconds: пауза между попытками или стратегия ``Backoff``.
-    :param max_attempts: максимальное число попыток; None снимает ограничение,
-        пропущенный аргумент сохраняет текущее значение.
-    :return: применённая конфигурация.
-    :raises TypeError: если время или число попыток имеют неверный тип.
-    :raises ValueError: если числовые значения некорректны.
+    :param timeout_seconds: maximum wait time; ``math.inf`` waits forever.
+    :param sleep_seconds: pause between attempts or a ``Backoff`` strategy.
+    :param max_attempts: maximum number of attempts; None removes the limit,
+        while omitting the argument keeps the current value.
+    :return: applied configuration.
+    :raises TypeError: if the time or attempt count has an invalid type.
+    :raises ValueError: if numeric values are invalid.
     """
     with _ConfigState.lock:
         _ConfigState.baseline = _merge(
@@ -127,9 +127,9 @@ def configure(
 
 
 def reset_config() -> WaitConfig:
-    """Вернуть конфигурацию ожиданий к значениям по умолчанию.
+    """Reset the wait configuration to its defaults.
 
-    :return: конфигурация по умолчанию.
+    :return: default configuration.
     """
     with _ConfigState.lock:
         _ConfigState.baseline = WaitConfig()
@@ -143,18 +143,18 @@ def configured(
     sleep_seconds: SleepSecondsType | Backoff | None = None,
     max_attempts: MaxAttempts = UNSET,
 ) -> Iterator[WaitConfig]:
-    """Временно переопределить значения по умолчанию внутри блока.
+    """Temporarily override defaults within a block.
 
-    Переопределение действует в текущем контексте выполнения, включая корутины, и
-    гарантированно снимается при выходе из блока, в том числе при исключении.
+    The override applies in the current execution context, including coroutines,
+    and is always removed on block exit, including on exceptions.
 
-    :param timeout_seconds: максимальное время ожидания; ``math.inf`` — ждать бесконечно.
-    :param sleep_seconds: пауза между попытками или стратегия ``Backoff``.
-    :param max_attempts: максимальное число попыток; None снимает ограничение,
-        пропущенный аргумент сохраняет текущее значение.
-    :return: контекстный менеджер, отдающий применённую конфигурацию.
-    :raises TypeError: если время или число попыток имеют неверный тип.
-    :raises ValueError: если числовые значения некорректны.
+    :param timeout_seconds: maximum wait time; ``math.inf`` waits forever.
+    :param sleep_seconds: pause between attempts or a ``Backoff`` strategy.
+    :param max_attempts: maximum number of attempts; None removes the limit,
+        while omitting the argument keeps the current value.
+    :return: context manager yielding the applied configuration.
+    :raises TypeError: if the time or attempt count has an invalid type.
+    :raises ValueError: if numeric values are invalid.
     """
     config = _merge(get_config(), timeout_seconds, sleep_seconds, max_attempts)
     token = _override.set(config)

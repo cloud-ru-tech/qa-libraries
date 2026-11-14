@@ -48,7 +48,7 @@ if TYPE_CHECKING:
 
     from grpc_client.types import MetadataType
 
-# Имя намеренно отличается от параметра `logger`, чтобы одно не заслоняло другое внутри методов.
+# The name intentionally differs from `logger` to avoid shadowing inside methods.
 _logger = logging.getLogger(__name__)
 
 
@@ -57,24 +57,24 @@ class _Cancelable(Protocol):
 
 
 class InterceptorLogOptions(LoggerOptions, total=False):
-    """Настройки логирования интерцептора."""
+    """Interceptor logging settings."""
 
     sink: LogSink | None
 
 
 class _LoggingBase:
-    """Общие настройки логирующих интерцепторов.
+    """Shared logging interceptor settings.
 
-    Класс отвечает за то, *что* произошло с вызовом: собирает записи и выбирает уровень.
-    Куда и в каком виде запись попадет, решает приемник.
+    The class describes *what* happened to the call: it builds records and selects levels.
+    The sink decides where and how the record is written.
     """
 
     def __init__(self, logger: logging.Logger | None = None, **settings: Unpack[InterceptorLogOptions]) -> None:
-        """Создать интерцептор с логгером или приемником записей.
+        """Create an interceptor with a logger or record sink.
 
-        :param logger: стандартный логгер.
-        :param settings: уровни, оформление и альтернативный приемник записей.
-        :raises TypeError: если задано неверное сочетание логгера и приемника.
+        :param logger: standard logger.
+        :param settings: levels, formatting, and alternative record sink.
+        :raises TypeError: if the logger and sink combination is invalid.
         """
         sink = settings.get("sink")
         sanitize_keys = settings.get("sanitize_keys")
@@ -104,40 +104,40 @@ class _LoggingBase:
         self._log_level, self._err_log_level = resolve_log_levels(log_level, err_log_level)
 
     def _is_disabled(self) -> bool:
-        """Проверить, что логирование выключено для обоих уровней.
+        """Check whether logging is disabled at both levels.
 
-        В этом случае интерцептору нечего делать: он не должен ни генерировать идентификатор,
-        ни оборачивать поток ради подсчета сообщений.
+        In this case the interceptor has nothing to do: it must neither generate an identifier
+        nor wrap the stream to count messages.
         """
         return not self._is_enabled_for(self._log_level) and not self._is_enabled_for(self._err_log_level)
 
     def _is_enabled_for(self, level: int) -> bool:
-        """Спросить приемник, дойдет ли запись указанного уровня до вывода.
+        """Ask the sink whether records at the specified level reach the output.
 
-        Отказ приемника трактуется как выключенный уровень: запись пропускается, вызов идет дальше.
+        A sink failure is treated as a disabled level: skip the record and continue the call.
         """
         try:
             return self._sink.is_enabled_for(level)
-        except Exception as error:  # noqa: BLE001 — сбой приемника не должен ломать вызов
+        except Exception as error:  # noqa: BLE001 - a sink failure must not break the call
             _report_sink_failure(error)
             return False
 
     def _write_request(self, level: int, record: RequestRecord) -> None:
-        """Отдать приемнику запись о запросе, погасив его возможный сбой."""
+        """Pass a request record to the sink, suppressing any sink failure."""
         try:
             self._sink.write_request(level, record)
-        except Exception as error:  # noqa: BLE001 — сбой приемника не должен ломать вызов
+        except Exception as error:  # noqa: BLE001 - a sink failure must not break the call
             _report_sink_failure(error)
 
     def _write_response(self, level: int, record: ResponseRecord) -> None:
-        """Отдать приемнику запись о завершившемся вызове, погасив его возможный сбой."""
+        """Pass a completed call record to the sink, suppressing any sink failure."""
         try:
             self._sink.write_response(level, record)
-        except Exception as error:  # noqa: BLE001 — сбой приемника не должен ломать вызов
+        except Exception as error:  # noqa: BLE001 - a sink failure must not break the call
             _report_sink_failure(error)
 
     def _outcome_level(self, code: grpc.StatusCode) -> int:
-        """Выбрать уровень записи по исходу вызова."""
+        """Choose the log level based on the call outcome."""
         return self._log_level if code is grpc.StatusCode.OK else self._err_log_level
 
     def _log_request(self, trace_id: str, call_details: object, message: Message | None) -> None:
@@ -202,11 +202,11 @@ class LoggingInterceptor(
     SyncStreamUnaryBase,
     SyncStreamStreamBase,
 ):
-    """Интерцептор, логирующий gRPC-запросы и ответы.
+    """Interceptor that logs gRPC requests and responses.
 
-    Поддерживает все четыре типа вызовов. Тело потока запросов и потока ответов в лог не попадает:
-    вычитывание потока ради лога изменило бы поведение вызова. Для потока ответов логируется
-    итоговый статус и количество полученных сообщений.
+    Supports all four call types. Request and response stream bodies are not logged:
+    reading the stream for logging would change call behavior. For response streams, log
+    the final status and number of received messages.
     """
 
     @override
@@ -283,14 +283,14 @@ class AsyncLoggingInterceptor(
     AsyncStreamUnaryBase,
     AsyncStreamStreamBase,
 ):
-    """Асинхронный интерцептор, логирующий gRPC-запросы и ответы."""
+    """Asynchronous interceptor that logs gRPC requests and responses."""
 
     def __init__(self, logger: logging.Logger | None = None, **settings: Unpack[InterceptorLogOptions]) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         super().__init__(logger, **settings)
 
-        # Реестр создается здесь, а не лениво: объект может попасть сразу в несколько потоков,
-        # и ленивая инициализация выдала бы им разные блокировки.
+        # Create the registry eagerly: the object may immediately be shared across threads,
+        # and lazy initialization would give them different locks.
         self._log_tasks: MutableMapping[asyncio.AbstractEventLoop, set[asyncio.Task[None]]] = (
             weakref.WeakKeyDictionary()
         )
@@ -298,15 +298,15 @@ class AsyncLoggingInterceptor(
 
     @property
     def pending_log_tasks(self) -> set[asyncio.Task[None]]:
-        """Незавершенные задачи записи финального лога текущего событийного цикла."""
+        """Pending final log tasks for the current event loop."""
         return self._tasks_of_current_loop()
 
     def _tasks_of_current_loop(self) -> set[asyncio.Task[None]]:
-        """Получить набор задач, принадлежащих текущему циклу событий.
+        """Get the task set belonging to the current event loop.
 
-        Один интерцептор может обслуживать клиентов в разных циклах, поэтому наборы
-        разделены: иначе набор менялся бы из чужого потока прямо во время обхода.
-        Ссылки на циклы слабые — закрытый цикл не удерживается реестром.
+        One interceptor can serve clients in different loops, so the sets are
+        separate, otherwise another thread could modify the set during iteration.
+        Event loop references are weak, so the registry does not retain closed loops.
         """
         loop = asyncio.get_running_loop()
 
@@ -314,10 +314,10 @@ class AsyncLoggingInterceptor(
             return self._log_tasks.setdefault(loop, set())
 
     async def drain(self) -> None:
-        """Дождаться записи всех отложенных логов.
+        """Wait for all deferred logs to be written.
 
-        Финальный лог потока пишется отдельной задачей, поэтому при закрытии клиента
-        ее нужно дождаться — иначе последняя запись потеряется.
+        The final stream log runs in a separate task, so when closing the client
+        await it or the final record will be lost.
         """
         while True:
             own = tuple(self._tasks_of_current_loop())
@@ -325,7 +325,7 @@ class AsyncLoggingInterceptor(
                 return
 
             await asyncio.gather(*own, return_exceptions=True)
-            # Задача лога могла появиться, пока мы ждали предыдущие: даем циклу шанс их создать.
+            # A logging task may appear while awaiting earlier tasks: let the event loop create it.
             await asyncio.sleep(0)
 
     @override
@@ -418,12 +418,12 @@ class AsyncLoggingInterceptor(
         call: object,
         messages_count: int | None,
     ) -> None:
-        """Записать исход асинхронного вызова.
+        """Log the outcome of an asynchronous call.
 
-        :param trace_id: идентификатор, связывающий запрос с ответом
-        :param call_details: параметры вызова
-        :param call: объект завершившегося вызова
-        :param messages_count: количество полученных сообщений, `None` для унарного вызова
+        :param trace_id: identifier linking a request to its response
+        :param call_details: call options
+        :param call: completed call object
+        :param messages_count: number of received messages, `None` for unary calls
         """
         code = await _async_code(call)
         level = self._outcome_level(code)
@@ -447,25 +447,25 @@ class AsyncLoggingInterceptor(
 
 
 class _CountingCall:
-    """Обертка над потоковым вызовом, считающая полученные сообщения.
+    """Wrapper around a streaming call that counts received messages.
 
-    Все остальные обращения делегируются исходному вызову, поэтому обертка остается полноценным `grpc.Call`.
+    All other access is delegated to the original call, so the wrapper remains a complete `grpc.Call`.
     """
 
     def __init__(self, call: object, on_finish: Callable[[int], None]) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._call = call
         self._on_finish = on_finish
         self._count = 0
         self._finished = False
         self._reading = False
         self._finish_requested = False
-        # Callback завершения grpcio вызывает из служебного потока канала, поэтому счетчик
-        # и признак завершения нужно защищать: иначе возможны двойной лог и потерянные сообщения.
+        # grpcio invokes the completion callback from the channel's internal thread, so the counter
+        # and the completion flag need protection to avoid duplicate logs and lost messages.
         self._lock = threading.Lock()
 
-        # Поток могут не дочитать: он завершится сам по ошибке, deadline или закрытию канала.
-        # Тогда единственный шанс записать финальный лог — callback самого вызова.
+        # A stream may remain unread and finish due to an error, deadline, or channel closure.
+        # The call callback is then the only chance to write the final log.
         add_done_callback = cast(
             "Callable[[Callable[[object], None]], None] | None", getattr(call, "add_done_callback", None)
         )
@@ -473,11 +473,11 @@ class _CountingCall:
             add_done_callback(lambda _: self._request_finish())
 
     def __iter__(self) -> Iterator[object]:
-        """Получить итератор значений."""
+        """Get an iterator of values."""
         return self
 
     def __next__(self) -> object:
-        """Получить следующее сообщение потока."""
+        """Get the next stream message."""
         with self._lock:
             self._reading = True
 
@@ -494,15 +494,15 @@ class _CountingCall:
             self._reading = False
             finish_now = self._finish_requested
 
-        # Вызов мог завершиться, пока мы читали сообщение: тогда финальный лог откладывался
-        # до этого момента, чтобы в него попало уже прочитанное сообщение.
+        # The call may have finished while reading a message: the final log was deferred
+        # until this point to include the message already read.
         if finish_now:
             self._finish()
 
         return message
 
     def _request_finish(self) -> None:
-        """Записать финальный лог или отложить его до конца текущего чтения."""
+        """Write the final log or defer it until the current read finishes."""
         with self._lock:
             if self._reading:
                 self._finish_requested = True
@@ -530,18 +530,18 @@ class _CountingCall:
 
 
 class _AsyncCountingCall:
-    """Обертка над асинхронным потоковым вызовом, считающая полученные сообщения.
+    """Wrapper around an asynchronous streaming call that counts received messages.
 
-    Финальный лог вешается на сам вызов через `add_done_callback`: grpc.aio оборачивает
-    результат интерцептора в собственный объект, поэтому отмену обертка не увидит.
+    Attach the final log to the call itself using `add_done_callback`: grpc.aio wraps
+    the interceptor result in its own object, so the wrapper misses cancellation.
 
-    ⚠️ Считаются только сообщения, полученные асинхронной итерацией. Чтение методом `read()`
-    grpc.aio выполняет мимо объекта интерцептора, поэтому такие сообщения в счетчик не попадают —
-    в логе завершения потока их не будет.
+    Only messages received through asynchronous iteration are counted. Reading with `read()`
+    grpc.aio performs outside the interceptor object, so these messages are not counted;
+    they will be absent from the stream completion log.
     """
 
     def __init__(self, call: object) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._call = call
         self._iterator: AsyncIterator[object] | None = None
         self.count = 0
@@ -549,13 +549,13 @@ class _AsyncCountingCall:
         self._pending_finish: Callable[[], None] | None = None
 
     def __aiter__(self) -> AsyncIterator[object]:
-        """Получить асинхронный итератор сообщений."""
+        """Get an asynchronous message iterator."""
         return self
 
     async def __anext__(self) -> object:
-        # Объект вызова grpc.aio отдает сообщения через отдельный итератор, а сам методом
-        # __anext__ не обладает, поэтому итератор берется у него при первом чтении.
-        """Получить следующее сообщение потока."""
+        # The grpc.aio call object yields messages through a separate iterator and itself
+        # has no __anext__, so its iterator is obtained on the first read.
+        """Get the next stream message."""
         if self._iterator is None:
             self._iterator = aiter(cast("AsyncIterable[object]", self._call))
 
@@ -570,16 +570,16 @@ class _AsyncCountingCall:
         self.count += 1
         self._reading = False
 
-        # Вызов мог завершиться, пока мы ждали сообщение: финальный лог отложен до этого
-        # момента, чтобы в него попало уже полученное сообщение.
+        # The call may have finished while awaiting a message: the final log is deferred until this
+        # point to include the message already received.
         self._run_pending_finish()
         return message
 
     def defer_if_reading(self, schedule_log: Callable[[], None]) -> bool:
-        """Отложить запись финального лога, если прямо сейчас читается сообщение.
+        """Defer the final log if a message is currently being read.
 
-        :param schedule_log: функция, запускающая запись лога
-        :return: True, если запись отложена до конца чтения
+        :param schedule_log: function that starts logging
+        :return: True if logging is deferred until reading finishes
         """
         if not self._reading:
             return False
@@ -588,7 +588,7 @@ class _AsyncCountingCall:
         return True
 
     def _run_pending_finish(self) -> None:
-        """Запустить отложенную запись лога, если она была запрошена во время чтения."""
+        """Run deferred logging if it was requested during reading."""
         schedule_log = self._pending_finish
         if schedule_log is None:
             return
@@ -606,15 +606,15 @@ def _log_when_done(
     tasks: set[asyncio.Task[None]],
     counting: _AsyncCountingCall | None = None,
 ) -> None:
-    """Запланировать запись лога на момент завершения асинхронного вызова.
+    """Schedule logging when an asynchronous call finishes.
 
-    Задача сохраняется в переданном наборе: иначе сборщик мусора может убрать ее до записи,
-    а исключение внутри останется незамеченным.
+    Store the task in the supplied set; otherwise garbage collection may remove it before logging,
+    and an exception inside would go unnoticed.
 
-    :param call: объект асинхронного вызова
-    :param build_log: функция, создающая корутину записи лога
-    :param tasks: набор незавершенных задач логирования
-    :param counting: обертка потока, у которой уточняется, идет ли сейчас чтение
+    :param call: asynchronous call object
+    :param build_log: function that creates the logging coroutine
+    :param tasks: pending logging task set
+    :param counting: stream wrapper queried for whether a read is in progress
     """
     add_done_callback = cast(
         "Callable[[Callable[[object], None]], None] | None", getattr(call, "add_done_callback", None)
@@ -633,8 +633,8 @@ def _log_when_done(
             tasks.add(task)
             task.add_done_callback(_forget_task(tasks))
 
-        # Пока обертка читает сообщение, счетчик еще не обновлен: тогда запись откладывается
-        # и запускается самой оберткой сразу после инкремента.
+        # While the wrapper reads a message, the counter is not updated yet: defer logging
+        # and the wrapper runs it immediately after incrementing the counter.
         if counting is not None and counting.defer_if_reading(schedule_log):
             return
 
@@ -644,15 +644,15 @@ def _log_when_done(
 
 
 def _forget_task(tasks: set[asyncio.Task[None]]) -> Callable[[asyncio.Task[None]], None]:
-    """Создать обработчик завершения задачи логирования."""
+    """Create a logging task completion handler."""
 
     def _on_finished(task: asyncio.Task[None]) -> None:
         tasks.discard(task)
         if task.cancelled():
             return
 
-        # Исключение нужно забрать, иначе интерпретатор напишет о необработанной ошибке задачи.
-        # Но и молчать нельзя: иначе пропажа финального лога останется незамеченной.
+        # Retrieve the exception to prevent an unhandled task error from the interpreter.
+        # Silently ignoring this would hide the missing final log.
         error = task.exception()
         if error is not None:
             _report_log_failure(error)
@@ -661,18 +661,18 @@ def _forget_task(tasks: set[asyncio.Task[None]]) -> Callable[[asyncio.Task[None]
 
 
 def _report_sink_failure(error: BaseException) -> None:
-    """Сообщить о сбое приемника записей.
+    """Report a record sink failure.
 
-    Приемник может быть чужим кодом, а лог запроса собирается до отправки: падение приемника
-    сорвало бы сам вызов. Поэтому запись теряется, но запрос уходит, а ответ доходит до вызывающего.
+    The sink can be external code and request logs are built before sending: a sink failure
+    would break the call. Drop the record instead, while the request is sent and the caller receives the response.
 
-    :param error: исключение, выброшенное приемником
+    :param error: exception raised by the sink
     """
     _logger.warning("Приемник лога gRPC не смог записать вызов", exc_info=error)
 
 
 def _report_log_failure(error: BaseException) -> None:
-    """Сообщить о сбое записи отложенного лога через обработчик событийного цикла."""
+    """Report deferred logging failures through the event loop handler."""
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
@@ -688,14 +688,14 @@ def _trace_id() -> str:
 
 
 def _result_message(outcome: object) -> Message | None:
-    """Достать ответное сообщение из завершенного вызова."""
+    """Extract the response message from a completed call."""
     result = cast("Callable[[], object] | None", getattr(outcome, "result", None))
     if not callable(result):
         return None
 
     try:
         message = result()
-    except Exception:  # noqa: BLE001 — недоступный результат не должен ломать логирование
+    except Exception:  # noqa: BLE001 - an unavailable result must not break logging
         return None
 
     return cast("Message", message) if isinstance(message, cast("type[object]", Message)) else None
@@ -708,7 +708,7 @@ def _details(outcome: object) -> str:
 
     try:
         return str(details() or "")
-    except Exception:  # noqa: BLE001 — недоступные детали не должны ломать логирование
+    except Exception:  # noqa: BLE001 - unavailable details must not break logging
         return ""
 
 
@@ -719,7 +719,7 @@ def _trailing_metadata(outcome: object) -> MetadataType | None:
 
     try:
         return metadata()
-    except Exception:  # noqa: BLE001 — недоступные метаданные не должны ломать логирование
+    except Exception:  # noqa: BLE001 - unavailable metadata must not break logging
         return None
 
 
@@ -728,11 +728,11 @@ async def _async_code(call: object) -> grpc.StatusCode:
         return await cast("grpc.aio.Call", call).code()
     except grpc.aio.AioRpcError as error:
         return error.code()
-    # CancelledError наследуется от BaseException, поэтому его нужно ловить отдельно:
-    # именно он приходит, когда статус запрашивают у только что отмененного вызова.
+    # CancelledError inherits from BaseException and must be caught separately:
+    # it is raised when querying the status of a just-cancelled call.
     except asyncio.CancelledError:
         return grpc.StatusCode.CANCELLED
-    except Exception:  # noqa: BLE001 — недоступный статус не должен ломать логирование
+    except Exception:  # noqa: BLE001 - an unavailable status must not break logging
         return grpc.StatusCode.UNKNOWN
 
 
@@ -743,7 +743,7 @@ async def _async_details(call: object) -> str:
         return error.details() or ""
     except asyncio.CancelledError:
         return ""
-    except Exception:  # noqa: BLE001 — недоступные детали не должны ломать логирование
+    except Exception:  # noqa: BLE001 - unavailable details must not break logging
         return ""
 
 
@@ -752,14 +752,14 @@ async def _async_trailing_metadata(call: object) -> MetadataType | None:
         return cast("MetadataType | None", await cast("grpc.aio.Call", call).trailing_metadata())
     except asyncio.CancelledError:
         return None
-    except Exception:  # noqa: BLE001 — недоступные метаданные не должны ломать логирование
+    except Exception:  # noqa: BLE001 - unavailable metadata must not break logging
         return None
 
 
 async def _async_result(call: object) -> Message | None:
     try:
         message = await cast("Awaitable[object]", call)
-    except Exception:  # noqa: BLE001 — недоступный результат не должен ломать логирование
+    except Exception:  # noqa: BLE001 - an unavailable result must not break logging
         return None
 
     return cast("Message", message) if isinstance(message, cast("type[object]", Message)) else None

@@ -19,13 +19,13 @@ else:
 
 
 class GRPCAssertions(_Builder):
-    """Утверждения об ответах gRPC и логах клиента."""
+    """Assertions about gRPC responses and client logs."""
 
     def has_status_code(self, expected: grpc.StatusCode) -> Self:
-        """Проверить код статуса ответа.
+        """Check the response status code.
 
-        :param expected: ожидаемый код статуса
-        :return: билдер утверждений для продолжения цепочки
+        :param expected: expected status code
+        :return: assertion builder for chaining
         """
         actual = cast("GRPCResponse[Message]", self.val).status_code
         if actual is not expected:
@@ -33,10 +33,10 @@ class GRPCAssertions(_Builder):
         return self
 
     def has_details(self, expected: str) -> Self:
-        """Проверить текст, поясняющий статус ответа.
+        """Check the text explaining the response status.
 
-        :param expected: ожидаемый текст
-        :return: билдер утверждений для продолжения цепочки
+        :param expected: expected text
+        :return: assertion builder for chaining
         """
         actual = cast("GRPCResponse[Message]", self.val).details
         if actual != expected:
@@ -44,11 +44,11 @@ class GRPCAssertions(_Builder):
         return self
 
     def has_metadata_value(self, key: str, expected: str | bytes) -> Self:
-        """Проверить значение ключа в метаданных ответа.
+        """Check a key value in response metadata.
 
-        :param key: имя ключа метаданных
-        :param expected: ожидаемое значение
-        :return: билдер утверждений для продолжения цепочки
+        :param key: metadata key name
+        :param expected: expected value
+        :return: assertion builder for chaining
         """
         values = cast("GRPCResponse[Message]", self.val).trailing_metadata.get_all(key)
         if expected not in values:
@@ -56,13 +56,13 @@ class GRPCAssertions(_Builder):
         return self
 
     def received_metadata(self, key: str, expected: str) -> Self:
-        """Проверить, что сервис увидел в запросе метаданные с указанным значением.
+        """Check whether the service received request metadata with the specified value.
 
-        Применяется к ответу метода, возвращающего метаданные запроса.
+        Applied to responses from the method that returns request metadata.
 
-        :param key: имя ключа метаданных
-        :param expected: ожидаемое значение
-        :return: билдер утверждений для продолжения цепочки
+        :param key: metadata key name
+        :param expected: expected value
+        :return: assertion builder for chaining
         """
         received = cast("GRPCResponse[HeadersMessage]", self.val).message().Metadata
         if key not in received:
@@ -74,11 +74,11 @@ class GRPCAssertions(_Builder):
         return self
 
     def received_metadata_matching(self, key: str, pattern: str) -> Self:
-        """Проверить, что значение метаданных запроса совпадает с шаблоном.
+        """Check whether a request metadata value matches a pattern.
 
-        :param key: имя ключа метаданных
-        :param pattern: регулярное выражение, которому должно соответствовать значение
-        :return: билдер утверждений для продолжения цепочки
+        :param key: metadata key name
+        :param pattern: regular expression the value must match
+        :return: assertion builder for chaining
         """
         received = cast("GRPCResponse[HeadersMessage]", self.val).message().Metadata
         if key not in received:
@@ -90,10 +90,10 @@ class GRPCAssertions(_Builder):
         return self
 
     def has_no_metadata(self, key: str) -> Self:
-        """Проверить, что сервис не увидел в запросе указанный ключ метаданных.
+        """Check whether the service received no request metadata with the specified key.
 
-        :param key: имя ключа метаданных
-        :return: билдер утверждений для продолжения цепочки
+        :param key: metadata key name
+        :return: assertion builder for chaining
         """
         received = cast("GRPCResponse[HeadersMessage]", self.val).message().Metadata
         if key in received:
@@ -101,10 +101,10 @@ class GRPCAssertions(_Builder):
         return self
 
     def has_error_message(self, expected: str) -> Self:
-        """Проверить текст ошибки в расширенном статусе google.rpc.Status.
+        """Check the error text in the rich google.rpc.Status.
 
-        :param expected: ожидаемый текст ошибки
-        :return: билдер утверждений для продолжения цепочки
+        :param expected: expected error text
+        :return: assertion builder for chaining
         """
         status = cast("GRPCResponse[Message]", self.val).error_status
         if status is None:
@@ -114,9 +114,9 @@ class GRPCAssertions(_Builder):
         return self
 
     def has_error_details(self) -> Self:
-        """Проверить, что расширенный статус ошибки содержит типизированные подробности.
+        """Check whether the rich error status contains typed details.
 
-        :return: билдер утверждений для продолжения цепочки
+        :return: assertion builder for chaining
         """
         status = cast("GRPCResponse[Message]", self.val).error_status
         if status is None:
@@ -126,9 +126,9 @@ class GRPCAssertions(_Builder):
         return self
 
     def has_error_detail_of_first_type(self) -> Self:
-        """Проверить, что подробность ошибки находится по типу своего сообщения.
+        """Check whether an error detail is found by its message type.
 
-        :return: билдер утверждений для продолжения цепочки
+        :return: assertion builder for chaining
         """
         status = cast("GRPCResponse[Message]", self.val).error_status
         if status is None or not status.details:
@@ -141,11 +141,11 @@ class GRPCAssertions(_Builder):
         return self
 
     def stores_token(self, key: str, expected: str) -> Self:
-        """Проверить, какой токен лежит в хранилище по ключу.
+        """Check which token is stored under a key.
 
-        :param key: ключ, под которым хранится токен
-        :param expected: ожидаемое значение токена доступа
-        :return: билдер утверждений для продолжения цепочки
+        :param key: key under which the token is stored
+        :param expected: expected access token value
+        :return: assertion builder for chaining
         """
         token = cast("AuthStore", self.val).get(key)
         if token is None:
@@ -155,10 +155,10 @@ class GRPCAssertions(_Builder):
         return self
 
     def has_access_token(self, expected: str) -> Self:
-        """Проверить значение токена доступа.
+        """Check the access token value.
 
-        :param expected: ожидаемое значение токена
-        :return: билдер утверждений для продолжения цепочки
+        :param expected: expected token value
+        :return: assertion builder for chaining
         """
         if self.val is None:
             self.error(f"Ожидался токен <{expected}>, а его не было")
@@ -167,10 +167,10 @@ class GRPCAssertions(_Builder):
         return self
 
     def logged(self, expected: str) -> Self:
-        """Проверить, что подстрока встречается в логе.
+        """Check whether the log contains a substring.
 
-        :param expected: ожидаемая подстрока
-        :return: билдер утверждений для продолжения цепочки
+        :param expected: expected substring
+        :return: assertion builder for chaining
         """
         log = self._log_text()
         if expected not in log:
@@ -178,10 +178,10 @@ class GRPCAssertions(_Builder):
         return self
 
     def not_logged(self, unexpected: str) -> Self:
-        """Проверить, что подстрока не встречается в логе.
+        """Check whether the log does not contain a substring.
 
-        :param unexpected: подстрока, которой не должно быть
-        :return: билдер утверждений для продолжения цепочки
+        :param unexpected: substring that must be absent
+        :return: assertion builder for chaining
         """
         log = self._log_text()
         if unexpected in log:
@@ -189,10 +189,10 @@ class GRPCAssertions(_Builder):
         return self
 
     def has_log_records(self, expected_count: int) -> Self:
-        """Проверить количество непустых строк в логе.
+        """Check the number of nonempty log lines.
 
-        :param expected_count: ожидаемое количество строк
-        :return: билдер утверждений для продолжения цепочки
+        :param expected_count: expected line count
+        :return: assertion builder for chaining
         """
         records = [line for line in self._log_text().splitlines() if line.strip()]
         if len(records) != expected_count:
@@ -204,10 +204,10 @@ class GRPCAssertions(_Builder):
 
 
 def assert_that(val: object, description: str = "") -> GRPCAssertions:
-    """Начать проверку с утверждениями, дополненными проверками gRPC.
+    """Start assertions extended with gRPC checks.
 
-    :param val: проверяемое значение
-    :param description: описание, подставляемое в сообщение об ошибке
-    :return: билдер утверждений
+    :param val: value to check
+    :param description: description inserted into the error message
+    :return: assertion builder
     """
     return GRPCAssertions(val, description)

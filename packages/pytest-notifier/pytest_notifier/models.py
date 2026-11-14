@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 
 @dataclass
 class TestFailureInfo:
-    """Информация об упавшем тесте или ошибке."""
+    """Information about a failed test or error."""
 
     nodeid: str
     name: str
@@ -15,7 +15,7 @@ class TestFailureInfo:
 
 @dataclass
 class TestResults:
-    """Результаты прогона тестов."""
+    """Test run results."""
 
     collected: int
     passed: int

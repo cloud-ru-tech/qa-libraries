@@ -14,7 +14,7 @@ UNAUTHENTICATED_CODE = code_number(grpc.StatusCode.UNAUTHENTICATED)
 
 
 def test_sends_bearer_token(service_addr: str) -> None:
-    """Токен доступа уходит в заголовке авторизации."""
+    """The access token is sent in the authorization header."""
     auth = FakeAuth(prefix="warehouse")
 
     with GRPCbinServiceClient.from_addr(
@@ -28,7 +28,7 @@ def test_sends_bearer_token(service_addr: str) -> None:
 
 
 def test_issues_token_once_for_several_requests(service_addr: str) -> None:
-    """Для нескольких успешных запросов токен выпускается один раз."""
+    """A token is issued once for multiple successful requests."""
     auth = FakeAuth()
 
     with GRPCbinServiceClient.from_addr(
@@ -43,7 +43,7 @@ def test_issues_token_once_for_several_requests(service_addr: str) -> None:
 
 
 def test_keeps_user_defined_authorization(service_addr: str) -> None:
-    """Собственный заголовок авторизации вызывающего кода не подменяется."""
+    """The caller's custom authorization header is preserved."""
     auth = FakeAuth()
 
     with GRPCbinServiceClient.from_addr(
@@ -57,7 +57,7 @@ def test_keeps_user_defined_authorization(service_addr: str) -> None:
 
 
 def test_does_not_issue_token_when_authorization_is_given(service_addr: str) -> None:
-    """Если заголовок авторизации задан, токен у источника не запрашивается."""
+    """An explicit authorization header prevents fetching a token from the provider."""
     auth = FakeAuth()
 
     with GRPCbinServiceClient.from_addr(
@@ -71,7 +71,7 @@ def test_does_not_issue_token_when_authorization_is_given(service_addr: str) -> 
 
 
 def test_refreshes_token_after_unauthenticated(service_addr: str) -> None:
-    """После ответа UNAUTHENTICATED выпускается новый токен."""
+    """A new token is issued after an UNAUTHENTICATED response."""
     auth = FakeAuth()
 
     with GRPCbinServiceClient.from_addr(
@@ -85,7 +85,7 @@ def test_refreshes_token_after_unauthenticated(service_addr: str) -> None:
 
 
 def test_keeps_single_token_when_retry_is_disabled(service_addr: str) -> None:
-    """С отключенным повтором токен после UNAUTHENTICATED не обновляется."""
+    """With retries disabled, UNAUTHENTICATED does not refresh the token."""
     auth = FakeAuth()
 
     with GRPCbinServiceClient.from_addr(
@@ -99,7 +99,7 @@ def test_keeps_single_token_when_retry_is_disabled(service_addr: str) -> None:
 
 
 def test_returns_error_status_after_failed_retry(service_addr: str) -> None:
-    """Если повтор снова отвергнут, возвращается статус ошибки."""
+    """If the retry is rejected again, an error status is returned."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -111,7 +111,7 @@ def test_returns_error_status_after_failed_retry(service_addr: str) -> None:
 
 
 def test_does_not_refresh_token_for_other_errors(service_addr: str) -> None:
-    """Ошибки, не связанные с авторизацией, не приводят к обновлению токена."""
+    """Errors unrelated to authentication do not refresh the token."""
     auth = FakeAuth()
 
     with GRPCbinServiceClient.from_addr(
@@ -125,7 +125,7 @@ def test_does_not_refresh_token_for_other_errors(service_addr: str) -> None:
 
 
 def test_rejects_async_auth_in_sync_client(service_addr: str) -> None:
-    """Синхронный клиент не принимает асинхронную реализацию авторизации."""
+    """The synchronous client rejects asynchronous authentication implementations."""
     with pytest.raises(TypeError):
         GRPCbinServiceClient.from_addr(
             service_addr,
@@ -135,7 +135,7 @@ def test_rejects_async_auth_in_sync_client(service_addr: str) -> None:
 
 
 def test_repeats_call_after_unauthenticated() -> None:
-    """После ответа UNAUTHENTICATED запрос отправляется повторно."""
+    """The request is retried after an UNAUTHENTICATED response."""
     prefix = uuid4().hex
     auth = FakeAuth(prefix=prefix)
     continuation = FakeContinuation(accepted_token=f"{prefix}-2")
@@ -147,7 +147,7 @@ def test_repeats_call_after_unauthenticated() -> None:
 
 
 def test_sends_refreshed_token_in_repeated_call() -> None:
-    """Повторный запрос уходит с новым токеном."""
+    """The retry uses the new token."""
     prefix = uuid4().hex
     auth = FakeAuth(prefix=prefix)
     continuation = FakeContinuation(accepted_token=f"{prefix}-2")
@@ -159,7 +159,7 @@ def test_sends_refreshed_token_in_repeated_call() -> None:
 
 
 def test_sends_original_token_in_first_call() -> None:
-    """Первый запрос уходит с изначально выданным токеном."""
+    """The first request uses the initially issued token."""
     prefix = uuid4().hex
     auth = FakeAuth(prefix=prefix)
     continuation = FakeContinuation(accepted_token=f"{prefix}-2")
@@ -171,7 +171,7 @@ def test_sends_original_token_in_first_call() -> None:
 
 
 def test_passes_rejected_token_to_refresh() -> None:
-    """Источнику токенов сообщается, какой именно токен отверг сервис."""
+    """The token provider is told exactly which token the service rejected."""
     prefix = uuid4().hex
     auth = FakeAuth(prefix=prefix)
     interceptor = AuthInterceptor(auth)
@@ -182,7 +182,7 @@ def test_passes_rejected_token_to_refresh() -> None:
 
 
 def test_gives_up_after_single_repeat() -> None:
-    """Если новый токен тоже отвергнут, третьей попытки не будет."""
+    """If the new token is also rejected, there is no third attempt."""
     continuation = FakeContinuation(accepted_token=None)
     interceptor = AuthInterceptor(FakeAuth())
 
@@ -192,7 +192,7 @@ def test_gives_up_after_single_repeat() -> None:
 
 
 def test_returns_successful_outcome_of_repeated_call() -> None:
-    """Результатом становится ответ повторного запроса."""
+    """The retry response becomes the result."""
     prefix = uuid4().hex
     continuation = FakeContinuation(accepted_token=f"{prefix}-2")
     interceptor = AuthInterceptor(FakeAuth(prefix=prefix))
@@ -203,7 +203,7 @@ def test_returns_successful_outcome_of_repeated_call() -> None:
 
 
 def test_makes_single_call_when_retry_disabled() -> None:
-    """С отключенным повтором запрос отправляется один раз."""
+    """With retries disabled, the request is sent once."""
     continuation = FakeContinuation(accepted_token=None)
     interceptor = AuthInterceptor(FakeAuth(), retry_on_unauthenticated=False)
 
@@ -213,7 +213,7 @@ def test_makes_single_call_when_retry_disabled() -> None:
 
 
 def test_does_not_repeat_call_with_user_defined_authorization() -> None:
-    """С собственным заголовком авторизации повтор не выполняется."""
+    """A custom authorization header prevents retries."""
     continuation = FakeContinuation(accepted_token=None)
     interceptor = AuthInterceptor(FakeAuth())
     details = fake_call_details(metadata=(("authorization", "Bearer external"),))
@@ -224,7 +224,7 @@ def test_does_not_repeat_call_with_user_defined_authorization() -> None:
 
 
 def test_keeps_metadata_untouched_with_user_defined_authorization() -> None:
-    """Метаданные с собственным заголовком авторизации не переписываются."""
+    """Metadata with a custom authorization header is preserved."""
     continuation = FakeContinuation(accepted_token=None)
     interceptor = AuthInterceptor(FakeAuth())
     details = fake_call_details(metadata=(("authorization", "Bearer untouched"),))

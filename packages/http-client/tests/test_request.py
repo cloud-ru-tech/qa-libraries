@@ -7,7 +7,7 @@ from .support.clients import AsyncClientFactory, SyncClientFactory
 
 
 def test_request_sends_given_method(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """request() отправляет запрос тем методом, который ему передали."""
+    """request() sends the request with the supplied method."""
     httpx_mock.add_response(url="https://example.com/api/resource", method="PATCH", status_code=200)
     client = new_client("https://example.com")
 
@@ -17,7 +17,7 @@ def test_request_sends_given_method(httpx_mock: HTTPXMock, new_client: SyncClien
 
 
 def test_request_returns_response_body(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """request() возвращает разобранное тело ответа."""
+    """request() returns the parsed response body."""
     payload: dict[str, bool] = {"patched": True}
     httpx_mock.add_response(url="https://example.com/api/resource", method="PATCH", json=payload)
     client = new_client("https://example.com")
@@ -28,7 +28,7 @@ def test_request_returns_response_body(httpx_mock: HTTPXMock, new_client: SyncCl
 
 
 async def test_async_request_sends_given_method(httpx_mock: HTTPXMock, new_async_client: AsyncClientFactory) -> None:
-    """request() асинхронного клиента отправляет запрос переданным методом."""
+    """Asynchronous client request() sends the request with the supplied method."""
     httpx_mock.add_response(url="https://example.com/api/resource", method="DELETE", status_code=204)
     client = new_async_client("https://example.com")
 
@@ -38,7 +38,7 @@ async def test_async_request_sends_given_method(httpx_mock: HTTPXMock, new_async
 
 
 async def test_async_request_returns_status(httpx_mock: HTTPXMock, new_async_client: AsyncClientFactory) -> None:
-    """request() асинхронного клиента возвращает код ответа."""
+    """Asynchronous client request() returns the response status code."""
     httpx_mock.add_response(url="https://example.com/api/resource", method="DELETE", status_code=204)
     client = new_async_client("https://example.com")
 

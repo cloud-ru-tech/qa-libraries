@@ -1,50 +1,52 @@
-# Авторизация для HTTP-клиента
+# Authorization for the HTTP client
 
 [![PyPI](https://img.shields.io/pypi/v/cloudru-qa-http-client-auth)](https://pypi.org/project/cloudru-qa-http-client-auth/)
 [![Python](https://img.shields.io/pypi/pyversions/cloudru-qa-http-client-auth)](https://pypi.org/project/cloudru-qa-http-client-auth/)
 [![License](https://img.shields.io/pypi/l/cloudru-qa-http-client-auth)](https://github.com/cloud-ru-tech/qa-libraries/blob/master/LICENSE)
 
-Библиотека подставляет в исходящие HTTP-запросы токен доступа, выданный сервисом IAM. Токен запрашивается по паре «идентификатор ключа + секретный ключ», кешируется и обновляется автоматически — вызывающему коду не нужно ничего знать про время жизни токена и повторные попытки.
+English | [Русский](README.ru.md)
 
-Подходит, когда сервис требует заголовок `Authorization: Bearer <token>`, а токен выдаёт IAM. Работает и с [httpx](https://www.python-httpx.org/) напрямую, и с [HTTP-клиентом](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/http-client).
+The library adds an IAM access token to outgoing HTTP requests. It obtains the token using a key identifier and secret key, then caches and refreshes it automatically. Calling code does not need to manage token lifetime or retries.
 
-- [Установка](#установка)
-- [Скиллы для AI-агентов](#скиллы-для-ai-агентов)
-- [Быстрый старт](#быстрый-старт)
-  - [Синхронный клиент](#синхронный-клиент)
-  - [Асинхронный клиент](#асинхронный-клиент)
-  - [Авторизация через OpenID](#авторизация-через-openid)
-  - [Закрытие клиентов](#закрытие-клиентов)
-  - [Своё хранилище токенов](#своё-хранилище-токенов)
-  - [Логирование](#логирование)
-- [Компоненты](#компоненты)
-- [Разработка](#разработка)
+Use it when a service requires `Authorization: Bearer <token>` and IAM issues the token. Works both directly with [httpx](https://www.python-httpx.org/) and with the [HTTP client](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/http-client).
 
-## Установка
+- [Installation](#installation)
+- [Skills for AI agents](#skills-for-ai-agents)
+- [Quick start](#quick-start)
+  - [Synchronous client](#synchronous-client)
+  - [Asynchronous client](#asynchronous-client)
+  - [OpenID authorization](#openid-authorization)
+  - [Closing clients](#closing-clients)
+  - [Custom token store](#custom-token-store)
+  - [Logging](#logging)
+- [Components](#components)
+- [Development](#development)
 
-Требуется Python 3.13 или новее.
+## Installation
+
+Requires Python 3.13 or later.
 
 ```shell
 pip install cloudru-qa-http-client-auth
 ```
 
-Библиотека импортируется как модуль `http_client_auth`.
+Import the library as the `http_client_auth` module.
 
-## Скиллы для AI-агентов
+## Skills for AI agents
 
-В пакет включён скилл [`http-client-auth-usage`](https://github.com/cloud-ru-tech/qa-libraries/blob/master/.agents/skills/http-client-auth-usage/SKILL.md)
-с примерами и правилами использования библиотеки для AI-агентов. Установите библиотеку
-в окружение своего проекта, затем из его корня выполните (нужен [`uv`](https://docs.astral.sh/uv/)):
+The package includes the [`http-client-auth-usage`](https://github.com/cloud-ru-tech/qa-libraries/blob/master/.agents/skills/http-client-auth-usage/SKILL.md) skill
+with examples and usage rules for AI agents. Install the library
+in your project environment, then run this from its root (requires [`uv`](https://docs.astral.sh/uv/)):
 
 ```shell
 uvx library-skills install --skill http-client-auth-usage --yes
 ```
 
-Для Claude Code добавьте `--claude`. Инструкции поставляются вместе с версией библиотеки.
+For Claude Code, add `--claude`. The instructions are shipped with the library version.
 
-## Быстрый старт
+## Quick start
 
-### Синхронный клиент
+### Synchronous client
 
 ```python
 import httpx
@@ -54,15 +56,15 @@ from http_client_auth import IAM_Auth, IAM_HttpClient
 iam_client = IAM_HttpClient("https://iam.example.com")
 auth = IAM_Auth("your_key_id", "your_key_secret", iam_client)
 
-# С httpx напрямую
+# Directly with httpx
 response = httpx.get("https://api.example.com/data", auth=auth)
 
-# С http-client
+# With http-client
 client = HttpClient("https://api.example.com", options.with_auth(auth))
 response = client.get("/data")
 ```
 
-### Асинхронный клиент
+### Asynchronous client
 
 ```python
 import httpx
@@ -72,18 +74,18 @@ from http_client_auth import IAM_AsyncAuth, IAM_AsyncHttpClient
 iam_client = IAM_AsyncHttpClient("https://iam.example.com")
 auth = IAM_AsyncAuth("your_key_id", "your_key_secret", iam_client)
 
-# С httpx напрямую
+# Directly with httpx
 async with httpx.AsyncClient(auth=auth) as client:
     response = await client.get("https://api.example.com/data")
 
-# С http-client
+# With http-client
 client = AsyncHttpClient("https://api.example.com", options.with_auth(auth))
 response = await client.get("/data")
 ```
 
-### Авторизация через OpenID
+### OpenID authorization
 
-Достаточно взять другой клиент IAM, всё остальное не меняется:
+Use a different IAM client; everything else stays the same:
 
 ```python
 from http_client_auth import IAM_Auth, IAM_OpenID_HttpClient
@@ -92,9 +94,9 @@ iam_client = IAM_OpenID_HttpClient("https://iam.example.com")
 auth = IAM_Auth("your_key_id", "your_key_secret", iam_client)
 ```
 
-### Закрытие клиентов
+### Closing clients
 
-Клиент IAM держит собственный пул соединений и закрывается вызывающим кодом — `IAM_Auth` им не владеет:
+The IAM client owns its connection pool and must be closed by the caller; `IAM_Auth` does not own it:
 
 ```python
 with IAM_HttpClient("https://iam.example.com") as iam_client:
@@ -103,11 +105,11 @@ with IAM_HttpClient("https://iam.example.com") as iam_client:
         response = client.get("/data")
 ```
 
-Для долгоживущего клиента вызывайте `close()`, для асинхронного — `await aclose()`.
+For a long-lived client, call `close()`; for an asynchronous client, use `await aclose()`.
 
-### Своё хранилище токенов
+### Custom token store
 
-По умолчанию токены лежат в памяти процесса. Чтобы переиспользовать их между процессами, реализуйте `AuthStore`:
+By default, tokens are stored in process memory. To reuse them across processes, implement `AuthStore`:
 
 ```python
 import json
@@ -143,7 +145,7 @@ iam_client = IAM_HttpClient("https://iam.example.com")
 auth = IAM_Auth("your_key_id", "your_key_secret", iam_client, store=RedisAuthStore(redis_client))
 ```
 
-`IAM_AsyncAuth` принимает `AsyncAuthStore` — тот же интерфейс с асинхронными `get` и `set`:
+`IAM_AsyncAuth` accepts `AsyncAuthStore`, the same interface with asynchronous `get` and `set`:
 
 ```python
 from http_client_auth import AsyncAuthStore, Token
@@ -158,9 +160,9 @@ class RedisAsyncAuthStore(AsyncAuthStore):
     async def set(self, key: str, token: Token) -> None: ...
 ```
 
-### Логирование
+### Logging
 
-Если навешиваете на клиент IAM логирование, передайте `IAM_SANITIZE_KEYS` — иначе секретный ключ из запроса OpenID и JWT из ответа попадут в лог целиком: список маскирования http-client по умолчанию их не покрывает.
+If you add logging to the IAM client, pass `IAM_SANITIZE_KEYS`. Otherwise the OpenID request's secret key and the response JWT appear in full in logs: http-client's default masking list does not cover them.
 
 ```python
 import logging
@@ -174,65 +176,65 @@ iam_client = IAM_OpenID_HttpClient(
 )
 ```
 
-## Компоненты
+## Components
 
-Авторизация:
+Authorization:
 
-| Класс | Назначение |
+| Class | Purpose |
 |---|---|
-| `IAM_Auth` | авторизация для синхронных запросов, реализует `httpx.Auth` |
-| `IAM_AsyncAuth` | то же для асинхронных запросов |
+| `IAM_Auth` | authorization for synchronous requests; implements `httpx.Auth` |
+| `IAM_AsyncAuth` | the same for asynchronous requests |
 
-Клиенты IAM — передаются в объект авторизации первым аргументом после ключей:
+IAM clients are passed to the authorization object as the first argument after the keys:
 
-| Класс | Назначение |
+| Class | Purpose |
 |---|---|
-| `IAM_HttpClient` | публичное API IAM |
-| `IAM_AsyncHttpClient` | публичное API IAM, асинхронный |
+| `IAM_HttpClient` | public IAM API |
+| `IAM_AsyncHttpClient` | public IAM API, asynchronous |
 | `IAM_OpenID_HttpClient` | API OpenID |
-| `IAM_OpenID_AsyncHttpClient` | API OpenID, асинхронный |
+| `IAM_OpenID_AsyncHttpClient` | OpenID API, asynchronous |
 
-Хранилища токенов:
+Token stores:
 
-| Класс | Назначение |
+| Class | Purpose |
 |---|---|
-| `AuthStore` | интерфейс синхронного хранилища |
-| `AsyncAuthStore` | интерфейс асинхронного хранилища |
-| `InMemoryAuthStore` | хранилище в памяти, по умолчанию в `IAM_Auth` |
-| `InMemoryAsyncAuthStore` | хранилище в памяти, по умолчанию в `IAM_AsyncAuth` |
-| `Token` | токен доступа и время его истечения |
+| `AuthStore` | synchronous store interface |
+| `AsyncAuthStore` | asynchronous store interface |
+| `InMemoryAuthStore` | in-memory store, default for `IAM_Auth` |
+| `InMemoryAsyncAuthStore` | in-memory store, default for `IAM_AsyncAuth` |
+| `Token` | access token and its expiry time |
 
-Прочее:
+Other:
 
-| Имя | Назначение |
+| Name | Purpose |
 |---|---|
-| `AuthData` | ответ IAM: токен доступа, срок жизни, `id_token` |
-| `IAM_SANITIZE_KEYS` | ключи секретов IAM для `options.with_logger(sanitize_keys=...)` |
+| `AuthData` | IAM response: access token, lifetime, `id_token` |
+| `IAM_SANITIZE_KEYS` | IAM secret keys for `options.with_logger(sanitize_keys=...)` |
 
-Исключения:
+Exceptions:
 
-| Класс | Когда возникает |
+| Class | Raised when |
 |---|---|
-| `IAM_Error` | базовый класс, ловит любую ошибку авторизации |
-| `IAM_AuthError` | сервис IAM ответил неуспешным кодом |
-| `IAM_InvalidJsonResponseError` | ответ IAM не удалось разобрать |
+| `IAM_Error` | base class for all authorization errors |
+| `IAM_AuthError` | IAM service returned an unsuccessful status code |
+| `IAM_InvalidJsonResponseError` | IAM response could not be parsed |
 
-## Разработка
+## Development
 
-Библиотека развивается в монорепозитории [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries)
-вместе с остальными библиотеками `cloudru-qa-*`. Нужны [`uv`](https://docs.astral.sh/uv/), GNU Make
-и [`checkmake`](https://github.com/checkmake/checkmake),
-команды запускаются из корня репозитория:
+The library is developed in the [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries) monorepo
+alongside the other `cloudru-qa-*` libraries. You need [`uv`](https://docs.astral.sh/uv/), GNU Make,
+and [`checkmake`](https://github.com/checkmake/checkmake).
+Run commands from the repository root:
 
 ```shell
-make sync                         # зависимости всех библиотек строго по uv.lock
-make test-http-client-auth        # тесты этой библиотеки
-make typecheck-http-client-auth   # mypy для этой библиотеки
-make check                        # форматирование, ruff, mypy и тесты всего набора
+make sync                         # install dependencies for all libraries from uv.lock
+make test-http-client-auth        # tests for this library
+make typecheck-http-client-auth   # mypy for this library
+make check                        # formatting, ruff, mypy, and tests for the entire workspace
 ```
 
-Тесты прогоняются на Python 3.13 и 3.14. Окружение для другой версии создаётся отдельно:
+Tests run on Python 3.13 and 3.14. Create a separate environment for another version:
 `make sync test-http-client-auth PYTHON_VERSION=3.14`.
 
-Релиз выпускается git-тегом `http-client-auth/v<версия>`. Версия в теге должна совпадать
-с версией в `packages/http-client-auth/pyproject.toml`.
+Publish a release with the git tag `http-client-auth/v<version>`. The tag version must match
+the version in `packages/http-client-auth/pyproject.toml`.

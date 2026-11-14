@@ -9,7 +9,7 @@ DEFAULT_JSON_DUMPS_KWARGS: JsonDumpsOptions = {"ensure_ascii": False}
 
 
 class RequestStepOptions(TypedDict, total=False):
-    """Настройки шага и вложений запроса."""
+    """Step and request attachment settings."""
 
     show_host: bool
     show_query_params: bool
@@ -22,7 +22,7 @@ class RequestStepOptions(TypedDict, total=False):
 
 
 class ResponseStepOptions(RequestStepOptions, total=False):
-    """Настройки шага с вложениями запроса и ответа."""
+    """Step settings with request and response attachments."""
 
     attach_response: bool
     attach_response_headers: bool
@@ -30,7 +30,7 @@ class ResponseStepOptions(RequestStepOptions, total=False):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class StepSettings:
-    """Настройки оформления Allure шага для одного HTTP-запроса."""
+    """Allure step formatting options for one HTTP request."""
 
     show_host: bool = False
     show_query_params: bool = False
@@ -44,10 +44,10 @@ class StepSettings:
 
 
 def build_settings(**options: Unpack[ResponseStepOptions]) -> StepSettings:
-    """Собрать настройки шага с разрешенными именами маскируемых полей.
+    """Build step settings with the resolved names of fields to mask.
 
-    :param options: настройки шага и вложений.
-    :return: неизменяемые настройки шага.
+    :param options: Step and attachment settings.
+    :return: Immutable step settings.
     """
     default_keys = DEFAULT_SANITIZE_KEYS if options.get("use_default_sanitize_keys", True) else ()
     resolved_keys: list[str] = []

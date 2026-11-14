@@ -3,10 +3,10 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class Attempt:
-    """Результат одной попытки ожидания, передаваемый в хуки.
+    """Result of one wait attempt, passed to hooks.
 
-    Ровно одно из полей ``result`` и ``exception`` осмысленно: если предикат завершился
-    исключением из ``expected_exceptions``, то ``exception`` заполнен, а ``result`` равен None.
+    Exactly one of ``result`` and ``exception`` is meaningful: if the predicate raises
+    an exception from ``expected_exceptions``, ``exception`` is set and ``result`` is None.
     """
 
     number: int
@@ -17,10 +17,10 @@ class Attempt:
 
     @property
     def has_no_planned_sleep(self) -> bool:
-        """Проверить, что на момент решения следующая пауза не запланирована.
+        """Check that no next pause is planned at the time of the decision.
 
-        Это снимок плана, а не гарантия финальности: попытка может оказаться последней и при
-        запланированной паузе, если ожидание отменят извне, пробуждение случится позже
-        заказанного или время израсходует сам хук.
+        This is a snapshot of the plan, not a guarantee of finality: an attempt can be last even
+        with a planned pause if the wait is canceled externally, wakes up later than requested,
+        or the hook itself uses up the remaining time.
         """
         return self.next_sleep_seconds is None

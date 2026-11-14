@@ -8,7 +8,7 @@ from .sink import StructLogger, StructlogSink, check_supported_level
 
 
 class StructLoggerOptions(TypedDict, total=False):
-    """Параметры структурированного логирования."""
+    """Structured logging options."""
 
     sanitize_keys: Sequence[str] | None
     json_indent: int | None
@@ -19,32 +19,32 @@ class StructLoggerOptions(TypedDict, total=False):
 
 
 def with_structlogger(logger: StructLogger, **settings: Unpack[StructLoggerOptions]) -> ClientOption:
-    """Установить структурированный логгер для логирования запросов и ответов в gRPC-клиенте.
+    """Set a structured logger for gRPC client requests and responses.
 
-    :param logger: структурированный логгер
-    :param sanitize_keys: имена ключей метаданных и пути в формате
-                          [glom](https://glom.readthedocs.io/en/latest/) в теле сообщения,
-                          значения которых нужно скрыть
-    :param json_indent: ширина отступа для логирования JSON свойств (по умолчанию отступ отсутствует)
-    :param log_level: уровень логов gRPC-клиента, по умолчанию INFO;
-                      structlog принимает только DEBUG, INFO, WARNING, ERROR и CRITICAL
-    :param err_log_level: уровень логов запросов, завершившихся ошибкой, по умолчанию ERROR;
-                          набор допустимых значений тот же
-    :param payload_maxlength: максимальная длина тела сообщения в логе, по умолчанию 4096 символов;
-                              `None` в `grpc_client.configure_logging` снимает ограничение
-    :param use_default_sanitize_keys: скрывать ли поля с типовыми именами секретов
-                                      (см. `grpc_client.utils.sanitizer.DEFAULT_SANITIZE_KEYS`)
-                                      на любой глубине, в дополнение к `sanitize_keys`
-    :returns: опция, которая применяется к gRPC-клиенту для установки логгера
-    :raises ValueError: при сборке клиента, если уровень логирования не поддерживается structlog
+    :param logger: structured logger
+    :param sanitize_keys: metadata key names and paths in the format
+                          [glom](https://glom.readthedocs.io/en/latest/) in the message body,
+                          whose values should be hidden
+    :param json_indent: indentation width for JSON property logging (defaults to no indentation)
+    :param log_level: gRPC client logging level, defaults to INFO;
+                      structlog accepts only DEBUG, INFO, WARNING, ERROR, and CRITICAL
+    :param err_log_level: failed request logging level, defaults to ERROR;
+                          the allowed values are the same
+    :param payload_maxlength: maximum logged message body length, defaults to 4096 characters;
+                              `None` in `grpc_client.configure_logging` removes the limit
+    :param use_default_sanitize_keys: whether to hide fields with common secret names
+                                      (see `grpc_client.utils.sanitizer.DEFAULT_SANITIZE_KEYS`)
+                                      at any depth, in addition to `sanitize_keys`
+    :returns: option applied to a gRPC client to set its logger
+    :raises ValueError: when building the client if structlog does not support the logging level
     """
 
     def option(client: BaseGRPCClient[object]) -> None:
-        # Общая настройка читается в момент сборки клиента, а не создания опции:
-        # `grpc_client.configure_logging` могли вызвать уже после того, как опцию создали.
+        # Read shared settings when building the client rather than creating the option:
+        # `grpc_client.configure_logging` may have been called after the option was created.
         levels = resolve_log_levels(settings.get("log_level"), settings.get("err_log_level"))
-        # Проверяется уже подставленный уровень: неподдерживаемое значение приходит
-        # и аргументом, и из `configure_logging`.
+        # Check the resolved level: unsupported values can come
+        # both from an argument and from `configure_logging`.
         check_supported_level("log_level", levels[0])
         check_supported_level("err_log_level", levels[1])
 

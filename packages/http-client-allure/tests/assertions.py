@@ -20,7 +20,7 @@ else:
 
 
 class ReportAssertions(_Builder):
-    """Проверки записанного Allure отчета."""
+    """Assertions for a recorded Allure report."""
 
     def has_single_step(self, expected_title: str) -> Self:
         titles = [step.title for step in self._report().steps]
@@ -77,7 +77,7 @@ class ReportAssertions(_Builder):
 
 
 class AttachmentAssertions(_Builder):
-    """Проверки одного вложения Allure."""
+    """Assertions for a single Allure attachment."""
 
     def has_name(self, expected: str) -> Self:
         actual = self._attachment().name

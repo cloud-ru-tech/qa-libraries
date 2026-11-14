@@ -21,7 +21,7 @@ class _TypedDecorator(Protocol):
 
 @cast("_TypedDecorator", parametrize_with_cases("iam", has_tag="sync"))
 def test_sends_credentials_to_iam(httpx_mock: HTTPXMock, iam: SyncIamCase) -> None:
-    """Клиент отправляет в IAM идентификатор ключа и секрет."""
+    """The client sends the key ID and secret to IAM."""
     key_id, key_secret = "orders-key", "orders-secret"
     httpx_mock.add_response(
         url=f"{constants.IAM_URL}{iam.route}",
@@ -37,7 +37,7 @@ def test_sends_credentials_to_iam(httpx_mock: HTTPXMock, iam: SyncIamCase) -> No
 
 @cast("_TypedDecorator", parametrize_with_cases("iam", has_tag="sync"))
 def test_returns_access_token(httpx_mock: HTTPXMock, iam: SyncIamCase) -> None:
-    """Клиент возвращает токен доступа из ответа IAM."""
+    """The client returns the access token from the IAM response."""
     access_token = uuid4().hex
     httpx_mock.add_response(
         url=f"{constants.IAM_URL}{iam.route}",
@@ -53,7 +53,7 @@ def test_returns_access_token(httpx_mock: HTTPXMock, iam: SyncIamCase) -> None:
 
 @cast("_TypedDecorator", parametrize_with_cases("iam", has_tag="sync"))
 def test_returns_token_lifetime(httpx_mock: HTTPXMock, iam: SyncIamCase) -> None:
-    """Клиент возвращает время жизни токена из ответа IAM."""
+    """The client returns the token lifetime from the IAM response."""
     expires_in = 900
     httpx_mock.add_response(
         url=f"{constants.IAM_URL}{iam.route}",
@@ -68,7 +68,7 @@ def test_returns_token_lifetime(httpx_mock: HTTPXMock, iam: SyncIamCase) -> None
 
 
 def test_raises_on_unsuccessful_status(httpx_mock: HTTPXMock) -> None:
-    """Клиент сообщает об ошибке авторизации, если IAM ответил не 200."""
+    """The client reports an authentication error if IAM returns a status other than 200."""
     httpx_mock.add_response(
         url=f"{constants.IAM_URL}{PUBLIC_API_AUTHORIZE_ROUTE}",
         method="POST",
@@ -81,7 +81,7 @@ def test_raises_on_unsuccessful_status(httpx_mock: HTTPXMock) -> None:
 
 
 def test_raises_on_malformed_body(httpx_mock: HTTPXMock) -> None:
-    """Клиент сообщает об ошибке разбора, если в ответе IAM не JSON."""
+    """The client reports a parsing error if the IAM response is not JSON."""
     httpx_mock.add_response(
         url=f"{constants.IAM_URL}{PUBLIC_API_AUTHORIZE_ROUTE}",
         method="POST",
@@ -94,7 +94,7 @@ def test_raises_on_malformed_body(httpx_mock: HTTPXMock) -> None:
 
 
 def test_raises_when_access_token_is_missing(httpx_mock: HTTPXMock) -> None:
-    """Клиент сообщает об ошибке разбора, если в ответе IAM нет токена доступа."""
+    """The client reports a parsing error if the IAM response has no access token."""
     httpx_mock.add_response(
         url=f"{constants.IAM_URL}{PUBLIC_API_AUTHORIZE_ROUTE}",
         method="POST",
@@ -107,7 +107,7 @@ def test_raises_when_access_token_is_missing(httpx_mock: HTTPXMock) -> None:
 
 
 def test_keeps_token_out_of_parse_error_message(httpx_mock: HTTPXMock) -> None:
-    """Сообщение об ошибке разбора не содержит токен доступа из тела ответа."""
+    """The parsing error message does not contain the access token from the response body."""
     leaked_token = uuid4().hex
     httpx_mock.add_response(
         url=f"{constants.IAM_URL}{PUBLIC_API_AUTHORIZE_ROUTE}",
@@ -124,7 +124,7 @@ def test_keeps_token_out_of_parse_error_message(httpx_mock: HTTPXMock) -> None:
 
 @cast("_TypedDecorator", parametrize_with_cases("iam", has_tag="async"))
 async def test_async_sends_credentials_to_iam(httpx_mock: HTTPXMock, iam: AsyncIamCase) -> None:
-    """Асинхронный клиент отправляет в IAM идентификатор ключа и секрет."""
+    """The asynchronous client sends the key ID and secret to IAM."""
     key_id, key_secret = "async-orders-key", "async-orders-secret"
     httpx_mock.add_response(
         url=f"{constants.IAM_URL}{iam.route}",
@@ -140,7 +140,7 @@ async def test_async_sends_credentials_to_iam(httpx_mock: HTTPXMock, iam: AsyncI
 
 @cast("_TypedDecorator", parametrize_with_cases("iam", has_tag="async"))
 async def test_async_returns_access_token(httpx_mock: HTTPXMock, iam: AsyncIamCase) -> None:
-    """Асинхронный клиент возвращает токен доступа из ответа IAM."""
+    """The asynchronous client returns the access token from the IAM response."""
     access_token = uuid4().hex
     httpx_mock.add_response(
         url=f"{constants.IAM_URL}{iam.route}",
@@ -155,7 +155,7 @@ async def test_async_returns_access_token(httpx_mock: HTTPXMock, iam: AsyncIamCa
 
 
 def test_accepts_response_without_id_token(httpx_mock: HTTPXMock) -> None:
-    """Клиент принимает ответ IAM без поля id_token: OpenID возвращает его не всегда."""
+    """The client accepts an IAM response without id_token: OpenID does not always return it."""
     access_token = uuid4().hex
     httpx_mock.add_response(
         url=f"{constants.IAM_URL}{OPEN_ID_AUTHORIZE_ROUTE}",
@@ -170,7 +170,7 @@ def test_accepts_response_without_id_token(httpx_mock: HTTPXMock) -> None:
 
 
 def test_sends_authorize_request_through_send_decorators(httpx_mock: HTTPXMock) -> None:
-    """Запрос авторизации проходит через send-декораторы клиента, а не мимо них."""
+    """The authentication request passes through the client send decorators."""
     calls: list[str] = []
     httpx_mock.add_response(
         url=f"{constants.IAM_URL}{PUBLIC_API_AUTHORIZE_ROUTE}",
@@ -193,7 +193,7 @@ def test_sends_authorize_request_through_send_decorators(httpx_mock: HTTPXMock) 
     ],
 )
 def test_raises_when_body_is_not_an_object(httpx_mock: HTTPXMock, body: object) -> None:
-    """Клиент сообщает об ошибке разбора, если тело ответа IAM не JSON-объект."""
+    """The client reports a parsing error if the IAM response body is not a JSON object."""
     httpx_mock.add_response(
         url=f"{constants.IAM_URL}{PUBLIC_API_AUTHORIZE_ROUTE}",
         method="POST",
@@ -205,7 +205,7 @@ def test_raises_when_body_is_not_an_object(httpx_mock: HTTPXMock, body: object) 
 
 
 def test_raises_when_access_token_is_not_a_string(httpx_mock: HTTPXMock) -> None:
-    """Клиент сообщает об ошибке разбора, если токен доступа пришел не строкой."""
+    """The client reports a parsing error if the access token is not a string."""
     httpx_mock.add_response(
         url=f"{constants.IAM_URL}{PUBLIC_API_AUTHORIZE_ROUTE}",
         method="POST",
@@ -217,7 +217,7 @@ def test_raises_when_access_token_is_not_a_string(httpx_mock: HTTPXMock) -> None
 
 
 def test_raises_when_lifetime_is_not_a_number(httpx_mock: HTTPXMock) -> None:
-    """Клиент сообщает об ошибке разбора, если срок жизни пришел строкой."""
+    """The client reports a parsing error if the lifetime is a string."""
     httpx_mock.add_response(
         url=f"{constants.IAM_URL}{PUBLIC_API_AUTHORIZE_ROUTE}",
         method="POST",

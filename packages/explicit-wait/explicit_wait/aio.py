@@ -14,7 +14,7 @@ T = TypeVar("T")
 
 
 class _AsyncWaitOptions(TypedDict, total=False):
-    """Параметры выполнения асинхронных ожиданий."""
+    """Execution parameters for asynchronous waits."""
 
     options: WaitOptions | None
     clock: Clock
@@ -49,19 +49,19 @@ async def async_wait_until[T](
     clock: Clock = time.monotonic,
     sleeper: AsyncSleeper = asyncio.sleep,
 ) -> T:
-    """Ожидать в event loop, пока предикат не вернёт значение, отличное от falsy.
+    """Wait in the event loop until the predicate returns a non-falsy value.
 
-    Предикат может быть как корутинной, так и обычной функцией. Пауза между попытками
-    не блокирует event loop, поэтому фоновые задачи продолжают выполняться. Отмена
-    ожидания выполняется штатной отменой задачи: ``CancelledError`` не перехватывается.
+    The predicate can be a coroutine or a regular function. Pauses between attempts
+    do not block the event loop, so background tasks keep running. Cancel the wait
+    through standard task cancellation: ``CancelledError`` is not caught.
 
-    :param predicate: функция-предикат, возможно асинхронная.
-    :param options: параметры ожидания; None использует значения по умолчанию.
-    :param clock: источник монотонного времени.
-    :param sleeper: асинхронная функция сна между попытками.
-    :return: значение, которое вернул предикат.
-    :raises TimeoutExpiredError: если истекло время ожидания.
-    :raises AttemptsExhaustedError: если исчерпаны попытки, заданные ``max_attempts``.
+    :param predicate: predicate function, possibly asynchronous.
+    :param options: wait parameters; None uses the defaults.
+    :param clock: monotonic time source.
+    :param sleeper: asynchronous sleep function between attempts.
+    :return: value returned by the predicate.
+    :raises TimeoutExpiredError: if the wait times out.
+    :raises AttemptsExhaustedError: if ``max_attempts`` is exhausted.
     """
     options = WaitOptions() if options is None else options
     loop = _build_loop(
@@ -109,16 +109,16 @@ async def async_wait_or_none[T](
     clock: Clock = time.monotonic,
     sleeper: AsyncSleeper = asyncio.sleep,
 ) -> T | None:
-    """Ожидать в event loop и вернуть None, если дождаться не удалось.
+    """Wait in the event loop and return None if the condition is not satisfied.
 
-    Ошибка остановки не перехватывается по типу, поэтому ``TimeoutExpiredError``,
-    выброшенный самим предикатом или вложенным ожиданием, не будет проглочен.
+    The stopping error is not caught by type, so a ``TimeoutExpiredError``
+    raised by the predicate or a nested wait is not swallowed.
 
-    :param predicate: функция-предикат, возможно асинхронная.
-    :param options: параметры ожидания; None использует значения по умолчанию.
-    :param clock: источник монотонного времени.
-    :param sleeper: асинхронная функция сна между попытками.
-    :return: значение, которое вернул предикат, либо None если дождаться не удалось.
+    :param predicate: predicate function, possibly asynchronous.
+    :param options: wait parameters; None uses the defaults.
+    :param clock: monotonic time source.
+    :param sleeper: asynchronous sleep function between attempts.
+    :return: predicate value, or None if the condition was not satisfied.
     """
     options = WaitOptions() if options is None else options
     loop = _build_loop(
@@ -143,14 +143,14 @@ async def async_wait_while(
     clock: Clock = time.monotonic,
     sleeper: AsyncSleeper = asyncio.sleep,
 ) -> None:
-    """Ожидать в event loop, пока предикат не перестанет возвращать truthy-значение.
+    """Wait in the event loop until the predicate stops returning a truthy value.
 
-    :param predicate: функция-предикат, возможно асинхронная.
-    :param options: параметры ожидания; None использует значения по умолчанию.
-    :param clock: источник монотонного времени.
-    :param sleeper: асинхронная функция сна между попытками.
-    :raises TimeoutExpiredError: если истекло время ожидания.
-    :raises AttemptsExhaustedError: если исчерпаны попытки, заданные ``max_attempts``.
+    :param predicate: predicate function, possibly asynchronous.
+    :param options: wait parameters; None uses the defaults.
+    :param clock: monotonic time source.
+    :param sleeper: asynchronous sleep function between attempts.
+    :raises TimeoutExpiredError: if the wait times out.
+    :raises AttemptsExhaustedError: if ``max_attempts`` is exhausted.
     """
     options = WaitOptions() if options is None else options
     loop = _build_loop(

@@ -13,10 +13,10 @@ from .support.logs import RecordedLog, RecordingHandler
 
 @pytest.fixture(autouse=True)
 def restore_logging_config() -> Iterator[None]:
-    """Вернуть глобальную конфигурацию логирования после теста.
+    """Restore the global logging configuration after the test.
 
-    LOGGING_CONFIG — модульный синглтон, поэтому без восстановления настройки
-    одного теста меняют поведение всех последующих.
+    LOGGING_CONFIG is a module singleton, so without restoration, settings from
+    one test change the behavior of every subsequent test.
     """
     snapshot = cast("dict[str, object]", vars(replace(config.LOGGING_CONFIG)))
     yield
@@ -26,7 +26,7 @@ def restore_logging_config() -> Iterator[None]:
 
 @pytest.fixture()
 def new_client() -> Iterator[SyncClientFactory]:
-    """Фабрика синхронных клиентов, закрывающая их пулы соединений после теста."""
+    """Provide a synchronous client factory and close its connection pools after the test."""
     created: list[HttpClient] = []
 
     def factory(base_url: str, *options: ClientOption, cls: type[HttpClient] = HttpClient) -> HttpClient:
@@ -42,7 +42,7 @@ def new_client() -> Iterator[SyncClientFactory]:
 
 @pytest.fixture()
 async def new_async_client() -> AsyncIterator[AsyncClientFactory]:
-    """Фабрика асинхронных клиентов, закрывающая их пулы соединений после теста."""
+    """Provide an asynchronous client factory and close its connection pools after the test."""
     created: list[AsyncHttpClient] = []
 
     def factory(
@@ -62,9 +62,9 @@ async def new_async_client() -> AsyncIterator[AsyncClientFactory]:
 
 @pytest.fixture()
 def recorded_log(request: pytest.FixtureRequest) -> Iterator[RecordedLog]:
-    """Настоящий логгер с перехватом записей — фейк вместо мока.
+    """Real logger with captured records: a fake rather than a mock.
 
-    У каждого теста собственный логгер, поэтому записи не утекают между тестами.
+    Each test has its own logger, so records do not leak between tests.
     """
     logger = logging.getLogger(f"http_client.tests.{cast('pytest.Item', request.node).nodeid}")
     handler = RecordingHandler()

@@ -41,7 +41,7 @@ def client_key() -> paramiko.RSAKey:
 @pytest.fixture(scope="session")
 def authorized_keys(client_key: paramiko.RSAKey, tmp_path_factory: pytest.TempPathFactory) -> Path:
     directory = tmp_path_factory.mktemp("ssh-authorized-keys")
-    # sshd читает authorized_keys от имени testuser, а mktemp открывает каталог только владельцу.
+    # sshd reads authorized_keys as testuser, while mktemp restricts the directory to its owner.
     directory.chmod(0o755)
     keys = directory / "authorized_keys"
     keys.write_text(f"{client_key.get_name()} {client_key.get_base64()}\n", encoding="utf-8")

@@ -27,7 +27,7 @@ PayloadBuilder = Callable[[str, str], dict[str, str]]
 
 @dataclass(frozen=True, slots=True)
 class SyncIamCase:
-    """Синхронный клиент IAM вместе с ожидаемыми роутом и телом запроса авторизации."""
+    """Synchronous IAM client with the expected authentication request route and body."""
 
     client_class: type[IAM_SyncClientT]
     route: str
@@ -36,7 +36,7 @@ class SyncIamCase:
 
 @dataclass(frozen=True, slots=True)
 class AsyncIamCase:
-    """Асинхронный клиент IAM вместе с ожидаемыми роутом и телом запроса авторизации."""
+    """Asynchronous IAM client with the expected authentication request route and body."""
 
     client_class: type[IAM_AsyncClientT]
     route: str
@@ -44,10 +44,10 @@ class AsyncIamCase:
 
 
 def record_sent_requests(calls: list[str]) -> Callable[[SyncSendMethod], SyncSendMethod]:
-    """Создать send-декоратор, записывающий прошедшие через него запросы.
+    """Create a send decorator that records requests passing through it.
 
-    :param calls: список, в который дописываются метод и путь каждого запроса
-    :return: декоратор для options.with_send_decorator
+    :param calls: List to append each request method and path to
+    :return: Decorator for options.with_send_decorator
     """
 
     def decorator(func: SyncSendMethod) -> SyncSendMethod:
@@ -62,12 +62,12 @@ def record_sent_requests(calls: list[str]) -> Callable[[SyncSendMethod], SyncSen
 
 
 def delay_sent_requests(delay: float) -> Callable[[SyncSendMethod], SyncSendMethod]:
-    """Создать send-декоратор, задерживающий отправку запроса.
+    """Create a send decorator that delays request sending.
 
-    Нужен, чтобы параллельные вызовы гарантированно перекрывались во времени.
+    Ensure concurrent calls overlap in time.
 
-    :param delay: задержка в секундах
-    :return: декоратор для options.with_send_decorator
+    :param delay: Delay in seconds
+    :return: Decorator for options.with_send_decorator
     """
 
     def decorator(func: SyncSendMethod) -> SyncSendMethod:
@@ -82,10 +82,10 @@ def delay_sent_requests(delay: float) -> Callable[[SyncSendMethod], SyncSendMeth
 
 
 def delay_sent_requests_async(delay: float) -> Callable[[AsyncSendMethod], AsyncSendMethod]:
-    """Создать асинхронный send-декоратор, задерживающий отправку запроса.
+    """Create an asynchronous send decorator that delays request sending.
 
-    :param delay: задержка в секундах
-    :return: декоратор для options.with_send_decorator
+    :param delay: Delay in seconds
+    :return: Decorator for options.with_send_decorator
     """
 
     def decorator(func: AsyncSendMethod) -> AsyncSendMethod:
@@ -105,12 +105,12 @@ def authorized_client(
     key_secret: str,
     store: AuthStore | None = None,
 ) -> Iterator[HttpClient]:
-    """Создать HTTP-клиент с авторизацией через публичное API IAM.
+    """Create an HTTP client authenticated through the IAM public API.
 
-    :param key_id: идентификатор ключа
-    :param key_secret: секретный ключ
-    :param store: хранилище токенов
-    :return: контекстный менеджер клиента, закрывающий оба пула соединений
+    :param key_id: Key ID
+    :param key_secret: Secret key
+    :param store: Token store
+    :return: Client context manager that closes both connection pools
     """
     with (
         IAM_HttpClient(constants.IAM_URL) as iam_client,
@@ -128,12 +128,12 @@ async def async_authorized_client(
     key_secret: str,
     store: AsyncAuthStore | None = None,
 ) -> AsyncIterator[AsyncHttpClient]:
-    """Создать асинхронный HTTP-клиент с авторизацией через публичное API IAM.
+    """Create an asynchronous HTTP client authenticated through the IAM public API.
 
-    :param key_id: идентификатор ключа
-    :param key_secret: секретный ключ
-    :param store: хранилище токенов
-    :return: контекстный менеджер клиента, закрывающий оба пула соединений
+    :param key_id: Key ID
+    :param key_secret: Secret key
+    :param store: Token store
+    :return: Client context manager that closes both connection pools
     """
     async with (
         IAM_AsyncHttpClient(constants.IAM_URL) as iam_client,
@@ -146,11 +146,11 @@ async def async_authorized_client(
 
 
 def iam_auth_response(access_token: str, expires_in: int = 3600) -> dict[str, object]:
-    """Собрать тело успешного ответа сервиса IAM.
+    """Build a successful IAM response body.
 
-    :param access_token: токен доступа, который вернет IAM
-    :param expires_in: время жизни токена в секундах
-    :return: тело ответа
+    :param access_token: Access token returned by IAM
+    :param expires_in: Token lifetime in seconds
+    :return: Response body
     """
     return {
         "access_token": access_token,
@@ -162,21 +162,21 @@ def iam_auth_response(access_token: str, expires_in: int = 3600) -> dict[str, ob
 
 
 def public_api_payload(key_id: str, key_secret: str) -> dict[str, str]:
-    """Собрать тело запроса авторизации через публичное API IAM.
+    """Build an authentication request body for the IAM public API.
 
-    :param key_id: идентификатор ключа
-    :param key_secret: секретный ключ
-    :return: тело запроса
+    :param key_id: Key ID
+    :param key_secret: Secret key
+    :return: Request body
     """
     return {"keyId": key_id, "secret": key_secret}
 
 
 def openid_payload(key_id: str, key_secret: str) -> dict[str, str]:
-    """Собрать тело запроса авторизации через OpenID API IAM.
+    """Build an authentication request body for the IAM OpenID API.
 
-    :param key_id: идентификатор ключа
-    :param key_secret: секретный ключ
-    :return: тело запроса
+    :param key_id: Key ID
+    :param key_secret: Secret key
+    :return: Request body
     """
     return {
         "grant_type": "client_credentials",

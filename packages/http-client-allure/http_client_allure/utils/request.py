@@ -17,12 +17,12 @@ def parse_request_for_attach(
     body: bytes | None,
     settings: StepSettings,
 ) -> Attachment:
-    """Собрать вложение с данными запроса.
+    """Build an attachment with request data.
 
-    :param request: HTTP-запрос
-    :param body: тело запроса, None означает непрочитанный поток выгрузки
-    :param settings: настройки шага
-    :return: вложение для прикрепления к шагу
+    :param request: HTTP request
+    :param body: Request body; None indicates an unread upload stream
+    :param settings: Step settings
+    :return: Attachment for the step
     """
     if settings.serialize_request_to_curl:
         return _build_curl_attachment(request, body, settings)
@@ -51,11 +51,11 @@ def _build_curl_request(
     body: bytes | None,
     settings: StepSettings,
 ) -> httpx.Request:
-    """Пересобрать запрос для to_curl с замаскированным URL и уже готовым телом.
+    """Rebuild a request for to_curl with a masked URL and a prepared body.
 
-    Исходный запрос отдавать нельзя: to_curl печатает URL как есть, поэтому секреты
-    из query утекли бы в отчет, и сам читает тело - непрочитанный поток выгрузки
-    оказался бы съеден до отправки, а сам запрос упал бы с StreamClosed.
+    Do not pass the original request: to_curl prints the URL unchanged, exposing query
+    secrets in the report, and reads the body itself, consuming an unread upload stream
+    before sending and causing the request to fail with StreamClosed.
     """
     return httpx.Request(
         request.method,
@@ -66,10 +66,10 @@ def _build_curl_request(
 
 
 def _streamed_placeholder(request: httpx.Request) -> bytes:
-    """Заглушка вместо непрочитанного тела потоковой выгрузки.
+    """Create a placeholder for an unread streaming upload body.
 
-    Для JSON запроса заглушка сама обязана быть валидным JSON: to_curl разбирает
-    такое тело через json.loads и упал бы на обычной строке уже после отправки.
+    For a JSON request, the placeholder must be valid JSON: to_curl parses
+    the body with json.loads and would fail on a plain string after sending.
     """
     if cast("str", request.headers.get("content-type", "")).startswith(JSON_CONTENT_TYPE):
         return json.dumps(STREAMED_CONTENT).encode()

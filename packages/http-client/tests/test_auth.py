@@ -9,7 +9,7 @@ from .support.clients import AsyncClientFactory, SyncClientFactory
 
 
 class FalseyAuth(httpx.Auth):
-    """Валидный механизм авторизации, который при этом falsey."""
+    """Valid authentication mechanism that is falsey."""
 
     def __bool__(self) -> bool:
         return False
@@ -20,9 +20,9 @@ class FalseyAuth(httpx.Auth):
 
 
 def test_applies_falsey_auth_passed_to_call(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Переданный в вызов Auth применяется, даже если он falsey.
+    """Apply Auth supplied by the call even when it is falsey.
 
-    Регрессия: выражение `auth or self.client.auth` подменяло такой объект авторизацией клиента.
+    Regression: `auth or self.client.auth` replaced such an object with client authentication.
     """
     httpx_mock.add_response(status_code=200)
     client = new_client("https://billing.example.com", with_auth(httpx.BasicAuth("ops", "s3cret")))
@@ -33,7 +33,7 @@ def test_applies_falsey_auth_passed_to_call(httpx_mock: HTTPXMock, new_client: S
 
 
 def test_falsey_auth_from_call_replaces_client_auth(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Авторизация клиента не применяется, когда в вызов передан falsey Auth."""
+    """Client authentication is not applied when the call supplies a falsey Auth."""
     httpx_mock.add_response(status_code=200)
     client = new_client("https://billing.example.com", with_auth(httpx.BasicAuth("ops", "s3cret")))
 
@@ -45,7 +45,7 @@ def test_falsey_auth_from_call_replaces_client_auth(httpx_mock: HTTPXMock, new_c
 async def test_async_applies_falsey_auth_passed_to_call(
     httpx_mock: HTTPXMock, new_async_client: AsyncClientFactory
 ) -> None:
-    """Асинхронный клиент так же применяет falsey Auth из вызова."""
+    """The asynchronous client also applies a falsey Auth supplied by the call."""
     httpx_mock.add_response(status_code=200)
     client = new_async_client("https://audit.example.com", with_auth(httpx.BasicAuth("sre", "letmein")))
 
@@ -55,7 +55,7 @@ async def test_async_applies_falsey_auth_passed_to_call(
 
 
 def test_applies_client_auth_when_call_has_none(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Без явной авторизации в вызове используется авторизация клиента."""
+    """Use client authentication when the call does not specify authentication."""
     httpx_mock.add_response(status_code=200)
     client = new_client("https://registry.example.com", with_auth(httpx.BasicAuth("bot", "p@ssw0rd")))
 
@@ -65,7 +65,7 @@ def test_applies_client_auth_when_call_has_none(httpx_mock: HTTPXMock, new_clien
 
 
 def test_anonymous_call_drops_client_auth(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """anonymous=True отключает авторизацию клиента."""
+    """anonymous=True disables client authentication."""
     httpx_mock.add_response(status_code=200)
     client = new_client("https://status.example.com", with_auth(httpx.BasicAuth("admin", "qwerty")))
 

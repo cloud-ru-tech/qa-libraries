@@ -26,10 +26,10 @@ _ENV_SERVICE_ADDR = os.getenv("SERVICE_ADDR")
 
 
 def _check_grpcbin(ip: str, port: int) -> bool:
-    """Проверить готовность grpcbin настоящим gRPC вызовом.
+    """Check grpcbin readiness using a real gRPC call.
 
-    Открытого TCP-порта мало: контейнер успевает принять соединение раньше, чем сервис
-    начинает отвечать, и первый запрос теста падает на ровном месте.
+    An open TCP port is insufficient: the container may accept connections before the service
+    starts responding, causing the first test request to fail unexpectedly.
     """
     try:
         with socket.create_connection((ip, port), timeout=1), grpc.insecure_channel(f"{ip}:{port}") as channel:
@@ -43,13 +43,13 @@ def _check_grpcbin(ip: str, port: int) -> bool:
 
 @pytest.fixture(scope="session")
 def docker_compose_file() -> list[str]:
-    """Путь к docker-compose файлу с grpcbin для тестов."""
+    """Path to the docker-compose file with grpcbin for tests."""
     return [str(Path(__file__).parent / "docker-compose.yml")]
 
 
 @pytest.fixture(scope="session")
 def grpcbin_docker(docker_services: DockerServices, docker_ip: str) -> str:
-    """Дождаться готовности тестового gRPC сервиса."""
+    """Wait for the test gRPC service to become ready."""
     public_port = docker_services.port_for(_GRPCBIN_SERVICE, _GRPCBIN_PORT)
     docker_services.wait_until_responsive(timeout=60, pause=0.1, check=lambda: _check_grpcbin(docker_ip, public_port))
     return f"{docker_ip}:{public_port}"
@@ -57,11 +57,11 @@ def grpcbin_docker(docker_services: DockerServices, docker_ip: str) -> str:
 
 @pytest.fixture(scope="session")
 def service_addr(request: pytest.FixtureRequest) -> str:
-    """Адрес сервиса grpcbin.
+    """Address of the grpcbin service.
 
-    Если переменная окружения SERVICE_ADDR задана — используется она, иначе поднимается контейнер.
+    Use the SERVICE_ADDR environment variable if set; otherwise start a container.
 
-    :return: адрес grpcbin в формате host:port
+    :return: grpcbin address in host:port format
     """
     if _ENV_SERVICE_ADDR:
         return _ENV_SERVICE_ADDR
@@ -70,34 +70,34 @@ def service_addr(request: pytest.FixtureRequest) -> str:
 
 @pytest.fixture()
 def boe_client(service_addr: str) -> Iterator[ABitOfEverythingServiceClient]:
-    """Клиент сервиса «A Bit Of Everything»."""
+    """Client for the A Bit Of Everything service."""
     with ABitOfEverythingServiceClient.from_addr(service_addr, options.with_insecure_channel()) as client:
         yield client
 
 
 @pytest.fixture()
 def grpcbin_client(service_addr: str) -> Iterator[GRPCbinServiceClient]:
-    """Клиент сервиса grpcbin."""
+    """Client for the grpcbin service."""
     with GRPCbinServiceClient.from_addr(service_addr, options.with_insecure_channel()) as client:
         yield client
 
 
 @pytest.fixture()
 async def async_grpcbin_client(service_addr: str) -> AsyncIterator[AsyncGRPCbinServiceClient]:
-    """Асинхронный клиент сервиса grpcbin."""
+    """Asynchronous client for the grpcbin service."""
     async with AsyncGRPCbinServiceClient.from_addr(service_addr, options.with_insecure_channel()) as client:
         yield client
 
 
 @pytest.fixture()
 def dummy_message(faker: Faker) -> grpcbin_pb2.DummyMessage:
-    """Тестовое сообщение со случайным содержимым."""
+    """Test message with random contents."""
     return _generate_dummy_msg(faker)
 
 
 @pytest.fixture()
 def dummy_messages(faker: Faker) -> Iterator[grpcbin_pb2.DummyMessage]:
-    """Поток из десяти тестовых сообщений."""
+    """Stream of ten test messages."""
 
     def iterator() -> Iterator[grpcbin_pb2.DummyMessage]:
         for _ in range(10):
@@ -135,13 +135,13 @@ def _generate_dummy_msg(faker: Faker) -> grpcbin_pb2.DummyMessage:
 
 @pytest.fixture()
 def log_stream() -> io.StringIO:
-    """Поток, в который пишет тестовый логгер."""
+    """Stream used by the test logger."""
     return io.StringIO()
 
 
 @pytest.fixture()
 def logger(log_stream: io.StringIO, request: pytest.FixtureRequest) -> Iterator[logging.Logger]:
-    """Логгер, пишущий в отдельный поток для каждого теста."""
+    """Logger that writes to a separate stream for each test."""
     item = cast("pytest.Item", request.node)
     log = logging.getLogger(f"grpc_client_test.{item.name}")
     log.setLevel(logging.DEBUG)

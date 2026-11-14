@@ -22,7 +22,7 @@ def test_returns_ok_status_for_client_stream(
     grpcbin_client: GRPCbinServiceClient,
     dummy_messages: Iterator[grpcbin_pb2.DummyMessage],
 ) -> None:
-    """Поток запросов завершается статусом OK."""
+    """A request stream finishes with status OK."""
     response = grpcbin_client.send_client_stream(dummy_messages)
 
     assert_that(response).has_status_code(grpc.StatusCode.OK)
@@ -32,7 +32,7 @@ def test_returns_message_for_client_stream(
     grpcbin_client: GRPCbinServiceClient,
     dummy_messages: Iterator[grpcbin_pb2.DummyMessage],
 ) -> None:
-    """В ответ на поток запросов сервис присылает одно сообщение."""
+    """The service returns one message in response to a request stream."""
     response = grpcbin_client.send_client_stream(dummy_messages)
 
     assert_that(response.message()).is_instance_of(grpcbin_pb2.DummyMessage)
@@ -42,7 +42,7 @@ def test_reads_server_stream_lazily(
     grpcbin_client: GRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Поток ответов читается по одному сообщению за раз."""
+    """A response stream is read one message at a time."""
     with grpcbin_client.send_server_stream(dummy_message) as stream:
         first = next(iter(stream))
 
@@ -53,7 +53,7 @@ def test_collects_all_messages_of_server_stream(
     grpcbin_client: GRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Собранный поток ответов содержит все присланные сервисом сообщения."""
+    """A collected response stream contains all messages sent by the service."""
     response = grpcbin_client.send_server_stream(dummy_message).collect()
 
     assert_that(response.message()).is_length(STREAM_MESSAGES_COUNT)
@@ -63,7 +63,7 @@ def test_returns_ok_status_after_collecting_server_stream(
     grpcbin_client: GRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Собранный поток ответов завершается статусом OK."""
+    """A collected response stream finishes with status OK."""
     response = grpcbin_client.send_server_stream(dummy_message).collect()
 
     assert_that(response).has_status_code(grpc.StatusCode.OK)
@@ -73,7 +73,7 @@ def test_stops_collecting_server_stream_at_limit(
     grpcbin_client: GRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Сбор потока прекращается по достижении заданного предела."""
+    """Stream collection stops at the specified limit."""
     limit = 3
 
     response = grpcbin_client.send_server_stream(dummy_message).collect(limit=limit)
@@ -85,7 +85,7 @@ def test_collects_all_messages_of_bidirectional_stream(
     grpcbin_client: GRPCbinServiceClient,
     dummy_messages: Iterator[grpcbin_pb2.DummyMessage],
 ) -> None:
-    """Двунаправленный поток возвращает столько же сообщений, сколько отправлено."""
+    """A bidirectional stream returns as many messages as were sent."""
     response = grpcbin_client.send_bidirectional_stream(dummy_messages).collect()
 
     assert_that(response.message()).is_length(STREAM_MESSAGES_COUNT)
@@ -95,7 +95,7 @@ def test_returns_ok_status_after_collecting_bidirectional_stream(
     grpcbin_client: GRPCbinServiceClient,
     dummy_messages: Iterator[grpcbin_pb2.DummyMessage],
 ) -> None:
-    """Двунаправленный поток завершается статусом OK."""
+    """A bidirectional stream finishes with status OK."""
     response = grpcbin_client.send_bidirectional_stream(dummy_messages).collect()
 
     assert_that(response).has_status_code(grpc.StatusCode.OK)
@@ -105,7 +105,7 @@ def test_reports_deadline_exceeded_for_interrupted_server_stream(
     grpcbin_client: GRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Оборванный по истечении времени поток превращается в ответ со статусом ошибки."""
+    """A timed-out stream becomes a response with an error status."""
     response = grpcbin_client.send_server_stream(dummy_message, CallOptions(timeout=0.05)).collect()
 
     assert_that(response).has_status_code(grpc.StatusCode.DEADLINE_EXCEEDED)
@@ -115,7 +115,7 @@ def test_returns_only_messages_received_before_interruption(
     grpcbin_client: GRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Оборванный поток отдает только то, что успел прислать сервис."""
+    """An interrupted stream yields only messages already sent by the service."""
     response = grpcbin_client.send_server_stream(dummy_message, CallOptions(timeout=0.5)).collect()
 
     assert_that(len(response.message())).is_less_than(STREAM_MESSAGES_COUNT)
@@ -125,7 +125,7 @@ def test_rejects_second_reading_of_stream(
     grpcbin_client: GRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Повторное чтение потока завершается ошибкой."""
+    """Reading the stream again raises an error."""
     stream = grpcbin_client.send_server_stream(dummy_message)
     stream.collect()
 
@@ -137,7 +137,7 @@ def test_hides_status_until_stream_is_consumed(
     grpcbin_client: GRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Итоговый статус недоступен, пока поток не прочитан до конца."""
+    """The final status is unavailable until the stream is fully consumed."""
     with grpcbin_client.send_server_stream(dummy_message) as stream, pytest.raises(StreamNotConsumedError):
         _ = stream.status_code
 
@@ -146,7 +146,7 @@ def test_reports_status_after_stream_is_consumed(
     grpcbin_client: GRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """После полного чтения потока становится доступен итоговый статус."""
+    """The final status becomes available after fully reading the stream."""
     stream = grpcbin_client.send_server_stream(dummy_message)
     list(stream)
 
@@ -157,7 +157,7 @@ def test_cancels_stream_on_context_exit(
     grpcbin_client: GRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Незавершенный поток отменяется при выходе из контекстного менеджера."""
+    """An unfinished stream is cancelled on context manager exit."""
     with grpcbin_client.send_server_stream(dummy_message) as stream:
         next(iter(stream))
 
@@ -168,17 +168,17 @@ def test_reads_nothing_with_zero_limit(
     grpcbin_client: GRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """С нулевым пределом поток не читается вовсе."""
+    """A zero limit prevents any stream reads."""
     response = grpcbin_client.send_server_stream(dummy_message).collect(limit=0)
 
     assert_that(response.message()).is_empty()
 
 
 def test_makes_no_reads_with_zero_limit() -> None:
-    """С нулевым пределом сообщения у вызова не запрашиваются.
+    """A zero limit prevents requesting messages from the call.
 
-    Проверяется на поддельном вызове: по пустому списку нельзя отличить «не читали»
-    от «прочитали и выбросили».
+    Use a fake call: an empty list cannot distinguish no reads
+    from reading and discarding messages.
     """
     call = FakeStreamCall(messages_count=3)
     stream: GRPCStreamResponse[object] = GRPCStreamResponse(cast("grpc.Call", call))
@@ -192,7 +192,7 @@ def test_rejects_negative_limit(
     grpcbin_client: GRPCbinServiceClient,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Отрицательный предел числа сообщений не принимается."""
+    """A negative message count limit is rejected."""
     stream = grpcbin_client.send_server_stream(dummy_message)
 
     with pytest.raises(ValueError, match="отрицательным"):
@@ -200,9 +200,9 @@ def test_rejects_negative_limit(
 
 
 def test_keeps_messages_received_before_error() -> None:
-    """Сообщения, пришедшие до ошибки сервера, остаются в собранном ответе.
+    """Messages received before a server error remain in the collected response.
 
-    По ним видно, на каком месте оборвался поток, поэтому терять их нельзя.
+    They show where the stream was interrupted and must not be lost.
     """
     received = object()
     call = FakeFailingStreamCall([received], FakeRpcError())
@@ -214,7 +214,7 @@ def test_keeps_messages_received_before_error() -> None:
 
 
 def test_reports_error_status_for_interrupted_stream() -> None:
-    """Оборванный поток сообщает код ошибки сервера."""
+    """An interrupted stream reports the server error code."""
     call = FakeFailingStreamCall([object()], FakeRpcError(code=grpc.StatusCode.INTERNAL))
     stream: GRPCStreamResponse[object] = GRPCStreamResponse(cast("grpc.Call", call))
 

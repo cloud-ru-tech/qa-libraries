@@ -9,14 +9,14 @@ from .support import code_number
 
 
 def test_returns_ok_status_for_unary_request(boe_client: ABitOfEverythingServiceClient) -> None:
-    """Успешный унарный запрос завершается статусом OK."""
+    """A successful unary request finishes with status OK."""
     response = boe_client.echo(StringMessage(value="Per aspera ad astra"))
 
     assert_that(response).has_status_code(grpc.StatusCode.OK)
 
 
 def test_returns_echoed_message_for_unary_request(boe_client: ABitOfEverythingServiceClient) -> None:
-    """Сервис возвращает отправленное сообщение."""
+    """The service returns the sent message."""
     sent_value = "Veni, vidi, vici"
 
     response = boe_client.echo(StringMessage(value=sent_value))
@@ -25,35 +25,35 @@ def test_returns_echoed_message_for_unary_request(boe_client: ABitOfEverythingSe
 
 
 def test_marks_successful_response_as_ok(boe_client: ABitOfEverythingServiceClient) -> None:
-    """Успешный ответ помечается признаком успеха."""
+    """A successful response is marked successful."""
     response = boe_client.echo(StringMessage(value="Cogito ergo sum"))
 
     assert_that(response.ok).is_true()
 
 
 def test_returns_empty_details_for_successful_request(boe_client: ABitOfEverythingServiceClient) -> None:
-    """У успешного ответа нет пояснения к статусу."""
+    """A successful response has no status explanation."""
     response = boe_client.echo(StringMessage(value="Alea iacta est"))
 
     assert_that(response).has_details("")
 
 
 def test_returns_message_of_empty_response(grpcbin_client: GRPCbinServiceClient) -> None:
-    """Успешный ответ без полей остается доступным как сообщение."""
+    """A successful response without fields remains accessible as a message."""
     response = grpcbin_client.empty()
 
     assert_that(response.message()).is_not_none()
 
 
 def test_returns_requested_error_code(grpcbin_client: GRPCbinServiceClient) -> None:
-    """Сервис отвечает тем кодом ошибки, который его попросили вернуть."""
+    """The service responds with the error code it was asked to return."""
     response = grpcbin_client.specific_error(code=code_number(grpc.StatusCode.NOT_FOUND), reason="ничего не нашлось")
 
     assert_that(response).has_status_code(grpc.StatusCode.NOT_FOUND)
 
 
 def test_returns_error_reason_in_details(grpcbin_client: GRPCbinServiceClient) -> None:
-    """Текст ошибки от сервиса попадает в детали ответа."""
+    """The service error text appears in response details."""
     reason = "склад закрыт на учет"
 
     response = grpcbin_client.specific_error(code=code_number(grpc.StatusCode.UNAVAILABLE), reason=reason)
@@ -62,21 +62,21 @@ def test_returns_error_reason_in_details(grpcbin_client: GRPCbinServiceClient) -
 
 
 def test_marks_failed_response_as_not_ok(grpcbin_client: GRPCbinServiceClient) -> None:
-    """Ответ с ошибкой не помечается признаком успеха."""
+    """A failed response is not marked successful."""
     response = grpcbin_client.specific_error(code=code_number(grpc.StatusCode.PERMISSION_DENIED), reason="нет прав")
 
     assert_that(response.ok).is_false()
 
 
 def test_keeps_original_error_in_failed_response(grpcbin_client: GRPCbinServiceClient) -> None:
-    """Ответ с ошибкой хранит исходное исключение gRPC."""
+    """A failed response retains the original gRPC exception."""
     response = grpcbin_client.specific_error(code=code_number(grpc.StatusCode.INTERNAL), reason="сломалось")
 
     assert_that(response.error).is_instance_of(grpc.RpcError)
 
 
 def test_rejects_message_access_for_failed_request(grpcbin_client: GRPCbinServiceClient) -> None:
-    """Обращение к сообщению неуспешного ответа завершается ошибкой."""
+    """Accessing the message of an unsuccessful response raises an error."""
     response = grpcbin_client.specific_error(code=code_number(grpc.StatusCode.ABORTED), reason="прервано")
 
     with pytest.raises(MessageUndefinedError):
@@ -84,7 +84,7 @@ def test_rejects_message_access_for_failed_request(grpcbin_client: GRPCbinServic
 
 
 def test_raises_for_failed_status(grpcbin_client: GRPCbinServiceClient) -> None:
-    """Проверка статуса неуспешного ответа завершается ошибкой."""
+    """Checking an unsuccessful response status raises an error."""
     response = grpcbin_client.specific_error(code=code_number(grpc.StatusCode.DATA_LOSS), reason="данные потеряны")
 
     with pytest.raises(ResponseStatusError):
@@ -92,21 +92,21 @@ def test_raises_for_failed_status(grpcbin_client: GRPCbinServiceClient) -> None:
 
 
 def test_returns_itself_when_status_is_ok(boe_client: ABitOfEverythingServiceClient) -> None:
-    """Проверка статуса успешного ответа возвращает тот же ответ."""
+    """Checking a successful response status returns the same response."""
     response = boe_client.echo(StringMessage(value="Dum spiro spero"))
 
     assert_that(response.raise_for_status()).is_same_as(response)
 
 
 def test_returns_parsed_message(boe_client: ABitOfEverythingServiceClient) -> None:
-    """Функция разбора применяется к ответному сообщению."""
+    """The parser is applied to the response message."""
     response = boe_client.echo(StringMessage(value="ad hoc"))
 
     assert_that(response.with_parser(lambda msg: msg.value.upper()).parse()).is_equal_to("AD HOC")
 
 
 def test_keeps_status_in_parsed_response(boe_client: ABitOfEverythingServiceClient) -> None:
-    """Ответ с функцией разбора сохраняет статус исходного ответа."""
+    """A parsed response preserves the original response status."""
     response = boe_client.echo(StringMessage(value="in vino veritas"))
 
     assert_that(response.with_parser(lambda msg: msg.value)).has_status_code(grpc.StatusCode.OK)

@@ -1,4 +1,4 @@
-"""Отклонённый ответ освобождает соединение до следующей попытки."""
+"""A rejected response releases its connection before the next attempt."""
 
 import httpx
 import pytest

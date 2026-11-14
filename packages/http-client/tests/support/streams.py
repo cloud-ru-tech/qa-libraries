@@ -1,4 +1,4 @@
-"""Матчеры для порций данных, вычитанных из потокового ответа."""
+"""Matchers for data chunks read from a streaming response."""
 
 from typing import TYPE_CHECKING, Self
 
@@ -11,7 +11,7 @@ else:
 
 
 class ChunksAssertions(_ChunkListAssertions):
-    """Проверки последовательности порций потокового ответа."""
+    """Check a sequence of streaming response chunks."""
 
     def are_no_longer_than(self, limit: int) -> Self:
         too_long = [len(chunk) for chunk in self.val if len(chunk) > limit]
@@ -32,5 +32,5 @@ class ChunksAssertions(_ChunkListAssertions):
 
 
 def assert_chunks(chunks: list[bytes]) -> ChunksAssertions:
-    """Проверки последовательности порций потокового ответа."""
+    """Check a sequence of streaming response chunks."""
     return ChunksAssertions(chunks)

@@ -12,7 +12,7 @@ from .call_options import CallOptions
 from .metadata import merge_metadata
 from .types import AsyncGRPCStub, ChannelOptions, GRPCStub, MetadataItems, MetadataType
 
-# Функция, настраивающая клиент при создании.
+# Function that configures a client when it is created.
 ClientOption = Callable[["BaseGRPCClient[object]"], None]
 
 type ClientInterceptorTypes = (
@@ -37,7 +37,7 @@ DEFAULT_TIMEOUT_SEC = 60.0
 
 
 class CallArguments(TypedDict):
-    """Аргументы, передаваемые в методы grpcio."""
+    """Arguments passed to grpcio methods."""
 
     timeout: float | None
     metadata: tuple[tuple[str, str | bytes], ...] | None
@@ -57,23 +57,23 @@ class _ClientConfiguration:
 
 
 class BaseGRPCClient[TAnyStub](metaclass=ABCMeta):
-    """Базовый абстрактный класс gRPC-клиента.
+    """Abstract base class for gRPC clients.
 
-    Хранит настройки, общие для синхронного и асинхронного клиентов, применяет к ним опции
-    и собирает из них итоговые параметры каждого вызова. Отправку запросов и работу с каналом
-    реализуют наследники.
+    Store settings shared by synchronous and asynchronous clients, apply options,
+    and build effective options for each call. Sending requests and managing channels
+    are implemented by subclasses.
     """
 
     DEFAULT_TIMEOUT_SEC = DEFAULT_TIMEOUT_SEC
 
     def __init__(self) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._configuration = _ClientConfiguration(timeout=self.DEFAULT_TIMEOUT_SEC)
         self._interceptors: list[object] = []
 
     @property
     def timeout(self) -> float | None:
-        """Ограничение времени вызова по умолчанию."""
+        """Default call timeout."""
         return self._configuration.timeout
 
     @timeout.setter
@@ -82,7 +82,7 @@ class BaseGRPCClient[TAnyStub](metaclass=ABCMeta):
 
     @property
     def secure(self) -> bool:
-        """Признак использования TLS для нового канала."""
+        """Whether TLS is enabled for a new channel."""
         return self._configuration.secure
 
     @secure.setter
@@ -91,7 +91,7 @@ class BaseGRPCClient[TAnyStub](metaclass=ABCMeta):
 
     @property
     def ssl_credentials(self) -> grpc.ChannelCredentials | None:
-        """Учетные данные TLS для нового канала."""
+        """TLS credentials for a new channel."""
         return self._configuration.ssl_credentials
 
     @ssl_credentials.setter
@@ -100,7 +100,7 @@ class BaseGRPCClient[TAnyStub](metaclass=ABCMeta):
 
     @property
     def compression(self) -> grpc.Compression | None:
-        """Алгоритм сжатия сообщений."""
+        """Message compression algorithm."""
         return self._configuration.compression
 
     @compression.setter
@@ -109,7 +109,7 @@ class BaseGRPCClient[TAnyStub](metaclass=ABCMeta):
 
     @property
     def channel_options(self) -> ChannelOptions:
-        """Низкоуровневые параметры нового канала."""
+        """Low-level options for a new channel."""
         return self._configuration.channel_options
 
     @channel_options.setter
@@ -118,7 +118,7 @@ class BaseGRPCClient[TAnyStub](metaclass=ABCMeta):
 
     @property
     def default_metadata(self) -> MetadataItems:
-        """Метаданные, добавляемые к каждому запросу."""
+        """Metadata added to every request."""
         return self._configuration.default_metadata
 
     @default_metadata.setter
@@ -126,16 +126,16 @@ class BaseGRPCClient[TAnyStub](metaclass=ABCMeta):
         self._configuration.default_metadata = value
 
     def add_interceptor(self, interceptor: object) -> None:
-        """Добавить интерцептор до создания канала.
+        """Add an interceptor before creating the channel.
 
-        :param interceptor: синхронный или асинхронный интерцептор grpcio.
+        :param interceptor: synchronous or asynchronous grpcio interceptor.
         """
         self._interceptors.append(interceptor)
 
     @property
     @abstractmethod
     def stub_class(self) -> type[TAnyStub]:
-        """Класс Stub-а сервиса из сгенерированного `***_pb2_grpc.py` файла."""
+        """Service stub class from the generated `***_pb2_grpc.py` file."""
 
     def _apply(self, options: Sequence[ClientOption]) -> None:
         for option in options:
@@ -145,7 +145,7 @@ class BaseGRPCClient[TAnyStub](metaclass=ABCMeta):
         return self.ssl_credentials if self.ssl_credentials is not None else grpc.ssl_channel_credentials()
 
     def _call_options(self, metadata: MetadataType | None, options: CallOptions | None) -> CallOptions:
-        """Собрать итоговые параметры вызова из настроек клиента и параметров запроса."""
+        """Build effective call options from client settings and request options."""
         base = CallOptions(
             timeout=self.timeout,
             metadata=self.default_metadata,
@@ -164,7 +164,7 @@ class BaseGRPCClient[TAnyStub](metaclass=ABCMeta):
 
     @staticmethod
     def _call_kwargs(options: CallOptions) -> CallArguments:
-        """Превратить параметры вызова в аргументы grpcio."""
+        """Convert call options to grpcio arguments."""
         metadata = merge_metadata(options.metadata)
         return {
             "timeout": options.resolve_timeout(None),

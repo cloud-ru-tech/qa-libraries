@@ -1,4 +1,4 @@
-"""Политика повторов задаётся отдельно для каждого клиента."""
+"""Configure retry policies separately for each client."""
 
 from dataclasses import FrozenInstanceError
 
@@ -145,4 +145,4 @@ def test_configuration_snapshot_cannot_be_mutated() -> None:
     snapshot = get_config()
 
     with pytest.raises(FrozenInstanceError):
-        setattr(snapshot, "reraise", True)  # noqa: B010 - присваивание напрямую отклонит проверка типов
+        setattr(snapshot, "reraise", True)  # noqa: B010 - The type checker would reject direct assignment

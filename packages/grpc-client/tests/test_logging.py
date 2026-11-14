@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 
 def test_logs_sent_request(service_addr: str, logger: logging.Logger, log_stream: io.StringIO) -> None:
-    """Отправленный запрос попадает в лог."""
+    """The sent request is logged."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -32,7 +32,7 @@ def test_logs_sent_request(service_addr: str, logger: logging.Logger, log_stream
 
 
 def test_logs_received_response(service_addr: str, logger: logging.Logger, log_stream: io.StringIO) -> None:
-    """Полученный ответ попадает в лог."""
+    """The received response is logged."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -44,7 +44,7 @@ def test_logs_received_response(service_addr: str, logger: logging.Logger, log_s
 
 
 def test_logs_request_payload(service_addr: str, logger: logging.Logger, log_stream: io.StringIO) -> None:
-    """Тело запроса попадает в лог."""
+    """The request body is logged."""
     payload = "инвентаризация склада"
 
     with GRPCbinServiceClient.from_addr(
@@ -58,7 +58,7 @@ def test_logs_request_payload(service_addr: str, logger: logging.Logger, log_str
 
 
 def test_logs_error_status(service_addr: str, logger: logging.Logger, log_stream: io.StringIO) -> None:
-    """Ошибка вызова попадает в лог."""
+    """The call error is logged."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -70,7 +70,7 @@ def test_logs_error_status(service_addr: str, logger: logging.Logger, log_stream
 
 
 def test_logs_error_reason(service_addr: str, logger: logging.Logger, log_stream: io.StringIO) -> None:
-    """Текст ошибки от сервиса попадает в лог."""
+    """The service error text is logged."""
     reason = "поставка отменена"
 
     with GRPCbinServiceClient.from_addr(
@@ -88,7 +88,7 @@ def test_masks_authorization_metadata_by_default(
     logger: logging.Logger,
     log_stream: io.StringIO,
 ) -> None:
-    """Заголовок авторизации маскируется в логе запроса без дополнительной настройки."""
+    """The authorization header is masked in request logs without additional configuration."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -104,7 +104,7 @@ def test_masks_nested_payload_field_by_glom_path(
     logger: logging.Logger,
     log_stream: io.StringIO,
 ) -> None:
-    """Вложенное поле тела сообщения маскируется по glom-пути."""
+    """A nested message body field is masked by its glom path."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -116,7 +116,7 @@ def test_masks_nested_payload_field_by_glom_path(
 
 
 def test_masks_configured_payload_field(service_addr: str, logger: logging.Logger, log_stream: io.StringIO) -> None:
-    """Поле тела запроса, указанное в настройках, маскируется в логе."""
+    """A configured request body field is masked in the log."""
     secret_value = uuid4().hex
     with GRPCbinServiceClient.from_addr(
         service_addr,
@@ -133,7 +133,7 @@ def test_completes_server_stream_with_logging_interceptor(
     logger: logging.Logger,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Поток ответов работает, когда к клиенту подключено логирование."""
+    """Response streaming works with client logging enabled."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -150,7 +150,7 @@ def test_logs_finished_server_stream(
     log_stream: io.StringIO,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Завершение потока ответов попадает в лог."""
+    """Response stream completion is logged."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -167,7 +167,7 @@ def test_logs_number_of_streamed_messages(
     log_stream: io.StringIO,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Количество полученных сообщений потока попадает в лог."""
+    """The number of received stream messages is logged."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -183,7 +183,7 @@ def test_writes_nothing_when_log_level_is_disabled(
     logger: logging.Logger,
     log_stream: io.StringIO,
 ) -> None:
-    """При отключенном уровне логирования лог остается пустым."""
+    """The log stays empty when its level is disabled."""
     logger.setLevel(logging.CRITICAL)
 
     with GRPCbinServiceClient.from_addr(
@@ -197,7 +197,7 @@ def test_writes_nothing_when_log_level_is_disabled(
 
 
 def test_truncates_long_payload(service_addr: str, logger: logging.Logger, log_stream: io.StringIO) -> None:
-    """Слишком длинное тело сообщения обрезается в логе."""
+    """An overly long message body is truncated in the log."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -213,9 +213,9 @@ def test_logs_all_values_of_repeated_metadata_key(
     logger: logging.Logger,
     log_stream: io.StringIO,
 ) -> None:
-    """Все значения повторяющегося ключа метаданных попадают в лог.
+    """All values of a repeated metadata key are logged.
 
-    Словарь оставил бы только последнее значение, и лог перестал бы соответствовать запросу.
+    A dictionary would retain only the last value and make the log differ from the request.
     """
     with GRPCbinServiceClient.from_addr(
         service_addr,
@@ -232,7 +232,7 @@ def test_masks_camel_case_secret_in_payload(
     logger: logging.Logger,
     log_stream: io.StringIO,
 ) -> None:
-    """Секрет в теле сообщения маскируется независимо от стиля записи имени поля."""
+    """A message body secret is masked regardless of field naming style."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -247,9 +247,9 @@ def test_sends_request_when_payload_logging_fails(
     service_addr: str,
     logger: logging.Logger,
 ) -> None:
-    """Сбой подготовки лога не мешает отправить запрос.
+    """A log preparation failure does not prevent sending the request.
 
-    Лог запроса собирается до вызова, поэтому ошибка маскирования не должна его срывать.
+    Request logs are built before calling, so masking errors must not prevent the call.
     """
     with GRPCbinServiceClient.from_addr(
         service_addr,
@@ -271,7 +271,7 @@ def test_reports_unavailable_payload_when_logging_fails(
     logger: logging.Logger,
     log_stream: io.StringIO,
 ) -> None:
-    """При сбое подготовки тела в лог попадает явный маркер."""
+    """A body preparation failure produces an explicit marker in the log."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -293,9 +293,9 @@ def test_logs_finished_stream_left_unread(
     log_stream: io.StringIO,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Поток, который никто не дочитал, всё равно оставляет запись о завершении.
+    """A stream left unread still produces a completion record.
 
-    Такой поток обрывается по deadline, и без callback самого вызова финального лога бы не было.
+    This stream ends at its deadline and would have no final log without the call callback.
     """
     with GRPCbinServiceClient.from_addr(
         service_addr,
@@ -313,10 +313,10 @@ def test_counts_message_delivered_together_with_completion(
     logger: logging.Logger,
     log_stream: io.StringIO,
 ) -> None:
-    """Сообщение попадает в счётчик, даже если вызов завершился в момент его выдачи.
+    """A message is counted even if the call finishes while yielding it.
 
-    Callback завершения приходит из служебного потока grpcio и раньше мог снять счётчик
-    до того, как читатель успевал учесть уже полученное сообщение.
+    The grpcio completion callback runs in an internal thread and previously could read the counter
+    before the reader counted a message already received.
     """
     call = FakeCallbackStreamCall(messages_count=1)
     interceptor = LoggingInterceptor(logger=logger)
@@ -335,7 +335,7 @@ def test_writes_single_final_log_for_stream(
     logger: logging.Logger,
     log_stream: io.StringIO,
 ) -> None:
-    """Финальный лог потока записывается ровно один раз."""
+    """The final stream log is written exactly once."""
     call = FakeCallbackStreamCall(messages_count=1)
     interceptor = LoggingInterceptor(logger=logger)
 

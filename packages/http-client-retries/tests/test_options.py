@@ -1,4 +1,4 @@
-"""Поведение опций повторных попыток на обычных (непотоковых) запросах клиента."""
+"""Retry option behavior for regular non-streaming client requests."""
 
 import logging
 from typing import cast

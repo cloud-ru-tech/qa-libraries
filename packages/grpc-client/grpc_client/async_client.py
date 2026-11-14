@@ -37,21 +37,21 @@ class _AsyncChannelFactory(Protocol):
 
 
 class AsyncGRPCClient(BaseGRPCClient[TAsyncStub], metaclass=ABCMeta):
-    """Базовый класс асинхронного gRPC-клиента.
+    """Base class for asynchronous gRPC clients.
 
-    Наследник объявляет `stub_class` и оборачивает методы сервиса в вызовы `send_*_request`.
-    Клиент можно создать как по адресу сервиса, так и поверх готового канала. Канал, созданный
-    клиентом, закрывается вместе с ним; переданный извне остается на попечении вызывающего кода.
+    Subclasses declare `stub_class` and wrap service methods in `send_*_request` calls.
+    Create a client from a service address or an existing channel. A channel created
+    by the client closes with it; externally supplied channels remain the caller's responsibility.
 
-    Интерцепторы принимаются только вместе с адресом: `grpc.aio` позволяет задать их
-    исключительно при создании канала.
+    Interceptors are accepted only with an address: `grpc.aio` allows setting them
+    only when creating a channel.
     """
 
     def __init__(self, target: str | grpc.aio.Channel, *options: ClientOption) -> None:
-        """Инициализатор.
+        """Initialize the object.
 
-        :param target: адрес сервиса вида `example.com:443` либо готовый канал
-        :param options: опции клиента из модуля `grpc_client.options`
+        :param target: service address such as `example.com:443` or an existing channel
+        :param options: client options from `grpc_client.options`
         """
         super().__init__()
         self._apply(options)
@@ -60,9 +60,9 @@ class AsyncGRPCClient(BaseGRPCClient[TAsyncStub], metaclass=ABCMeta):
         if self._owns_channel:
             self._channel = self._create_channel(cast("str", target))
         else:
-            # grpc.aio принимает интерцепторы только при создании канала: аналога
-            # grpc.intercept_channel() для асинхронного канала в публичном API нет.
-            # Молча проглотить их нельзя — авторизация и логирование просто не работали бы.
+            # grpc.aio accepts interceptors only when creating a channel: there is no
+            # asynchronous equivalent of grpc.intercept_channel() in the public API.
+            # Silently swallowing these would disable authentication and logging.
             if self._interceptors:
                 msg = (
                     "Интерцепторы нельзя добавить к готовому асинхронному каналу: "
@@ -76,37 +76,37 @@ class AsyncGRPCClient(BaseGRPCClient[TAsyncStub], metaclass=ABCMeta):
 
     @override
     def add_interceptor(self, interceptor: object) -> None:
-        """Добавить интерцептор для всех поддерживаемых типов вызовов.
+        """Add an interceptor for all supported call types.
 
-        :param interceptor: асинхронный интерцептор grpcio.
+        :param interceptor: asynchronous grpcio interceptor.
         """
         for item in split_async_interceptor(interceptor):
             super().add_interceptor(item)
 
     @classmethod
     def from_addr(cls, addr: str, *options: ClientOption) -> Self:
-        """Создать клиент по адресу сервиса.
+        """Create a client using a service address.
 
-        :param addr: адрес сервиса вида `example.com:443`
-        :param options: опции клиента из модуля `grpc_client.options`
-        :return: асинхронный gRPC-клиент
+        :param addr: service address such as `example.com:443`
+        :param options: client options from `grpc_client.options`
+        :return: asynchronous gRPC client
         """
         return cls(addr, *options)
 
     @classmethod
     def from_channel(cls, channel: grpc.aio.Channel, *options: ClientOption) -> Self:
-        """Создать клиент поверх готового канала.
+        """Create a client over an existing channel.
 
-        Канал не закрывается клиентом: его жизненным циклом управляет вызывающий код.
+        The client does not close the channel: its lifecycle is managed by the caller.
 
-        :param channel: готовый канал
-        :param options: опции клиента из модуля `grpc_client.options`
-        :return: асинхронный gRPC-клиент
+        :param channel: existing channel
+        :param options: client options from `grpc_client.options`
+        :return: asynchronous gRPC client
         """
         return cls(channel, *options)
 
     async def __aenter__(self) -> Self:
-        """Вернуть клиент для асинхронного блока with."""
+        """Return the client for an asynchronous with block."""
         return self
 
     async def __aexit__(
@@ -115,22 +115,22 @@ class AsyncGRPCClient(BaseGRPCClient[TAsyncStub], metaclass=ABCMeta):
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        """Закрыть принадлежащий клиенту канал."""
+        """Close the channel owned by the client."""
         await self.close()
 
     @property
     def channel(self) -> grpc.aio.Channel:
-        """Канал, через который отправляются запросы."""
+        """Channel used to send requests."""
         return self._channel
 
     async def close(self, grace: float | None = None) -> None:
-        """Закрыть канал, если он был создан клиентом.
+        """Close the channel if it was created by the client.
 
-        Дожидается интерцепторов с отложенной записью: финальный лог потока пишется отдельной
-        задачей. Дренаж выполняется и после закрытия канала — незавершенные потоки обрываются
-        именно в этот момент, и задачи их логов появляются только тогда.
+        Wait for interceptors with deferred logging: the final stream log is written in a separate
+        task. Draining also runs after channel closure, as unfinished streams are interrupted
+        at that moment, and their logging tasks appear only then.
 
-        :param grace: время в секундах, отведенное активным вызовам на завершение
+        :param grace: time in seconds allowed for active calls to finish
         """
         await self._drain_interceptors()
 
@@ -140,13 +140,13 @@ class AsyncGRPCClient(BaseGRPCClient[TAsyncStub], metaclass=ABCMeta):
         await self._drain_interceptors()
 
     async def _drain_interceptors(self) -> None:
-        """Дождаться интерцепторов, которые пишут логи отложенными задачами.
+        """Wait for interceptors that write logs in deferred tasks.
 
-        Интерцептор мог быть разложен на адаптеры по типам вызовов, поэтому дренируется
-        сама реализация, и каждая — по одному разу.
+        An interceptor may have been split into call type adapters, so drain
+        the implementation itself, once each.
         """
-        # Callback завершения вызова создает задачу лога не мгновенно: даем циклу событий
-        # прокрутиться, иначе дренаж не увидит только что оборванный поток.
+        # The call completion callback does not create the logging task immediately; allow the event loop
+        # advance, otherwise draining misses the newly interrupted stream.
         await asyncio.sleep(0)
 
         drained: set[int] = set()
@@ -167,13 +167,13 @@ class AsyncGRPCClient(BaseGRPCClient[TAsyncStub], metaclass=ABCMeta):
         metadata: MetadataType | None = None,
         options: CallOptions | None = None,
     ) -> GRPCResponse[TResponse]:
-        """Отправить унарный запрос и дождаться ответа.
+        """Send a unary request and wait for the response.
 
-        :param msg: сообщение запроса
-        :param method: метод сервиса из `self.stub`
-        :param metadata: метаданные запроса
-        :param options: параметры вызова, переопределяющие настройки клиента
-        :return: ответ на запрос
+        :param msg: request message
+        :param method: service method from `self.stub`
+        :param metadata: request metadata
+        :param options: call options that override client settings
+        :return: request response
         """
         call = method(msg, **self._call_kwargs(self._call_options(metadata, options)))
         return await self._unary_response(call)
@@ -185,13 +185,13 @@ class AsyncGRPCClient(BaseGRPCClient[TAsyncStub], metaclass=ABCMeta):
         metadata: MetadataType | None = None,
         options: CallOptions | None = None,
     ) -> GRPCResponse[TResponse]:
-        """Отправить поток сообщений и дождаться одного ответа.
+        """Send a message stream and wait for one response.
 
-        :param stream: итератор сообщений запроса
-        :param method: метод сервиса из `self.stub`
-        :param metadata: метаданные запроса
-        :param options: параметры вызова, переопределяющие настройки клиента
-        :return: ответ на запрос
+        :param stream: request message iterator
+        :param method: service method from `self.stub`
+        :param metadata: request metadata
+        :param options: call options that override client settings
+        :return: request response
         """
         call = method(stream, **self._call_kwargs(self._call_options(metadata, options)))
         return await self._unary_response(call)
@@ -203,13 +203,13 @@ class AsyncGRPCClient(BaseGRPCClient[TAsyncStub], metaclass=ABCMeta):
         metadata: MetadataType | None = None,
         options: CallOptions | None = None,
     ) -> AsyncGRPCStreamResponse[TResponse]:
-        """Отправить запрос и получить поток ответных сообщений.
+        """Send a request and receive a stream of response messages.
 
-        :param msg: сообщение запроса
-        :param method: метод сервиса из `self.stub`
-        :param metadata: метаданные запроса
-        :param options: параметры вызова, переопределяющие настройки клиента
-        :return: поток ответных сообщений
+        :param msg: request message
+        :param method: service method from `self.stub`
+        :param metadata: request metadata
+        :param options: call options that override client settings
+        :return: response message stream
         """
         call = method(msg, **self._call_kwargs(self._call_options(metadata, options)))
         return AsyncGRPCStreamResponse(cast("grpc.aio.Call", call))
@@ -221,13 +221,13 @@ class AsyncGRPCClient(BaseGRPCClient[TAsyncStub], metaclass=ABCMeta):
         metadata: MetadataType | None = None,
         options: CallOptions | None = None,
     ) -> AsyncGRPCStreamResponse[TResponse]:
-        """Отправить поток сообщений и получить поток ответных сообщений.
+        """Send a message stream and receive a stream of response messages.
 
-        :param stream: итератор сообщений запроса
-        :param method: метод сервиса из `self.stub`
-        :param metadata: метаданные запроса
-        :param options: параметры вызова, переопределяющие настройки клиента
-        :return: поток ответных сообщений
+        :param stream: request message iterator
+        :param method: service method from `self.stub`
+        :param metadata: request metadata
+        :param options: call options that override client settings
+        :return: response message stream
         """
         call = method(stream, **self._call_kwargs(self._call_options(metadata, options)))
         return AsyncGRPCStreamResponse(cast("grpc.aio.Call", call))
@@ -252,10 +252,10 @@ class AsyncGRPCClient(BaseGRPCClient[TAsyncStub], metaclass=ABCMeta):
     async def _unary_response[R, T](
         call: grpc.aio.UnaryUnaryCall[R, T] | grpc.aio.StreamUnaryCall[R, T],
     ) -> GRPCResponse[T]:
-        """Дождаться завершения унарного вызова и собрать ответ.
+        """Wait for the unary call to finish and assemble the response.
 
-        :param call: выполняющийся вызов
-        :return: ответ на запрос
+        :param call: running call
+        :return: request response
         """
         try:
             message = await call

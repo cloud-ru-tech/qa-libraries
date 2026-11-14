@@ -17,14 +17,14 @@ else:
 
 
 class HttpxMockAssertions(_Assertions):
-    """Утверждения о запросах, перехваченных pytest-httpx."""
+    """Assertions for requests captured by pytest-httpx."""
 
     def sent_json_to(self, path: str, expected: Mapping[str, object]) -> Self:
-        """Проверить, что по пути ушел запрос с ожидаемым JSON-телом.
+        """Check that a request to the path has the expected JSON body.
 
-        :param path: путь запроса без схемы и хоста
-        :param expected: ожидаемое тело запроса
-        :return: билдер утверждений для продолжения цепочки
+        :param path: Request path without the scheme and host
+        :param expected: Expected request body
+        :return: Assertion builder for continuing the chain
         """
         bodies = [cast("object", json.loads(request.content)) for request in self._requests_to(path)]
         if expected not in bodies:
@@ -32,11 +32,11 @@ class HttpxMockAssertions(_Assertions):
         return self
 
     def sent_bearer_token_to(self, path: str, expected: str) -> Self:
-        """Проверить, что по пути ушел запрос с указанным токеном в заголовке Authorization.
+        """Check that a request to the path has the specified token in its Authorization header.
 
-        :param path: путь запроса без схемы и хоста
-        :param expected: ожидаемое значение токена доступа
-        :return: билдер утверждений для продолжения цепочки
+        :param path: Request path without the scheme and host
+        :param expected: Expected access token value
+        :return: Assertion builder for continuing the chain
         """
         tokens = [cast("str | None", request.headers.get("Authorization")) for request in self._requests_to(path)]
         if f"Bearer {expected}" not in tokens:
@@ -44,11 +44,11 @@ class HttpxMockAssertions(_Assertions):
         return self
 
     def sent_requests_to(self, path: str, expected_count: int) -> Self:
-        """Проверить количество запросов, ушедших по пути.
+        """Check the number of requests sent to a path.
 
-        :param path: путь запроса без схемы и хоста
-        :param expected_count: ожидаемое количество запросов
-        :return: билдер утверждений для продолжения цепочки
+        :param path: Request path without the scheme and host
+        :param expected_count: Expected request count
+        :return: Assertion builder for continuing the chain
         """
         actual_count = len(self._requests_to(path))
         if actual_count != expected_count:
@@ -64,10 +64,10 @@ class HttpxMockAssertions(_Assertions):
 
 
 def assert_that(val: object, description: str = "") -> HttpxMockAssertions:
-    """Начать проверку с утверждениями, дополненными проверками HTTP-запросов.
+    """Start an assertion chain with HTTP request assertions.
 
-    :param val: проверяемое значение
-    :param description: описание, подставляемое в сообщение об ошибке
-    :return: билдер утверждений
+    :param val: Value to check
+    :param description: Description included in the error message
+    :return: Assertion builder
     """
     return HttpxMockAssertions(val, description)

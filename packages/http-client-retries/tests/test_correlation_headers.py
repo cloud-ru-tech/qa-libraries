@@ -1,4 +1,4 @@
-"""Идентификаторы запроса не должны меняться от попытки к попытке."""
+"""Request IDs must remain unchanged across attempts."""
 
 import httpx
 import pytest

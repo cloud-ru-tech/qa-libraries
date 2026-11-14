@@ -55,7 +55,7 @@ def _mock_resource(httpx_mock: HTTPXMock, status_code: int = codes.OK) -> None:
 
 
 def test_puts_issued_token_into_request(httpx_mock: HTTPXMock) -> None:
-    """Клиент подставляет в запрос токен, выданный сервисом IAM."""
+    """The client adds the IAM-issued token to the request."""
     access_token = uuid4().hex
     _mock_issued_token(httpx_mock, access_token)
     _mock_resource(httpx_mock)
@@ -67,7 +67,7 @@ def test_puts_issued_token_into_request(httpx_mock: HTTPXMock) -> None:
 
 
 def test_stores_issued_token(httpx_mock: HTTPXMock) -> None:
-    """Клиент сохраняет выданный токен в хранилище."""
+    """The client stores the issued token."""
     key_id = "catalog-key"
     access_token = uuid4().hex
     store = InMemoryAuthStore()
@@ -81,7 +81,7 @@ def test_stores_issued_token(httpx_mock: HTTPXMock) -> None:
 
 
 def test_skips_iam_when_stored_token_is_valid(httpx_mock: HTTPXMock) -> None:
-    """Клиент не ходит в IAM, пока в хранилище лежит действующий токен."""
+    """The client skips IAM while the store contains a valid token."""
     key_id = "reports-key"
     store = InMemoryAuthStore()
     store.set(key_id, Token.with_lifetime("reports-access-token", 3600))
@@ -94,7 +94,7 @@ def test_skips_iam_when_stored_token_is_valid(httpx_mock: HTTPXMock) -> None:
 
 
 def test_uses_stored_token_in_request(httpx_mock: HTTPXMock) -> None:
-    """Клиент подставляет в запрос токен из хранилища."""
+    """The client adds the stored token to the request."""
     key_id = "audit-key"
     access_token = uuid4().hex
     store = InMemoryAuthStore()
@@ -108,7 +108,7 @@ def test_uses_stored_token_in_request(httpx_mock: HTTPXMock) -> None:
 
 
 def test_requests_new_token_when_stored_one_expired(httpx_mock: HTTPXMock) -> None:
-    """Клиент запрашивает новый токен, не дожидаясь отказа сервиса, если срок хранимого истек."""
+    """The client requests a new token before a service rejection if the stored token has expired."""
     key_id = "backup-key"
     store = InMemoryAuthStore()
     store.set(key_id, Token("backup-stale-token", datetime.now(UTC) - timedelta(seconds=1)))
@@ -122,7 +122,7 @@ def test_requests_new_token_when_stored_one_expired(httpx_mock: HTTPXMock) -> No
 
 
 def test_sends_refreshed_token_after_expiry(httpx_mock: HTTPXMock) -> None:
-    """Клиент подставляет в запрос новый токен взамен истекшего."""
+    """The client replaces an expired token with a new one in the request."""
     key_id = "quota-key"
     fresh_token = uuid4().hex
     store = InMemoryAuthStore()
@@ -137,7 +137,7 @@ def test_sends_refreshed_token_after_expiry(httpx_mock: HTTPXMock) -> None:
 
 
 def test_requests_new_token_after_unauthorized(httpx_mock: HTTPXMock) -> None:
-    """Клиент запрашивает новый токен, когда сервис ответил 401."""
+    """The client requests a new token after a 401 response."""
     _mock_issued_token(httpx_mock, "billing-first-token")
     _mock_issued_token(httpx_mock, "billing-second-token")
     _mock_resource(httpx_mock, codes.UNAUTHORIZED)
@@ -150,7 +150,7 @@ def test_requests_new_token_after_unauthorized(httpx_mock: HTTPXMock) -> None:
 
 
 def test_repeats_request_with_new_token_after_unauthorized(httpx_mock: HTTPXMock) -> None:
-    """Клиент повторяет запрос с новым токеном, когда сервис ответил 401."""
+    """The client retries the request with a new token after a 401 response."""
     second_token = uuid4().hex
     _mock_issued_token(httpx_mock, "shipping-first-token")
     _mock_issued_token(httpx_mock, second_token)
@@ -164,7 +164,7 @@ def test_repeats_request_with_new_token_after_unauthorized(httpx_mock: HTTPXMock
 
 
 def test_keeps_token_after_forbidden(httpx_mock: HTTPXMock) -> None:
-    """Клиент не запрашивает новый токен, когда сервис ответил 403: прав недостаточно, токен ни при чем."""
+    """The client does not request a new token after 403: permissions are insufficient, regardless of the token."""
     _mock_issued_token(httpx_mock, "support-access-token")
     _mock_resource(httpx_mock, codes.FORBIDDEN)
 
@@ -175,7 +175,7 @@ def test_keeps_token_after_forbidden(httpx_mock: HTTPXMock) -> None:
 
 
 def test_does_not_repeat_request_after_forbidden(httpx_mock: HTTPXMock) -> None:
-    """Клиент не повторяет запрос, когда сервис ответил 403."""
+    """The client does not retry the request after a 403 response."""
     _mock_issued_token(httpx_mock, "readonly-access-token")
     _mock_resource(httpx_mock, codes.FORBIDDEN)
 
@@ -186,7 +186,7 @@ def test_does_not_repeat_request_after_forbidden(httpx_mock: HTTPXMock) -> None:
 
 
 async def test_async_puts_issued_token_into_request(httpx_mock: HTTPXMock) -> None:
-    """Асинхронный клиент подставляет в запрос токен, выданный сервисом IAM."""
+    """The asynchronous client adds the IAM-issued token to the request."""
     access_token = uuid4().hex
     _mock_issued_token(httpx_mock, access_token)
     _mock_resource(httpx_mock)
@@ -198,7 +198,7 @@ async def test_async_puts_issued_token_into_request(httpx_mock: HTTPXMock) -> No
 
 
 async def test_async_skips_iam_when_stored_token_is_valid(httpx_mock: HTTPXMock) -> None:
-    """Асинхронный клиент не ходит в IAM, пока в хранилище лежит действующий токен."""
+    """The asynchronous client skips IAM while the store contains a valid token."""
     key_id = "async-reports-key"
     store = InMemoryAsyncAuthStore()
     await store.set(key_id, Token.with_lifetime("async-reports-access-token", 3600))
@@ -211,7 +211,7 @@ async def test_async_skips_iam_when_stored_token_is_valid(httpx_mock: HTTPXMock)
 
 
 async def test_async_sends_refreshed_token_after_expiry(httpx_mock: HTTPXMock) -> None:
-    """Асинхронный клиент подставляет в запрос новый токен взамен истекшего."""
+    """The asynchronous client replaces an expired token with a new one in the request."""
     key_id = "async-quota-key"
     fresh_token = uuid4().hex
     store = InMemoryAsyncAuthStore()
@@ -226,7 +226,7 @@ async def test_async_sends_refreshed_token_after_expiry(httpx_mock: HTTPXMock) -
 
 
 async def test_async_requests_new_token_after_unauthorized(httpx_mock: HTTPXMock) -> None:
-    """Асинхронный клиент запрашивает новый токен, когда сервис ответил 401."""
+    """The asynchronous client requests a new token after a 401 response."""
     _mock_issued_token(httpx_mock, "async-billing-first-token")
     _mock_issued_token(httpx_mock, "async-billing-second-token")
     _mock_resource(httpx_mock, codes.UNAUTHORIZED)
@@ -239,7 +239,7 @@ async def test_async_requests_new_token_after_unauthorized(httpx_mock: HTTPXMock
 
 
 async def test_async_keeps_token_after_forbidden(httpx_mock: HTTPXMock) -> None:
-    """Асинхронный клиент не запрашивает новый токен, когда сервис ответил 403."""
+    """The asynchronous client does not request a new token after a 403 response."""
     _mock_issued_token(httpx_mock, "async-support-access-token")
     _mock_resource(httpx_mock, codes.FORBIDDEN)
 
@@ -250,7 +250,7 @@ async def test_async_keeps_token_after_forbidden(httpx_mock: HTTPXMock) -> None:
 
 
 def test_buffers_streaming_body_before_first_send(httpx_mock: HTTPXMock) -> None:
-    """Клиент вычитывает потоковое тело до первой отправки, иначе повтор после 401 отправить будет нечего."""
+    """The client reads the streaming body before the first send so a retry after 401 has data to send."""
     _mock_issued_token(httpx_mock, "upload-access-token")
 
     with IAM_HttpClient(constants.IAM_URL) as iam_client:
@@ -262,7 +262,7 @@ def test_buffers_streaming_body_before_first_send(httpx_mock: HTTPXMock) -> None
 
 
 async def test_async_buffers_streaming_body_before_first_send(httpx_mock: HTTPXMock) -> None:
-    """Асинхронный клиент вычитывает потоковое тело до первой отправки."""
+    """The asynchronous client reads the streaming body before the first send."""
 
     async def chunks() -> AsyncIterator[bytes]:
         yield b"async-chunk-one"
@@ -279,7 +279,7 @@ async def test_async_buffers_streaming_body_before_first_send(httpx_mock: HTTPXM
 
 
 class _FalseyAuthStore(InMemoryAuthStore):
-    """Хранилище, которое в пустом состоянии ложно по __bool__."""
+    """Store whose __bool__ is false when empty."""
 
     def __len__(self) -> int:
         return len(self._tokens)
@@ -291,7 +291,7 @@ def _unauthorized_for(request: httpx.Request) -> httpx.Response:
 
 @pytest.mark.usefixtures("httpx_mock")
 def test_reuses_token_refreshed_by_another_caller() -> None:
-    """После 401 клиент подставляет токен, который успел обновить другой вызывающий."""
+    """After a 401, the client uses the token already refreshed by another caller."""
     key_id = "concurrent-key"
     store = InMemoryAuthStore()
     store.set(key_id, Token.with_lifetime("concurrent-stale-token", 3600))
@@ -309,7 +309,7 @@ def test_reuses_token_refreshed_by_another_caller() -> None:
 
 
 def test_skips_iam_when_another_caller_refreshed_token(httpx_mock: HTTPXMock) -> None:
-    """После 401 клиент не идет в IAM, если токен в хранилище уже обновлен другим вызывающим."""
+    """After a 401, the client skips IAM if another caller has already refreshed the stored token."""
     key_id = "concurrent-skip-key"
     store = InMemoryAuthStore()
     store.set(key_id, Token.with_lifetime("concurrent-skip-stale-token", 3600))
@@ -326,7 +326,7 @@ def test_skips_iam_when_another_caller_refreshed_token(httpx_mock: HTTPXMock) ->
 
 
 def test_replaces_expired_token_left_by_another_caller(httpx_mock: HTTPXMock) -> None:
-    """После 401 клиент идет в IAM, если в хранилище лежит чужой, но уже истекший токен."""
+    """After a 401, the client calls IAM if the store contains another caller's expired token."""
     key_id = "leftover-key"
     fresh_token = uuid4().hex
     store = InMemoryAuthStore()
@@ -345,7 +345,7 @@ def test_replaces_expired_token_left_by_another_caller(httpx_mock: HTTPXMock) ->
 
 
 def test_keeps_passed_store_that_looks_empty(httpx_mock: HTTPXMock) -> None:
-    """Клиент пишет токен в переданное хранилище, даже если пустым оно ложно по __bool__."""
+    """The client stores the token in the supplied store even if its empty __bool__ is false."""
     key_id = "falsey-key"
     access_token = uuid4().hex
     store = _FalseyAuthStore()
@@ -359,7 +359,7 @@ def test_keeps_passed_store_that_looks_empty(httpx_mock: HTTPXMock) -> None:
 
 
 async def test_async_repeats_request_with_new_token_after_unauthorized(httpx_mock: HTTPXMock) -> None:
-    """Асинхронный клиент повторяет запрос с новым токеном, когда сервис ответил 401."""
+    """The asynchronous client retries the request with a new token after a 401 response."""
     second_token = uuid4().hex
     _mock_issued_token(httpx_mock, "async-shipping-first-token")
     _mock_issued_token(httpx_mock, second_token)
@@ -373,7 +373,7 @@ async def test_async_repeats_request_with_new_token_after_unauthorized(httpx_moc
 
 
 async def test_async_stores_issued_token(httpx_mock: HTTPXMock) -> None:
-    """Асинхронный клиент сохраняет выданный токен в хранилище."""
+    """The asynchronous client stores the issued token."""
     key_id = "async-catalog-key"
     access_token = uuid4().hex
     store = InMemoryAsyncAuthStore()
@@ -388,7 +388,7 @@ async def test_async_stores_issued_token(httpx_mock: HTTPXMock) -> None:
 
 @pytest.mark.httpx_mock(can_send_already_matched_responses=True)
 def test_requests_token_once_for_concurrent_callers(httpx_mock: HTTPXMock) -> None:
-    """При одновременном старте нескольких потоков токен запрашивается в IAM один раз."""
+    """Request an IAM token once when multiple threads start concurrently."""
     _mock_issued_token(httpx_mock, "parallel-access-token")
     barrier = threading.Barrier(CONCURRENT_CALLERS)
 
@@ -409,7 +409,7 @@ def test_requests_token_once_for_concurrent_callers(httpx_mock: HTTPXMock) -> No
 
 @pytest.mark.httpx_mock(can_send_already_matched_responses=True)
 async def test_async_requests_token_once_for_concurrent_callers(httpx_mock: HTTPXMock) -> None:
-    """При одновременном старте нескольких корутин токен запрашивается в IAM один раз."""
+    """Request an IAM token once when multiple coroutines start concurrently."""
     _mock_issued_token(httpx_mock, "async-parallel-access-token")
 
     async with IAM_AsyncHttpClient(

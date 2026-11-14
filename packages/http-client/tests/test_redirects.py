@@ -9,7 +9,7 @@ from .support.clients import AsyncClientFactory, SyncClientFactory
 
 
 def add_hop(httpx_mock: HTTPXMock, from_url: str, to_url: str) -> None:
-    """Зарегистрировать один шаг редиректа."""
+    """Register one redirect step."""
     httpx_mock.add_response(
         url=from_url,
         method="GET",
@@ -19,10 +19,10 @@ def add_hop(httpx_mock: HTTPXMock, from_url: str, to_url: str) -> None:
 
 
 def test_anonymous_call_follows_redirects(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """anonymous=True не отменяет follow_redirects, переданный в вызов.
+    """anonymous=True preserves follow_redirects supplied by the call.
 
-    Регрессия: анонимная ветка _send не передавала follow_redirects,
-    из-за чего всегда использовалась настройка httpx.Client.
+    Regression: the anonymous _send branch did not pass follow_redirects,
+    so the httpx.Client setting was always used.
     """
     add_hop(httpx_mock, "https://example.com/start", "https://example.com/final")
     httpx_mock.add_response(url="https://example.com/final", method="GET", status_code=codes.OK)
@@ -34,7 +34,7 @@ def test_anonymous_call_follows_redirects(httpx_mock: HTTPXMock, new_client: Syn
 
 
 def test_response_keeps_redirect_in_history(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Пройденный редирект остаётся в истории ответа."""
+    """A followed redirect remains in the response history."""
     add_hop(httpx_mock, "https://example.com/old", "https://example.com/new")
     httpx_mock.add_response(url="https://example.com/new", method="GET", status_code=codes.OK)
     client = new_client("https://example.com")
@@ -47,7 +47,7 @@ def test_response_keeps_redirect_in_history(httpx_mock: HTTPXMock, new_client: S
 async def test_async_anonymous_call_follows_redirects(
     httpx_mock: HTTPXMock, new_async_client: AsyncClientFactory
 ) -> None:
-    """anonymous=True не отменяет follow_redirects и в асинхронном клиенте."""
+    """anonymous=True preserves follow_redirects in the asynchronous client too."""
     add_hop(httpx_mock, "https://example.com/start", "https://example.com/final")
     httpx_mock.add_response(url="https://example.com/final", method="GET", status_code=codes.OK)
     client = new_async_client("https://example.com")
@@ -58,7 +58,7 @@ async def test_async_anonymous_call_follows_redirects(
 
 
 def test_client_option_enables_following_redirects(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """with_follow_redirects включает следование редиректам для всех вызовов."""
+    """with_follow_redirects enables redirect following for all calls."""
     add_hop(httpx_mock, "https://example.com/entry", "https://example.com/target")
     httpx_mock.add_response(url="https://example.com/target", method="GET", status_code=codes.OK)
     client = new_client("https://example.com", with_follow_redirects())
@@ -69,7 +69,7 @@ def test_client_option_enables_following_redirects(httpx_mock: HTTPXMock, new_cl
 
 
 def test_client_stops_after_max_redirects(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Цепочка длиннее max_redirects обрывается ошибкой."""
+    """A chain longer than max_redirects ends with an error."""
     add_hop(httpx_mock, "https://example.com/one", "https://example.com/two")
     add_hop(httpx_mock, "https://example.com/two", "https://example.com/three")
     client = new_client("https://example.com", with_follow_redirects(max_redirects=1))
@@ -81,7 +81,7 @@ def test_client_stops_after_max_redirects(httpx_mock: HTTPXMock, new_client: Syn
 def test_request_without_follow_redirects_returns_redirect(
     httpx_mock: HTTPXMock, new_client: SyncClientFactory
 ) -> None:
-    """Без включённого следования клиент возвращает сам ответ-редирект."""
+    """Return the redirect response when redirect following is disabled."""
     add_hop(httpx_mock, "https://example.com/short", "https://example.com/long")
     client = new_client("https://example.com")
 

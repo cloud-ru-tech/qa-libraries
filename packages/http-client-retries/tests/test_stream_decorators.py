@@ -1,7 +1,7 @@
-"""Поведение опций повторных попыток на потоковых запросах синхронного клиента.
+"""Retry option behavior for synchronous client streaming requests.
 
-Тесты ходят через реальный HttpClient.stream_request: соединение в нём открывается
-на __enter__, а не в момент вызова, и только так проверяется работа повторов.
+Tests use the real HttpClient.stream_request: the connection opens
+in __enter__ rather than at call time, so this is required to test retry behavior.
 """
 
 import logging

@@ -20,12 +20,12 @@ STREAM_MESSAGES_COUNT = 10
 
 @pytest.fixture()
 def sink() -> FakeLogSink:
-    """Приемник записей, доступный тесту для проверок."""
+    """Record sink available for test assertions."""
     return FakeLogSink()
 
 
 def test_passes_sent_request_to_sink(service_addr: str, sink: FakeLogSink) -> None:
-    """Отправленный запрос доходит до приемника."""
+    """The sent request reaches the sink."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -37,7 +37,7 @@ def test_passes_sent_request_to_sink(service_addr: str, sink: FakeLogSink) -> No
 
 
 def test_passes_called_method_to_sink(service_addr: str, sink: FakeLogSink) -> None:
-    """Полное имя вызванного метода доходит до приемника."""
+    """The full name of the called method reaches the sink."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -49,7 +49,7 @@ def test_passes_called_method_to_sink(service_addr: str, sink: FakeLogSink) -> N
 
 
 def test_passes_sent_message_to_sink(service_addr: str, sink: FakeLogSink) -> None:
-    """Приемник получает то самое сообщение, которое ушло сервису."""
+    """The sink receives the exact message sent to the service."""
     message = grpcbin_pb2.DummyMessage(f_string="инвентаризация склада")
 
     with GRPCbinServiceClient.from_addr(
@@ -63,7 +63,7 @@ def test_passes_sent_message_to_sink(service_addr: str, sink: FakeLogSink) -> No
 
 
 def test_binds_request_and_response_by_one_trace_id(service_addr: str, sink: FakeLogSink) -> None:
-    """Запрос и ответ приходят приемнику с одним идентификатором."""
+    """The sink receives matching identifiers for a request and its response."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -75,7 +75,7 @@ def test_binds_request_and_response_by_one_trace_id(service_addr: str, sink: Fak
 
 
 def test_reports_successful_call_as_succeeded(service_addr: str, sink: FakeLogSink) -> None:
-    """Успешный вызов помечается в записи как успешный."""
+    """A successful call is marked successful in the record."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -87,7 +87,7 @@ def test_reports_successful_call_as_succeeded(service_addr: str, sink: FakeLogSi
 
 
 def test_reports_unary_call_as_not_streamed(service_addr: str, sink: FakeLogSink) -> None:
-    """Унарный вызов не помечается как потоковый."""
+    """A unary call is not marked as streaming."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -99,7 +99,7 @@ def test_reports_unary_call_as_not_streamed(service_addr: str, sink: FakeLogSink
 
 
 def test_passes_received_message_to_sink(service_addr: str, sink: FakeLogSink) -> None:
-    """Ответное сообщение доходит до приемника."""
+    """The response message reaches the sink."""
     payload = "акт приема-передачи"
 
     with GRPCbinServiceClient.from_addr(
@@ -114,7 +114,7 @@ def test_passes_received_message_to_sink(service_addr: str, sink: FakeLogSink) -
 
 
 def test_writes_successful_call_with_success_level(service_addr: str, sink: FakeLogSink) -> None:
-    """Успешный вызов записывается уровнем успешных запросов."""
+    """A successful call is logged at the successful request level."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -126,7 +126,7 @@ def test_writes_successful_call_with_success_level(service_addr: str, sink: Fake
 
 
 def test_writes_failed_call_with_error_level(service_addr: str, sink: FakeLogSink) -> None:
-    """Вызов с ошибкой записывается уровнем ошибок."""
+    """Failed calls are logged at the error level."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -138,7 +138,7 @@ def test_writes_failed_call_with_error_level(service_addr: str, sink: FakeLogSin
 
 
 def test_reports_failed_call_as_not_succeeded(service_addr: str, sink: FakeLogSink) -> None:
-    """Вызов с ошибкой помечается в записи как неуспешный."""
+    """Failed calls are marked unsuccessful in the record."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -150,7 +150,7 @@ def test_reports_failed_call_as_not_succeeded(service_addr: str, sink: FakeLogSi
 
 
 def test_passes_error_status_code_to_sink(service_addr: str, sink: FakeLogSink) -> None:
-    """Код ошибки доходит до приемника."""
+    """The error code reaches the sink."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -162,7 +162,7 @@ def test_passes_error_status_code_to_sink(service_addr: str, sink: FakeLogSink) 
 
 
 def test_passes_error_details_to_sink(service_addr: str, sink: FakeLogSink) -> None:
-    """Текст ошибки от сервиса доходит до приемника."""
+    """The service error text reaches the sink."""
     reason = "поставка отменена"
 
     with GRPCbinServiceClient.from_addr(
@@ -176,7 +176,7 @@ def test_passes_error_details_to_sink(service_addr: str, sink: FakeLogSink) -> N
 
 
 def test_leaves_message_empty_for_failed_call(service_addr: str, sink: FakeLogSink) -> None:
-    """У вызова с ошибкой ответного сообщения в записи нет."""
+    """A failed call record has no response message."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -188,7 +188,7 @@ def test_leaves_message_empty_for_failed_call(service_addr: str, sink: FakeLogSi
 
 
 def test_leaves_details_empty_for_successful_call(service_addr: str, sink: FakeLogSink) -> None:
-    """У успешного вызова текста ошибки в записи нет."""
+    """A successful call record has no error text."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -204,7 +204,7 @@ def test_reports_finished_stream_as_streamed(
     sink: FakeLogSink,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Завершившийся поток ответов помечается в записи как потоковый."""
+    """A completed response stream is marked as streaming in the record."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -220,7 +220,7 @@ def test_passes_streamed_messages_count_to_sink(
     sink: FakeLogSink,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Количество полученных сообщений потока доходит до приемника."""
+    """The number of received stream messages reaches the sink."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -236,7 +236,7 @@ def test_leaves_message_empty_for_finished_stream(
     sink: FakeLogSink,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """У завершившегося потока ответного сообщения в записи нет."""
+    """A completed stream record has no response message."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -252,7 +252,7 @@ def test_leaves_message_empty_for_client_stream_request(
     sink: FakeLogSink,
     dummy_messages: Iterator[grpcbin_pb2.DummyMessage],
 ) -> None:
-    """У запроса, телом которого был поток, сообщения в записи нет."""
+    """A request record has no message when its body was a stream."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -264,7 +264,7 @@ def test_leaves_message_empty_for_client_stream_request(
 
 
 def test_skips_request_when_sink_disables_every_level(service_addr: str) -> None:
-    """При выключенных уровнях запись запроса приемнику не отдается."""
+    """Disabled levels prevent request records from reaching the sink."""
     silent_sink = FakeLogSink(enabled_levels=())
 
     with GRPCbinServiceClient.from_addr(
@@ -278,7 +278,7 @@ def test_skips_request_when_sink_disables_every_level(service_addr: str) -> None
 
 
 def test_skips_response_when_sink_disables_every_level(service_addr: str) -> None:
-    """При выключенных уровнях запись об исходе приемнику не отдается."""
+    """Disabled levels prevent outcome records from reaching the sink."""
     silent_sink = FakeLogSink(enabled_levels=())
 
     with GRPCbinServiceClient.from_addr(
@@ -292,7 +292,7 @@ def test_skips_response_when_sink_disables_every_level(service_addr: str) -> Non
 
 
 def test_writes_response_when_only_error_level_is_enabled(service_addr: str) -> None:
-    """Выключенный уровень успешных запросов не мешает записать ошибку."""
+    """Disabling the successful request level does not prevent error logging."""
     error_only_sink = FakeLogSink(enabled_levels=(logging.ERROR,))
 
     with GRPCbinServiceClient.from_addr(
@@ -306,7 +306,7 @@ def test_writes_response_when_only_error_level_is_enabled(service_addr: str) -> 
 
 
 def test_completes_call_when_sink_fails_to_write(service_addr: str) -> None:
-    """Сбой приемника не мешает выполнить вызов."""
+    """A sink failure does not prevent the call."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -318,7 +318,7 @@ def test_completes_call_when_sink_fails_to_write(service_addr: str) -> None:
 
 
 def test_completes_call_when_sink_fails_to_check_level(service_addr: str) -> None:
-    """Сбой приемника на проверке уровня не мешает выполнить вызов."""
+    """A sink failure during level checking does not prevent the call."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -333,7 +333,7 @@ def test_completes_server_stream_when_sink_fails(
     service_addr: str,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Сбой приемника не мешает дочитать поток ответов."""
+    """A sink failure does not prevent fully reading the response stream."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -345,13 +345,13 @@ def test_completes_server_stream_when_sink_fails(
 
 
 def test_rejects_both_logger_and_sink(logger: logging.Logger) -> None:
-    """Интерцептор не принимает логгер и приемник одновременно."""
+    """The interceptor rejects a logger and a sink supplied together."""
     with pytest.raises(TypeError):
         LoggingInterceptor(logger=logger, sink=FakeLogSink())
 
 
 def test_rejects_neither_logger_nor_sink() -> None:
-    """Интерцептор не собирается без логгера и без приемника."""
+    """The interceptor cannot be built without either a logger or a sink."""
     with pytest.raises(TypeError):
         LoggingInterceptor()
 
@@ -361,7 +361,7 @@ def test_writes_text_through_built_in_sink(
     logger: logging.Logger,
     log_stream: io.StringIO,
 ) -> None:
-    """Встроенный текстовый приемник пишет тот же лог, что и `with_logger`."""
+    """The built-in text sink produces the same log as `with_logger`."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -377,7 +377,7 @@ def test_masks_secrets_in_built_in_sink_by_default(
     logger: logging.Logger,
     log_stream: io.StringIO,
 ) -> None:
-    """Встроенный приемник маскирует типовые секреты без дополнительной настройки."""
+    """The built-in sink masks common secrets without additional configuration."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -393,7 +393,7 @@ def test_applies_given_format_in_built_in_sink(
     logger: logging.Logger,
     log_stream: io.StringIO,
 ) -> None:
-    """Приемник оформляет лог по переданным ему правилам, а не по общим."""
+    """The sink formats logs using its supplied rules rather than shared ones."""
     secret_value = uuid4().hex
     log_format = LogFormat.from_config(sanitize_keys=["fString"])
 
@@ -408,21 +408,21 @@ def test_applies_given_format_in_built_in_sink(
 
 
 def test_adds_default_secrets_to_given_sanitize_keys() -> None:
-    """`LogFormat.from_config` дополняет заданные ключи типовыми секретами."""
+    """`LogFormat.from_config` adds common secrets to the supplied keys."""
     log_format = LogFormat.from_config(sanitize_keys=["warehouse_pin"])
 
     assert_that(log_format.sanitize_keys).contains("warehouse_pin", "authorization")
 
 
 def test_keeps_only_given_sanitize_keys_when_defaults_are_off() -> None:
-    """С выключенными типовыми секретами остаются только заданные ключи."""
+    """Disabling common secrets leaves only explicitly specified keys."""
     log_format = LogFormat.from_config(sanitize_keys=["pallet_code"], use_default_sanitize_keys=False)
 
     assert_that(log_format.sanitize_keys).is_equal_to(("pallet_code",))
 
 
 def test_keeps_given_payload_maxlength() -> None:
-    """Заданная длина тела сообщения не подменяется значением из конфигурации."""
+    """An explicit message body length is preserved over configuration values."""
     maxlength = 64
 
     log_format = LogFormat.from_config(payload_maxlength=maxlength)
@@ -431,14 +431,14 @@ def test_keeps_given_payload_maxlength() -> None:
 
 
 def test_keeps_given_log_levels() -> None:
-    """`resolve_log_levels` оставляет заданные уровни без изменений."""
+    """`resolve_log_levels` preserves explicitly configured levels."""
     levels = (logging.DEBUG, logging.CRITICAL)
 
     assert_that(resolve_log_levels(*levels)).is_equal_to(levels)
 
 
 async def test_passes_async_response_to_sink(service_addr: str, sink: FakeLogSink) -> None:
-    """Исход асинхронного вызова доходит до приемника."""
+    """The asynchronous call outcome reaches the sink."""
     async with AsyncGRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -450,7 +450,7 @@ async def test_passes_async_response_to_sink(service_addr: str, sink: FakeLogSin
 
 
 async def test_passes_async_received_message_to_sink(service_addr: str, sink: FakeLogSink) -> None:
-    """Ответное сообщение асинхронного вызова доходит до приемника."""
+    """The asynchronous response message reaches the sink."""
     payload = "маршрутный лист"
 
     async with AsyncGRPCbinServiceClient.from_addr(
@@ -465,7 +465,7 @@ async def test_passes_async_received_message_to_sink(service_addr: str, sink: Fa
 
 
 async def test_writes_failed_async_call_with_error_level(service_addr: str, sink: FakeLogSink) -> None:
-    """Асинхронный вызов с ошибкой записывается уровнем ошибок."""
+    """Failed asynchronous calls are logged at the error level."""
     async with AsyncGRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -481,7 +481,7 @@ async def test_passes_async_streamed_messages_count_to_sink(
     sink: FakeLogSink,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Количество сообщений асинхронного потока доходит до приемника."""
+    """The asynchronous stream message count reaches the sink."""
     async with AsyncGRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -494,7 +494,7 @@ async def test_passes_async_streamed_messages_count_to_sink(
 
 
 async def test_completes_async_call_when_sink_fails(service_addr: str) -> None:
-    """Сбой приемника не мешает выполнить асинхронный вызов."""
+    """A sink failure does not prevent the asynchronous call."""
     async with AsyncGRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -509,7 +509,7 @@ async def test_completes_async_stream_when_sink_fails(
     service_addr: str,
     dummy_message: grpcbin_pb2.DummyMessage,
 ) -> None:
-    """Сбой приемника не мешает дочитать асинхронный поток ответов."""
+    """A sink failure does not prevent fully reading the asynchronous response stream."""
     async with AsyncGRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),

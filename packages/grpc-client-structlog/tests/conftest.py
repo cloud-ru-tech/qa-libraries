@@ -26,22 +26,22 @@ class BuildAsyncClient(Protocol):
     def __call__(self, *client_options: ClientOption) -> AsyncEchoClient: ...
 
 
-# Имя сервиса в docker-compose.yml.
+# Service name in docker-compose.yml.
 _COMPOSE_SERVICE = "echo"
 
-# Адрес уже поднятого сервиса. Задан — контейнер не поднимается.
+# Address of an existing service. When set, no container is started.
 _ENV_SERVICE_ADDR = os.getenv("SERVICE_ADDR")
 
 
 def _check_service(ip: str, port: int) -> bool:
-    """Проверить готовность сервиса настоящим gRPC вызовом.
+    """Check service readiness using a real gRPC call.
 
-    Открытого TCP-порта мало: контейнер успевает принять соединение раньше, чем сервис
-    начинает отвечать, и первый запрос теста падает на ровном месте.
+    An open TCP port is insufficient: the container may accept connections before the service
+    starts responding, causing the first test request to fail unexpectedly.
 
-    :param ip: адрес контейнера
-    :param port: порт, проброшенный наружу
-    :returns: True, если сервис отвечает на вызовы
+    :param ip: container address
+    :param port: exposed port
+    :returns: True if the service responds to calls
     """
     try:
         with EchoClient.from_addr(f"{ip}:{port}", options.with_insecure_channel()) as client:
@@ -52,13 +52,13 @@ def _check_service(ip: str, port: int) -> bool:
 
 @pytest.fixture(scope="session")
 def docker_compose_file() -> list[str]:
-    """Путь к docker-compose файлу с тестовым сервисом."""
+    """Path to the docker-compose file with the test service."""
     return [str(Path(__file__).parent / "docker-compose.yml")]
 
 
 @pytest.fixture(scope="session")
 def service_container(docker_services: DockerServices, docker_ip: str) -> str:
-    """Дождаться готовности тестового gRPC сервиса."""
+    """Wait for the test gRPC service to become ready."""
     public_port = docker_services.port_for(_COMPOSE_SERVICE, CONTAINER_PORT)
     docker_services.wait_until_responsive(timeout=60, pause=0.1, check=lambda: _check_service(docker_ip, public_port))
     return f"{docker_ip}:{public_port}"
@@ -66,11 +66,11 @@ def service_container(docker_services: DockerServices, docker_ip: str) -> str:
 
 @pytest.fixture(scope="session")
 def service_addr(request: pytest.FixtureRequest) -> str:
-    """Адрес тестового gRPC сервиса.
+    """Address of the test gRPC service.
 
-    Переменная `SERVICE_ADDR` задана — используется она, иначе поднимается контейнер.
+    Use `SERVICE_ADDR` if set; otherwise start a container.
 
-    :returns: адрес сервиса вида `host:port`
+    :returns: service address in `host:port` format
     """
     if _ENV_SERVICE_ADDR:
         return _ENV_SERVICE_ADDR
@@ -79,19 +79,19 @@ def service_addr(request: pytest.FixtureRequest) -> str:
 
 @pytest.fixture()
 def logger() -> StructlogRecorder:
-    """Логгер на основе `structlog.stdlib.BoundLogger`."""
+    """Logger based on `structlog.stdlib.BoundLogger`."""
     return build_stdlib_logger()
 
 
 @pytest.fixture()
 def filtering_logger() -> StructlogRecorder:
-    """Логгер на основе класса из `structlog.make_filtering_bound_logger`."""
+    """Logger based on a class from `structlog.make_filtering_bound_logger`."""
     return build_filtering_logger()
 
 
 @pytest.fixture()
 def unsupported_global_log_level() -> Iterator[None]:
-    """Подменить общую настройку уровня на значение, которого structlog не знает."""
+    """Replace the shared level setting with a value unknown to structlog."""
     original = LOGGING_CONFIG.log_level
     LOGGING_CONFIG.log_level = 15
     yield
@@ -100,7 +100,7 @@ def unsupported_global_log_level() -> Iterator[None]:
 
 @pytest.fixture()
 def build_client(service_addr: str) -> Iterator[BuildClient]:
-    """Фабрика синхронных клиентов, закрывающая их после теста."""
+    """Build synchronous clients and close them after the test."""
     clients: list[EchoClient] = []
 
     def build(*client_options: ClientOption) -> EchoClient:
@@ -116,7 +116,7 @@ def build_client(service_addr: str) -> Iterator[BuildClient]:
 
 @pytest.fixture()
 async def build_async_client(service_addr: str) -> AsyncIterator[BuildAsyncClient]:
-    """Фабрика асинхронных клиентов, закрывающая их после теста."""
+    """Build asynchronous clients and close them after the test."""
     clients: list[AsyncEchoClient] = []
 
     def build(*client_options: ClientOption) -> AsyncEchoClient:

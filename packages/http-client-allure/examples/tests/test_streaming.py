@@ -10,7 +10,7 @@ pytestmark = allure.feature("Потоковые запросы")
 
 
 def read_chunks(count: int) -> Iterator[bytes]:
-    """Отдать тело выгрузки кусками, как это делает чтение большого файла."""
+    """Yield the upload body in chunks, like reading a large file."""
     for number in range(count):
         yield f"chunk-{number}\n".encode()
 

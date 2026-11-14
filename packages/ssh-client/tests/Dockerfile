@@ -7,7 +7,7 @@ RUN apk add --no-cache openssh-server openssh-client sudo \
     && mkdir -p /etc/ssh/keys /etc/ssh/authorized
 
 EXPOSE 22
-# Ключи монтируются из каталогов pytest, их владелец не root и не testuser, поэтому StrictModes отключён.
+# Keys are mounted from pytest directories owned by neither root nor testuser, so StrictModes is disabled.
 CMD ["/usr/sbin/sshd", "-D", "-e", \
     "-h", "/etc/ssh/keys/ssh_host_rsa_key", \
     "-o", "AuthorizedKeysFile=/etc/ssh/authorized/authorized_keys", \

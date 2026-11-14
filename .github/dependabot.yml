@@ -5,8 +5,8 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
-    # Неделя ожидания: заражённые релизы обычно успевают удалить из PyPI.
-    # На обновления безопасности задержка не действует.
+    # Wait a week so compromised releases have time to be removed from PyPI.
+    # Security updates are not delayed.
     cooldown:
       default-days: 7
     commit-message:

@@ -30,7 +30,7 @@ class GrpcbinStub(Protocol):
     DummyBidirectionalStreamStream: grpc.StreamStreamMultiCallable[grpcbin_pb2.DummyMessage, grpcbin_pb2.DummyMessage]
 
     def __init__(self, channel: grpc.Channel) -> None:
-        """Создать stub тестового сервиса."""
+        """Create a test service stub."""
 
 
 class AsyncGrpcbinStub(Protocol):
@@ -46,11 +46,11 @@ class AsyncGrpcbinStub(Protocol):
     ]
 
     def __init__(self, channel: grpc.aio.Channel) -> None:
-        """Создать stub тестового сервиса."""
+        """Create a test service stub."""
 
 
 class GRPCbinServiceClient(GRPCClient[GrpcbinStub]):
-    """gRPC-клиент сервиса «GRPCBin»."""
+    """gRPC client for the GRPCBin service."""
 
     @property
     def stub_class(self) -> type[GrpcbinStub]:
@@ -62,29 +62,29 @@ class GRPCbinServiceClient(GRPCClient[GrpcbinStub]):
         metadata: MetadataType | None = None,
         options: CallOptions | None = None,
     ) -> GRPCResponse[grpcbin_pb2.DummyMessage]:
-        """Отправить сообщение и получить его же в ответ.
+        """Send a message and receive the same message in response.
 
-        :param msg: сообщение серверу
-        :param metadata: метаданные запроса
-        :param options: параметры вызова
-        :return: ответ с тем же сообщением
+        :param msg: message to the server
+        :param metadata: request metadata
+        :param options: call options
+        :return: response with the same message
         """
         return self.send_unary_unary_request(msg, self.stub.DummyUnary, metadata, options)
 
     def empty(self, options: CallOptions | None = None) -> GRPCResponse[grpcbin_pb2.EmptyMessage]:
-        """Вызвать метод, возвращающий пустое сообщение.
+        """Call a method that returns an empty message.
 
-        :param options: параметры вызова
-        :return: ответ с пустым сообщением
+        :param options: call options
+        :return: response with an empty message
         """
         return self.send_unary_unary_request(grpcbin_pb2.EmptyMessage(), self.stub.Empty, options=options)
 
     def specific_error(self, code: int, reason: str) -> GRPCResponse[grpcbin_pb2.EmptyMessage]:
-        """Попросить сервис ответить заданной ошибкой.
+        """Ask the service to return the specified error.
 
-        :param code: код ошибки gRPC
-        :param reason: текст ошибки
-        :return: ответ с запрошенной ошибкой
+        :param code: gRPC error code
+        :param reason: error text
+        :return: response with the requested error
         """
         return self.send_unary_unary_request(
             grpcbin_pb2.SpecificErrorRequest(code=code, reason=reason),
@@ -92,10 +92,10 @@ class GRPCbinServiceClient(GRPCClient[GrpcbinStub]):
         )
 
     def no_response(self, options: CallOptions | None = None) -> GRPCResponse[grpcbin_pb2.EmptyMessage]:
-        """Вызвать метод, который не отвечает.
+        """Call a method that never responds.
 
-        :param options: параметры вызова
-        :return: ответ, которого сервис не пришлет
+        :param options: call options
+        :return: response that the service will never send
         """
         return self.send_unary_unary_request(grpcbin_pb2.EmptyMessage(), self.stub.NoResponseUnary, options=options)
 
@@ -103,10 +103,10 @@ class GRPCbinServiceClient(GRPCClient[GrpcbinStub]):
         self,
         messages: Iterator[grpcbin_pb2.DummyMessage],
     ) -> GRPCResponse[grpcbin_pb2.DummyMessage]:
-        """Отправить поток сообщений и получить одно в ответ.
+        """Send a message stream and receive one response.
 
-        :param messages: поток сообщений
-        :return: ответ с сообщением от сервера
+        :param messages: message stream
+        :return: response with a server message
         """
         return self.send_stream_unary_request(messages, self.stub.DummyClientStream)
 
@@ -115,11 +115,11 @@ class GRPCbinServiceClient(GRPCClient[GrpcbinStub]):
         msg: grpcbin_pb2.DummyMessage,
         options: CallOptions | None = None,
     ) -> GRPCStreamResponse[grpcbin_pb2.DummyMessage]:
-        """Отправить сообщение и получить поток сообщений.
+        """Send a message and receive a message stream.
 
-        :param msg: сообщение серверу
-        :param options: параметры вызова
-        :return: поток ответных сообщений
+        :param msg: message to the server
+        :param options: call options
+        :return: response message stream
         """
         return self.send_unary_stream_request(msg, self.stub.DummyServerStream, options=options)
 
@@ -128,11 +128,11 @@ class GRPCbinServiceClient(GRPCClient[GrpcbinStub]):
         messages: Iterator[grpcbin_pb2.DummyMessage],
         options: CallOptions | None = None,
     ) -> GRPCStreamResponse[grpcbin_pb2.DummyMessage]:
-        """Отправить поток сообщений и получить поток в ответ.
+        """Send a message stream and receive a stream in response.
 
-        :param messages: поток сообщений
-        :param options: параметры вызова
-        :return: поток ответных сообщений
+        :param messages: message stream
+        :param options: call options
+        :return: response message stream
         """
         return self.send_stream_stream_request(
             messages,
@@ -145,17 +145,17 @@ class GRPCbinServiceClient(GRPCClient[GrpcbinStub]):
         metadata: MetadataType | None = None,
         options: CallOptions | None = None,
     ) -> GRPCResponse[grpcbin_pb2.HeadersMessage]:
-        """Получить метаданные, которые сервис увидел в запросе.
+        """Get the metadata received by the service in the request.
 
-        :param metadata: метаданные запроса
-        :param options: параметры вызова
-        :return: ответ с метаданными запроса
+        :param metadata: request metadata
+        :param options: call options
+        :return: response with request metadata
         """
         return self.send_unary_unary_request(grpcbin_pb2.EmptyMessage(), self.stub.HeadersUnary, metadata, options)
 
 
 class AsyncGRPCbinServiceClient(AsyncGRPCClient[AsyncGrpcbinStub]):
-    """Асинхронный gRPC-клиент сервиса «GRPCBin»."""
+    """Asynchronous gRPC client for the GRPCBin service."""
 
     @property
     def stub_class(self) -> type[AsyncGrpcbinStub]:
@@ -166,20 +166,20 @@ class AsyncGRPCbinServiceClient(AsyncGRPCClient[AsyncGrpcbinStub]):
         msg: grpcbin_pb2.DummyMessage,
         metadata: MetadataType | None = None,
     ) -> GRPCResponse[grpcbin_pb2.DummyMessage]:
-        """Отправить сообщение и получить его же в ответ.
+        """Send a message and receive the same message in response.
 
-        :param msg: сообщение серверу
-        :param metadata: метаданные запроса
-        :return: ответ с тем же сообщением
+        :param msg: message to the server
+        :param metadata: request metadata
+        :return: response with the same message
         """
         return await self.send_unary_unary_request(msg, self.stub.DummyUnary, metadata)
 
     async def specific_error(self, code: int, reason: str) -> GRPCResponse[grpcbin_pb2.EmptyMessage]:
-        """Попросить сервис ответить заданной ошибкой.
+        """Ask the service to return the specified error.
 
-        :param code: код ошибки gRPC
-        :param reason: текст ошибки
-        :return: ответ с запрошенной ошибкой
+        :param code: gRPC error code
+        :param reason: error text
+        :return: response with the requested error
         """
         return await self.send_unary_unary_request(
             grpcbin_pb2.SpecificErrorRequest(code=code, reason=reason),
@@ -191,11 +191,11 @@ class AsyncGRPCbinServiceClient(AsyncGRPCClient[AsyncGrpcbinStub]):
         msg: grpcbin_pb2.DummyMessage,
         options: CallOptions | None = None,
     ) -> AsyncGRPCStreamResponse[grpcbin_pb2.DummyMessage]:
-        """Отправить сообщение и получить поток сообщений.
+        """Send a message and receive a message stream.
 
-        :param msg: сообщение серверу
-        :param options: параметры вызова
-        :return: поток ответных сообщений
+        :param msg: message to the server
+        :param options: call options
+        :return: response message stream
         """
         return await self.send_unary_stream_request(msg, self.stub.DummyServerStream, options=options)
 
@@ -203,10 +203,10 @@ class AsyncGRPCbinServiceClient(AsyncGRPCClient[AsyncGrpcbinStub]):
         self,
         messages: Iterator[grpcbin_pb2.DummyMessage],
     ) -> GRPCResponse[grpcbin_pb2.DummyMessage]:
-        """Отправить поток сообщений и получить одно в ответ.
+        """Send a message stream and receive one response.
 
-        :param messages: поток сообщений
-        :return: ответ с сообщением от сервера
+        :param messages: message stream
+        :return: response with a server message
         """
         return await self.send_stream_unary_request(messages, self.stub.DummyClientStream)
 
@@ -214,17 +214,17 @@ class AsyncGRPCbinServiceClient(AsyncGRPCClient[AsyncGrpcbinStub]):
         self,
         messages: Iterator[grpcbin_pb2.DummyMessage],
     ) -> AsyncGRPCStreamResponse[grpcbin_pb2.DummyMessage]:
-        """Отправить поток сообщений и получить поток в ответ.
+        """Send a message stream and receive a stream in response.
 
-        :param messages: поток сообщений
-        :return: поток ответных сообщений
+        :param messages: message stream
+        :return: response message stream
         """
         return await self.send_stream_stream_request(messages, self.stub.DummyBidirectionalStreamStream)
 
     async def get_headers(self, metadata: MetadataType | None = None) -> GRPCResponse[grpcbin_pb2.HeadersMessage]:
-        """Получить метаданные, которые сервис увидел в запросе.
+        """Get the metadata received by the service in the request.
 
-        :param metadata: метаданные запроса
-        :return: ответ с метаданными запроса
+        :param metadata: request metadata
+        :return: response with request metadata
         """
         return await self.send_unary_unary_request(grpcbin_pb2.EmptyMessage(), self.stub.HeadersUnary, metadata)

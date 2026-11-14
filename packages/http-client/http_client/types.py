@@ -21,7 +21,7 @@ type RequestData = Mapping[str, object]
 
 
 class LoggingOptions(TypedDict, total=False):
-    """Именованные настройки логирования отдельного HTTP-клиента."""
+    """Named logging settings for an individual HTTP client."""
 
     sanitize_keys: Sequence[str] | None
     json_indent: int | None
@@ -31,7 +31,7 @@ class LoggingOptions(TypedDict, total=False):
 
 
 class QueryOptions(TypedDict, total=False):
-    """Именованные параметры HTTP-запроса без тела."""
+    """Named options for an HTTP request without a body."""
 
     params: QueryParamTypes | None
     headers: HeaderTypes | None
@@ -44,7 +44,7 @@ class QueryOptions(TypedDict, total=False):
 
 
 class RequestOptions(QueryOptions, total=False):
-    """Именованные параметры HTTP-запроса с телом."""
+    """Named options for an HTTP request with a body."""
 
     content: RequestContent | None
     data: RequestData | None
@@ -53,7 +53,7 @@ class RequestOptions(QueryOptions, total=False):
 
 
 class StreamOptions(TypedDict, total=False):
-    """Параметры отправки готового запроса в потоковом режиме."""
+    """Options for sending a prepared request in streaming mode."""
 
     auth: AuthTypes | None
     follow_redirects: bool | None
@@ -61,13 +61,13 @@ class StreamOptions(TypedDict, total=False):
 
 
 class SendOptions(StreamOptions, total=False):
-    """Параметры отправки готового HTTP-запроса."""
+    """Options for sending a prepared HTTP request."""
 
     stream: bool
 
 
 class SyncSendMethod(Protocol):
-    """Протокол для синхронного метода send."""
+    """Protocol for a synchronous send method."""
 
     def __call__(
         self,
@@ -78,12 +78,12 @@ class SyncSendMethod(Protocol):
         follow_redirects: bool | None = None,
         anonymous: bool = False,
     ) -> httpx.Response:
-        """Отправить готовый HTTP-запрос и вернуть ответ."""
+        """Send a prepared HTTP request and return the response."""
         ...
 
 
 class AsyncSendMethod(Protocol):
-    """Протокол для асинхронного метода send."""
+    """Protocol for an asynchronous send method."""
 
     async def __call__(
         self,
@@ -94,12 +94,12 @@ class AsyncSendMethod(Protocol):
         follow_redirects: bool | None = None,
         anonymous: bool = False,
     ) -> httpx.Response:
-        """Асинхронно отправить готовый HTTP-запрос и вернуть ответ."""
+        """Send a prepared HTTP request asynchronously and return the response."""
         ...
 
 
 class SyncStreamRequestMethod(Protocol):
-    """Протокол для синхронного метода stream_request."""
+    """Protocol for a synchronous stream_request method."""
 
     def __call__(
         self,
@@ -109,12 +109,12 @@ class SyncStreamRequestMethod(Protocol):
         auth: AuthTypes | None = None,
         follow_redirects: bool | None = None,
     ) -> AbstractContextManager[httpx.Response]:
-        """Открыть контекст потокового HTTP-ответа."""
+        """Open a streaming HTTP response context."""
         ...
 
 
 class AsyncStreamRequestMethod(Protocol):
-    """Протокол для асинхронного метода stream_request."""
+    """Protocol for an asynchronous stream_request method."""
 
     def __call__(
         self,
@@ -124,17 +124,17 @@ class AsyncStreamRequestMethod(Protocol):
         auth: AuthTypes | None = None,
         follow_redirects: bool | None = None,
     ) -> AbstractAsyncContextManager[httpx.Response]:
-        """Открыть асинхронный контекст потокового HTTP-ответа."""
+        """Open an asynchronous streaming HTTP response context."""
         ...
 
 
-# Типы для декораторов методов send
+# Types for send method decorators
 SyncSendDecorator = Callable[[SyncSendMethod], SyncSendMethod]
 AsyncSendDecorator = Callable[[AsyncSendMethod], AsyncSendMethod]
 
 SendDecorator = SyncSendDecorator | AsyncSendDecorator
 
-# Типы для декораторов методов stream_request
+# Types for stream_request method decorators
 SyncStreamRequestDecorator = Callable[[SyncStreamRequestMethod], SyncStreamRequestMethod]
 AsyncStreamRequestDecorator = Callable[[AsyncStreamRequestMethod], AsyncStreamRequestMethod]
 

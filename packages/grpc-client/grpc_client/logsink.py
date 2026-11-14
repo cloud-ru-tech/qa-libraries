@@ -12,14 +12,14 @@ from .utils.logutils import LogFormat
 
 
 def resolve_log_levels(log_level: int | None = None, err_log_level: int | None = None) -> tuple[int, int]:
-    """Подставить вместо `None` уровни из общей конфигурации.
+    """Replace `None` levels with values from the shared configuration.
 
-    Нужна тем, кто должен знать итоговые уровни до сборки клиента — например, чтобы
-    заранее отвергнуть уровень, которого не понимает вывод.
+    Useful when effective levels are needed before building a client, for example to
+    reject an output level unsupported by the sink in advance.
 
-    :param log_level: уровень логирования успешных запросов
-    :param err_log_level: уровень логирования запросов с ошибкой
-    :return: пара уровней «успешный, с ошибкой»
+    :param log_level: successful request logging level
+    :param err_log_level: failed request logging level
+    :return: pair of success and error levels
     """
     return (
         log_level if log_level is not None else LOGGING_CONFIG.log_level,
@@ -29,118 +29,118 @@ def resolve_log_levels(log_level: int | None = None, err_log_level: int | None =
 
 @dataclass(frozen=True, slots=True)
 class RequestRecord:
-    """Отправленный gRPC-запрос."""
+    """Sent gRPC request."""
 
-    # Идентификатор, связывающий запрос с ответом.
+    # Identifier linking a request to its response.
     trace_id: str
 
-    # Полное имя вызываемого метода в виде /package.Service/Method.
+    # Full name of the method to call as /package.Service/Method.
     method: str
 
-    # Отправляемое сообщение. `None`, когда телом запроса является поток сообщений.
+    # Sent message. `None` when the request body is a message stream.
     message: Message | None
 
-    # Метаданные запроса.
+    # Request metadata.
     metadata: MetadataType | None
 
 
 @dataclass(frozen=True, slots=True)
 class ResponseRecord:
-    """Завершившийся gRPC вызов: успешный, с ошибкой либо законченный поток."""
+    """Completed gRPC call: successful, failed, or a completed stream."""
 
-    # Идентификатор, связывающий запрос с ответом.
+    # Identifier linking a request to its response.
     trace_id: str
 
-    # Полное имя вызванного метода в виде /package.Service/Method.
+    # Full name of the called method as /package.Service/Method.
     method: str
 
-    # Итоговый код статуса вызова.
+    # Final call status code.
     status_code: grpc.StatusCode
 
-    # Ответное сообщение. `None` у потоковых ответов и у вызовов с ошибкой.
+    # Response message. `None` for streaming responses and failed calls.
     message: Message | None
 
-    # Текст ошибки от сервиса. Пустая строка, когда вызов успешен.
+    # Service error text. Empty for successful calls.
     details: str
 
-    # Метаданные ответа.
+    # Response metadata.
     metadata: MetadataType | None
 
-    # Количество полученных сообщений. `None` у унарных ответов.
+    # Number of received messages. `None` for unary responses.
     messages_count: int | None
 
     @property
     def succeeded(self) -> bool:
-        """Признак успешно завершившегося вызова."""
+        """Whether the call completed successfully."""
         return self.status_code is grpc.StatusCode.OK
 
     @property
     def is_stream(self) -> bool:
-        """Признак того, что запись описывает завершившийся поток ответов."""
+        """Whether the record describes a completed response stream."""
         return self.messages_count is not None
 
 
 class LogSink(Protocol):
-    """Приемник записей о gRPC вызовах.
+    """Sink for gRPC call records.
 
-    Интерцептор собирает записи и выбирает уровень, приемник решает, куда и в каком виде
-    они попадут. Реализация подключается опцией `options.with_log_sink`.
+    The interceptor builds records and selects levels; the sink decides where and how
+    records are written. Connect an implementation using `options.with_log_sink`.
 
-    Требования к реализации:
+    Implementation requirements:
 
-    - методы приходят из разных потоков — финальный лог потока ответов пишется из служебного
-      потока канала grpcio, а асинхронный лог из задачи событийного цикла;
-    - долгая работа внутри метода задерживает сам вызов: запись запроса делается до отправки;
-    - исключение приемника интерцептор гасит и вызов не срывает, но запись при этом теряется.
+    - methods run in different threads; the final response stream log is written from the internal
+      grpcio channel thread, while asynchronous logs run in an event loop task;
+    - slow methods delay the call itself: requests are logged before sending;
+    - interceptor suppresses sink exceptions without breaking the call, but the record is lost.
     """
 
     def is_enabled_for(self, level: int) -> bool:
-        """Проверить, что записи указанного уровня дойдут до вывода.
+        """Check whether records at the specified level reach the output.
 
-        Интерцептор спрашивает об этом до сборки записи: подготовка тела сообщения стоит
-        дороже самого вопроса. Когда оба уровня выключены, интерцептор не делает вообще
-        ничего — не создает идентификатор и не оборачивает поток ради подсчета сообщений.
+        The interceptor asks before building a record: preparing a message body costs
+        more than the query itself. When both levels are disabled, the interceptor does
+        nothing: it neither generates an identifier nor wraps the stream to count messages.
 
-        :param level: уровень записи
-        :return: True, если запись такого уровня дойдет до вывода
+        :param level: record level
+        :return: True if a record at this level reaches output
         """
         ...
 
     def write_request(self, level: int, record: RequestRecord) -> None:
-        """Записать отправленный запрос.
+        """Log a sent request.
 
-        :param level: уровень записи
-        :param record: данные запроса
+        :param level: record level
+        :param record: request data
         """
         ...
 
     def write_response(self, level: int, record: ResponseRecord) -> None:
-        """Записать завершившийся вызов.
+        """Log a completed call.
 
-        :param level: уровень записи
-        :param record: данные завершившегося вызова
+        :param level: record level
+        :param record: completed call data
         """
         ...
 
 
 class TextLogSink:
-    """Приемник, пишущий записи одной строкой в логгер stdlib."""
+    """Sink that writes records as one line to a stdlib logger."""
 
     def __init__(self, logger: logging.Logger, log_format: LogFormat | None = None) -> None:
-        """Инициализатор.
+        """Initialize the object.
 
-        :param logger: логгер, в который пишутся запросы и ответы
-        :param log_format: правила оформления лога, по умолчанию из общей конфигурации
+        :param logger: logger used for requests and responses
+        :param log_format: log formatting rules, defaults to shared configuration
         """
         self._logger = logger
         self._format = log_format if log_format is not None else LogFormat.from_config()
 
     def is_enabled_for(self, level: int) -> bool:
-        """Проверить, что логгер пишет записи указанного уровня."""
+        """Check whether the logger writes records at the specified level."""
         return self._logger.isEnabledFor(level)
 
     def write_request(self, level: int, record: RequestRecord) -> None:
-        """Записать отправленный запрос."""
+        """Log a sent request."""
         self._logger.log(
             level,
             logutils.request_log(
@@ -153,11 +153,11 @@ class TextLogSink:
         )
 
     def write_response(self, level: int, record: ResponseRecord) -> None:
-        """Записать завершившийся вызов."""
+        """Log a completed call."""
         self._logger.log(level, self._response_text(record))
 
     def _response_text(self, record: ResponseRecord) -> str:
-        """Собрать строку лога, подходящую исходу вызова."""
+        """Build a log line suitable for the call outcome."""
         if not record.succeeded:
             return logutils.error_log(
                 trace_id=record.trace_id,

@@ -8,22 +8,22 @@ from http_client_auth import AuthData
 
 
 class SlowIamClient:
-    """Синхронный клиент IAM, отвечающий с задержкой.
+    """Synchronous IAM client that responds after a delay.
 
-    Задержка нужна тестам конкуренции: без нее поток успевает выпустить и сохранить токен
-    раньше, чем соседний войдет в обновление, и тест проходил бы даже без блокировки.
+    The delay is needed for concurrency tests: without it, a thread can issue and save the token
+    before another starts refreshing, so the test would pass even without a lock.
     """
 
     def __init__(self, delay: float = 0.05, prefix: str = "token") -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._delay = delay
         self._prefix = prefix
         self._counter = count(1)
         self._lock = threading.Lock()
         self.calls = 0
 
-    def authorize(self, key_id: str, key_secret: str) -> AuthData:  # noqa: ARG002 — сигнатура задана контрактом
-        """Выдать очередной токен, задержавшись на заданное время."""
+    def authorize(self, key_id: str, key_secret: str) -> AuthData:  # noqa: ARG002 - the contract defines the signature
+        """Return the next token after the specified delay."""
         with self._lock:
             self.calls += 1
             number = next(self._counter)
@@ -33,20 +33,20 @@ class SlowIamClient:
 
 
 class ConstantIamClient:
-    """Синхронный клиент IAM, всегда возвращающий один и тот же токен.
+    """Synchronous IAM client that always returns the same token.
 
-    IAM вправе вернуть прежнее значение: тогда обновление нельзя распознать по тексту токена.
+    IAM may return the same value, so refreshes cannot be identified by token text.
     """
 
     def __init__(self, delay: float = 0.05, token: str | None = None) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._delay = delay
         self._token = token if token is not None else uuid4().hex
         self._lock = threading.Lock()
         self.calls = 0
 
-    def authorize(self, key_id: str, key_secret: str) -> AuthData:  # noqa: ARG002 — сигнатура задана контрактом
-        """Выдать неизменный токен, задержавшись на заданное время."""
+    def authorize(self, key_id: str, key_secret: str) -> AuthData:  # noqa: ARG002 - the contract defines the signature
+        """Return a fixed token after the specified delay."""
         with self._lock:
             self.calls += 1
 
@@ -55,33 +55,33 @@ class ConstantIamClient:
 
 
 class ConstantAsyncIamClient:
-    """Асинхронный клиент IAM, всегда возвращающий один и тот же токен."""
+    """Asynchronous IAM client that always returns the same token."""
 
     def __init__(self, delay: float = 0.05, token: str | None = None) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._delay = delay
         self._token = token if token is not None else uuid4().hex
         self.calls = 0
 
-    async def authorize(self, key_id: str, key_secret: str) -> AuthData:  # noqa: ARG002 — сигнатура задана контрактом
-        """Выдать неизменный токен, задержавшись на заданное время."""
+    async def authorize(self, key_id: str, key_secret: str) -> AuthData:  # noqa: ARG002 - the contract defines the signature
+        """Return a fixed token after the specified delay."""
         self.calls += 1
         await asyncio.sleep(self._delay)
         return AuthData(access_token=self._token, expires_in=3600)
 
 
 class SlowAsyncIamClient:
-    """Асинхронный клиент IAM, отвечающий с задержкой."""
+    """Asynchronous IAM client that responds after a delay."""
 
     def __init__(self, delay: float = 0.05, prefix: str = "async-token") -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._delay = delay
         self._prefix = prefix
         self._counter = count(1)
         self.calls = 0
 
-    async def authorize(self, key_id: str, key_secret: str) -> AuthData:  # noqa: ARG002 — сигнатура задана контрактом
-        """Выдать очередной токен, задержавшись на заданное время."""
+    async def authorize(self, key_id: str, key_secret: str) -> AuthData:  # noqa: ARG002 - the contract defines the signature
+        """Return the next token after the specified delay."""
         self.calls += 1
         number = next(self._counter)
 

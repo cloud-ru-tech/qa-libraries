@@ -15,20 +15,20 @@ DEFAULT_TRACEPARENT_KEY = "traceparent"
 
 
 def default_request_id_key() -> str:
-    """Получить имя ключа идентификатора запроса по умолчанию."""
+    """Get the default request identifier key name."""
     return os.getenv("GRPC_CLIENT_REQUEST_ID_KEY", DEFAULT_REQUEST_ID_KEY)
 
 
 def default_traceparent_key() -> str:
-    """Получить имя ключа traceparent по умолчанию."""
+    """Get the default traceparent key name."""
     return os.getenv("GRPC_CLIENT_TRACEPARENT_KEY", DEFAULT_TRACEPARENT_KEY)
 
 
 class _AutogenerateMixin:
-    """Общая логика интерцепторов, добавляющих сгенерированное значение в метаданные."""
+    """Shared logic for interceptors that add a generated value to metadata."""
 
     def __init__(self, key: str, generator: Callable[[], str]) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self._key = key
         self._generator = generator
 
@@ -39,9 +39,9 @@ class _AutogenerateMixin:
 
 
 class AutogenerateRequestIdInterceptor(_AutogenerateMixin, MetadataInterceptor):
-    """Интерцептор, добавляющий идентификатор к каждому gRPC-запросу.
+    """Interceptor that adds an identifier to every gRPC request.
 
-    Если запрос уже содержит такой ключ, значение сохраняется.
+    If the request already contains this key, its value is preserved.
     """
 
     def __init__(
@@ -49,42 +49,42 @@ class AutogenerateRequestIdInterceptor(_AutogenerateMixin, MetadataInterceptor):
         key: str | None = None,
         generator: Callable[[], str] | None = None,
     ) -> None:
-        """Инициализатор.
+        """Initialize the object.
 
-        :param key: имя ключа метаданных, по умолчанию `x-request-id`
-        :param generator: функция генерации значения, по умолчанию UUID4
+        :param key: metadata key name, defaults to `x-request-id`
+        :param generator: value generator, defaults to UUID4
         """
         super().__init__(key or default_request_id_key(), generator or _uuid4)
 
     def metadata_to_add(self, call_details: grpc.ClientCallDetails) -> MetadataItems:
-        """Собрать идентификатор запроса, если его еще нет в метаданных."""
+        """Build a request identifier if it is not already in metadata."""
         return self._metadata_to_add(call_details)
 
 
 class AsyncAutogenerateRequestIdInterceptor(_AutogenerateMixin, AsyncMetadataInterceptor):
-    """Асинхронный интерцептор, добавляющий идентификатор к каждому gRPC-запросу."""
+    """Asynchronous interceptor that adds an identifier to every gRPC request."""
 
     def __init__(
         self,
         key: str | None = None,
         generator: Callable[[], str] | None = None,
     ) -> None:
-        """Инициализатор.
+        """Initialize the object.
 
-        :param key: имя ключа метаданных, по умолчанию `x-request-id`
-        :param generator: функция генерации значения, по умолчанию UUID4
+        :param key: metadata key name, defaults to `x-request-id`
+        :param generator: value generator, defaults to UUID4
         """
         super().__init__(key or default_request_id_key(), generator or _uuid4)
 
     async def metadata_to_add(self, call_details: grpc.aio.ClientCallDetails) -> MetadataItems:
-        """Собрать идентификатор запроса, если его еще нет в метаданных."""
+        """Build a request identifier if it is not already in metadata."""
         return self._metadata_to_add(call_details)
 
 
 class AutogenerateTraceparentInterceptor(_AutogenerateMixin, MetadataInterceptor):
-    """Интерцептор, добавляющий traceparent к каждому gRPC-запросу.
+    """Interceptor that adds traceparent to every gRPC request.
 
-    Если запрос уже содержит traceparent, значение сохраняется.
+    If the request already contains traceparent, its value is preserved.
     """
 
     def __init__(
@@ -92,35 +92,35 @@ class AutogenerateTraceparentInterceptor(_AutogenerateMixin, MetadataInterceptor
         key: str | None = None,
         generator: Callable[[], str] | None = None,
     ) -> None:
-        """Инициализатор.
+        """Initialize the object.
 
-        :param key: имя ключа метаданных, по умолчанию `traceparent`
-        :param generator: функция генерации значения, по умолчанию генератор W3C Trace Context
+        :param key: metadata key name, defaults to `traceparent`
+        :param generator: value generator, defaults to the W3C Trace Context generator
         """
         super().__init__(key or default_traceparent_key(), generator or traceparent.generate)
 
     def metadata_to_add(self, call_details: grpc.ClientCallDetails) -> MetadataItems:
-        """Собрать traceparent, если его еще нет в метаданных."""
+        """Build traceparent if it is not already in metadata."""
         return self._metadata_to_add(call_details)
 
 
 class AsyncAutogenerateTraceparentInterceptor(_AutogenerateMixin, AsyncMetadataInterceptor):
-    """Асинхронный интерцептор, добавляющий traceparent к каждому gRPC-запросу."""
+    """Asynchronous interceptor that adds traceparent to every gRPC request."""
 
     def __init__(
         self,
         key: str | None = None,
         generator: Callable[[], str] | None = None,
     ) -> None:
-        """Инициализатор.
+        """Initialize the object.
 
-        :param key: имя ключа метаданных, по умолчанию `traceparent`
-        :param generator: функция генерации значения, по умолчанию генератор W3C Trace Context
+        :param key: metadata key name, defaults to `traceparent`
+        :param generator: value generator, defaults to the W3C Trace Context generator
         """
         super().__init__(key or default_traceparent_key(), generator or traceparent.generate)
 
     async def metadata_to_add(self, call_details: grpc.aio.ClientCallDetails) -> MetadataItems:
-        """Собрать traceparent, если его еще нет в метаданных."""
+        """Build traceparent if it is not already in metadata."""
         return self._metadata_to_add(call_details)
 
 

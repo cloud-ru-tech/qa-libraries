@@ -12,25 +12,25 @@ from .settings import RequestStepOptions, ResponseStepOptions, StepSettings, bui
 
 
 def wrap_requests_in_steps(**options: Unpack[RequestStepOptions]) -> ClientOption:
-    """Опция для обертки всех запросов HTTP-клиента в шаги Allure.
+    """Option that wraps all HTTP client requests in Allure steps.
 
-    Пример использования:
+    Usage example:
     >>> client = HttpClient(BASE_URL, wrap_requests_in_steps())
     >>> client.get("/sample")
 
-    Шаг оборачивает саму отправку запроса, поэтому в отчете видна ее длительность,
-    а при ошибке соединения или таймауте шаг создается и помечается упавшим.
+    The step wraps request sending itself, so the report shows its duration,
+    and create a failed step for connection errors or timeouts.
 
-    :param show_host: отображать хост запроса в шаге, по умолчанию False
-    :param show_query_params: отображать параметры запроса в шаге, по умолчанию False
-    :param attach_request: прикреплять данные запроса к шагу, по умолчанию True
-    :param serialize_request_to_curl: сериализовать данные запроса в curl, по умолчанию False
-    :param sanitize_keys: ключи в формате glom для скрытия секретных данных, по умолчанию None
-    :param json_dumps_kwargs: параметры сериализации JSON, по умолчанию None
-    :param max_attach_length: максимальная длина вложения в символах, если None - без ограничений
-    :param use_default_sanitize_keys: дополнять sanitize_keys списком секретов из http_client,
-                                      по умолчанию True
-    :return: опция ClientOption.
+    :param show_host: Show the request host in the step, False by default
+    :param show_query_params: Show query parameters in the step, False by default
+    :param attach_request: Attach request data to the step, True by default
+    :param serialize_request_to_curl: Serialize request data as curl, False by default
+    :param sanitize_keys: Keys in glom format for masking secrets, None by default
+    :param json_dumps_kwargs: JSON serialization options, None by default
+    :param max_attach_length: Maximum attachment length in characters, unlimited if None
+    :param use_default_sanitize_keys: Extend sanitize_keys with the secret list from http_client,
+                                      True by default
+    :return: ClientOption option.
     """
     settings = build_settings(**options)
 
@@ -38,31 +38,31 @@ def wrap_requests_in_steps(**options: Unpack[RequestStepOptions]) -> ClientOptio
 
 
 def wrap_requests_and_responses_in_steps(**options: Unpack[ResponseStepOptions]) -> ClientOption:
-    """Опция для обертки всех запросов и ответов HTTP-клиента в шаги Allure.
+    """Option that wraps all HTTP client requests and responses in Allure steps.
 
-    Пример использования:
+    Usage example:
     >>> client = HttpClient(BASE_URL, wrap_requests_and_responses_in_steps())
     >>> client.get("/sample")
 
-    Отличается от wrap_requests_in_steps тем, что к шагу прикрепляются еще и данные ответа.
-    Тело потокового ответа не читается, вместо него прикрепляется заглушка.
+    Unlike wrap_requests_in_steps, also attach response data to the step.
+    Attach a placeholder instead of reading a streaming response body.
 
-    Заголовки и тело ответа прикрепляются отдельными вложениями, поэтому заголовки видны
-    и у ответа без тела, и у непрочитанного потока. Статус ответа отображается в имени
-    вложения с заголовками.
+    Attach response headers and body separately so headers remain visible
+    for both empty responses and unread streams. Show the response status in the header
+    attachment name.
 
-    :param show_host: отображать хост запроса в шаге, по умолчанию False
-    :param show_query_params: отображать параметры запроса в шаге, по умолчанию False
-    :param attach_request: прикреплять данные запроса к шагу, по умолчанию True
-    :param attach_response: прикреплять тело ответа к шагу, по умолчанию True
-    :param attach_response_headers: прикреплять заголовки ответа к шагу, по умолчанию True
-    :param serialize_request_to_curl: сериализовать данные запроса в curl, по умолчанию False
-    :param sanitize_keys: ключи в формате glom для скрытия секретных данных, по умолчанию None
-    :param json_dumps_kwargs: параметры сериализации JSON, по умолчанию None
-    :param max_attach_length: максимальная длина вложения в символах, если None - без ограничений
-    :param use_default_sanitize_keys: дополнять sanitize_keys списком секретов из http_client,
-                                      по умолчанию True
-    :return: опция ClientOption.
+    :param show_host: Show the request host in the step, False by default
+    :param show_query_params: Show query parameters in the step, False by default
+    :param attach_request: Attach request data to the step, True by default
+    :param attach_response: Attach the response body to the step, True by default
+    :param attach_response_headers: Attach response headers to the step, True by default
+    :param serialize_request_to_curl: Serialize request data as curl, False by default
+    :param sanitize_keys: Keys in glom format for masking secrets, None by default
+    :param json_dumps_kwargs: JSON serialization options, None by default
+    :param max_attach_length: Maximum attachment length in characters, unlimited if None
+    :param use_default_sanitize_keys: Extend sanitize_keys with the secret list from http_client,
+                                      True by default
+    :return: ClientOption option.
     """
     resolved: ResponseStepOptions = {"attach_response": True, "attach_response_headers": True}
     resolved.update(options)
@@ -72,10 +72,10 @@ def wrap_requests_and_responses_in_steps(**options: Unpack[ResponseStepOptions])
 
 
 def _build_option(settings: StepSettings) -> ClientOption:
-    """Собрать опцию под тип клиента.
+    """Build an option for the client type.
 
-    Декораторы, в отличие от event hooks, не оборачиваются в корутины автоматически,
-    поэтому для асинхронного клиента нужны свои реализации.
+    Unlike event hooks, decorators are not automatically wrapped in coroutines,
+    so the asynchronous client needs separate implementations.
     """
 
     def option(client: BaseHttpClient) -> None:

@@ -1,22 +1,24 @@
-# Демо проект для демонстрации
+# Demo project
 
-Тесты в этой папке гоняют настоящие HTTP-запросы к локальному [httpbin](https://github.com/mccutchen/go-httpbin)
-и складывают результат в Allure. Смотреть нужно не на зеленые галочки, а на собранный отчет: каждый тест
-показывает, что именно делает с ним та или иная опция.
+English | [Русский](README.ru.md)
 
-Проект самостоятельный — он подключает `cloudru-qa-http-client-allure` как обычную зависимость, ровно
-так же, как это сделает любой другой проект с автотестами. В монорепозитории зависимость берётся
-из соседнего каталога, а не из PyPI.
+Tests in this directory send real HTTP requests to a local [httpbin](https://github.com/mccutchen/go-httpbin)
+and save the results in Allure. Inspect the generated report: each test
+shows exactly how an option affects it, beyond simply passing.
 
-## Что нужно
+This is a standalone project: it uses `cloudru-qa-http-client-allure` as a regular dependency,
+just like any automated test project. In the monorepo, the dependency comes
+from the neighboring directory rather than PyPI.
 
-- запущенный Docker — httpbin поднимается в контейнере;
-- [`uv`](https://docs.astral.sh/uv/) — ставит зависимости;
-- `npx` из Node.js — только для сборки отчета.
+## Requirements
 
-## Запуск
+- Docker running — httpbin starts in a container;
+- [`uv`](https://docs.astral.sh/uv/) — installs dependencies;
+- Node.js `npx` — only for building the report.
 
-Команды выполняются из каталога `packages/http-client-allure/examples`:
+## Running
+
+Run commands from `packages/http-client-allure/examples`:
 
 ```shell
 uv sync
@@ -24,11 +26,11 @@ uv run pytest --alluredir=allure-results
 npx allure awesome allure-results --single-file
 ```
 
-Отчёт появится в `allure-report/index.html`. Тесты сами поднимают httpbin и удаляют контейнер
-после прогона. Чтобы оставить контейнер поднятым между прогонами, добавьте флаг `--keepalive`:
+The report is written to `allure-report/index.html`. Tests start httpbin and remove its container
+after the run. To keep the container between runs, add `--keepalive`:
 
 ```shell
 uv run pytest --alluredir=allure-results --keepalive
 ```
 
-Удалить результаты прошлых прогонов: `rm -rf allure-results allure-report`.
+Remove results from previous runs: `rm -rf allure-results allure-report`.

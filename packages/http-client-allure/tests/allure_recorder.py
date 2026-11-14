@@ -25,7 +25,7 @@ class RecordedStep:
 
 @dataclass(slots=True)
 class Report:
-    """Фейк Allure: запоминает шаги и вложения вместо записи в отчет."""
+    """Allure fake that records steps and attachments instead of writing a report."""
 
     steps: list[RecordedStep] = field(default_factory=list)
     orphan_attachments: list[RecordedAttachment] = field(default_factory=list)
@@ -39,7 +39,7 @@ class Report:
         try:
             yield recorded
         except BaseException as exc:
-            # Allure помечает шаг упавшим только если исключение прошло через его контекст
+            # Allure marks a step as failed only if an exception passes through its context
             recorded.failure = type(exc).__name__
             raise
         finally:

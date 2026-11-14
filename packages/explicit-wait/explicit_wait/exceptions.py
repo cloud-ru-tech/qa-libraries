@@ -13,7 +13,7 @@ type ErrorState = tuple[type[WaitError], tuple[object, ...], dict[str, object]]
 
 
 class WaitFailureDetails(TypedDict):
-    """Диагностика ожидания, остановленного до выполнения условия."""
+    """Diagnostics for a wait stopped before its condition was satisfied."""
 
     waiting_for: str
     timeout_seconds: float
@@ -24,13 +24,13 @@ class WaitFailureDetails(TypedDict):
 
 
 class WaitError(Exception):
-    """Базовая ошибка библиотеки явных ожиданий."""
+    """Base error for the explicit wait library."""
 
     def __reduce__(self) -> tuple[ErrorReducer, ErrorState]:
-        """Восстановить исключение целиком: аргументы, поля и заметки.
+        """Restore the entire exception: arguments, fields, and notes.
 
-        Конструктор подкласса не вызывается, поэтому переопределённая сигнатура и
-        обязательные поля пользовательских наследников не мешают десериализации.
+        The subclass constructor is not called, so custom subclasses with overridden
+        signatures and required fields do not prevent deserialization.
         """
         return (
             _rebuild_error,
@@ -39,23 +39,23 @@ class WaitError(Exception):
 
 
 class InvalidPredicateError(WaitError, TypeError):
-    """Предикат нарушил контракт синхронного ожидания.
+    """The predicate violated the synchronous wait contract.
 
-    Наследуется от ``TypeError``, чтобы вызывающий код мог ловить ошибку привычным способом,
-    и от ``WaitError``, чтобы её не мог поглотить ``expected_exceptions``.
+    Inherits from ``TypeError`` so callers can catch it as usual,
+    and from ``WaitError`` so ``expected_exceptions`` cannot swallow it.
     """
 
 
 class WaitStoppedError(WaitError):
-    """Ожидание прекращено, так и не дождавшись выполнения условия.
+    """The wait stopped before its condition was satisfied.
 
-    Несёт диагностику последней попытки, чтобы упавший автотест объяснял причину сам.
+    Carries the last attempt's diagnostics so a failed automated test explains its own cause.
     """
 
     def __init__(self, **details: Unpack[WaitFailureDetails]) -> None:
-        """Сохранить диагностику последней попытки.
+        """Store the last attempt's diagnostics.
 
-        :param details: описание ожидания и его последнего результата.
+        :param details: description of the wait and its last result.
         """
         self.waiting_for = details["waiting_for"]
         self.timeout_seconds = details["timeout_seconds"]
@@ -88,21 +88,21 @@ class WaitStoppedError(WaitError):
 
 
 class TimeoutExpiredError(WaitStoppedError, TimeoutError):
-    """Ожидание прекращено по времени.
+    """The wait stopped because of its time limit.
 
-    Наследуется от встроенного ``TimeoutError``, чтобы таймауты этой библиотеки и таймауты
-    ``asyncio`` ловились одним ``except``. Обратите внимание, что ``httpx.TimeoutException``
-    в эту иерархию не входит и требует отдельного перехвата.
+    Inherits from built-in ``TimeoutError``, allowing timeouts from this library and
+    ``asyncio`` to be caught with one ``except``. Note that ``httpx.TimeoutException``
+    is outside this hierarchy and must be caught separately.
 
-    Флаг ``deadline_reached`` различает две ситуации: дедлайн действительно наступил либо
-    очередная пауза в него уже не помещалась и начинать новую попытку было бессмысленно.
+    ``deadline_reached`` distinguishes between a deadline that actually passed and
+    a next pause that no longer fit, making a new attempt pointless.
     """
 
     def __init__(self, *, deadline_reached: bool = True, **details: Unpack[WaitFailureDetails]) -> None:
-        """Сохранить диагностику остановки по времени.
+        """Store diagnostics for stopping on the time limit.
 
-        :param deadline_reached: наступил ли дедлайн фактически.
-        :param details: описание ожидания и его последнего результата.
+        :param deadline_reached: whether the deadline actually passed.
+        :param details: description of the wait and its last result.
         """
         self.deadline_reached = deadline_reached
         super().__init__(**details)
@@ -114,21 +114,21 @@ class TimeoutExpiredError(WaitStoppedError, TimeoutError):
 
 
 class AttemptsExhaustedError(WaitStoppedError):
-    """Исчерпано максимальное число попыток, заданное параметром ``max_attempts``."""
+    """The maximum number of attempts set by ``max_attempts`` was exhausted."""
 
     def _reason(self) -> str:
         return f"All {self.attempts} attempts exhausted"
 
 
 class WaitCancelledError(WaitError):
-    """Ожидание прервано извне через ``cancel_event``."""
+    """The wait was canceled externally through ``cancel_event``."""
 
     def __init__(self, *, waiting_for: str, attempts: int, elapsed_seconds: float) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param waiting_for: значение настройки ``waiting_for``.
-        :param attempts: значение настройки ``attempts``.
-        :param elapsed_seconds: значение настройки ``elapsed_seconds``.
+        :param waiting_for: Value of ``waiting_for``.
+        :param attempts: Value of ``attempts``.
+        :param elapsed_seconds: Value of ``elapsed_seconds``.
         """
         self.waiting_for = waiting_for
         self.attempts = attempts
@@ -139,10 +139,10 @@ class WaitCancelledError(WaitError):
 
 
 def safe_repr(value: object) -> str:
-    """Получить repr значения, не позволяя ему подменить исходную ошибку.
+    """Get a value's repr without replacing the original error.
 
-    :param value: произвольный объект, ``__repr__`` которого может выбросить исключение.
-    :return: repr объекта либо пометка о сбое.
+    :param value: any object whose ``__repr__`` may raise an exception.
+    :return: object repr or a failure marker.
     """
     try:
         return repr(value)
@@ -152,10 +152,10 @@ def safe_repr(value: object) -> str:
 
 
 def safe_str(value: object) -> str:
-    """Получить строковое представление, не позволяя ему подменить исходную ошибку.
+    """Get a string representation without replacing the original error.
 
-    :param value: произвольный объект, ``__str__`` которого может выбросить исключение.
-    :return: строковое представление объекта либо пометка о сбое.
+    :param value: any object whose ``__str__`` may raise an exception.
+    :return: object string representation or a failure marker.
     """
     try:
         return str(value)

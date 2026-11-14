@@ -4,18 +4,18 @@ from httpx import Request, Response
 
 
 def is_http_request(value: object) -> TypeGuard[Request]:
-    """Проверить тип запроса HTTPX.
+    """Check for an HTTPX request type.
 
-    :param value: произвольный аргумент вызова.
-    :return: является ли аргумент запросом HTTPX.
+    :param value: Arbitrary call argument.
+    :return: Whether the argument is an HTTPX request.
     """
     return isinstance(value, cast("type[object]", Request))
 
 
 def is_http_response(value: object) -> TypeGuard[Response]:
-    """Проверить тип ответа HTTPX.
+    """Check for an HTTPX response type.
 
-    :param value: результат вызова.
-    :return: является ли результат ответом HTTPX.
+    :param value: Call result.
+    :return: Whether the result is an HTTPX response.
     """
     return isinstance(value, cast("type[object]", Response))

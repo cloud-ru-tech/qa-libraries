@@ -12,12 +12,12 @@ def pytest_logging_context_configure(
     handler: LoggingContextHandler,
     config: pytest.Config,
 ) -> None:
-    """Настроить хендлер логов до начала прогона.
+    """Configure the log handler before the run starts.
 
-    Вызывается один раз после того, как плагин создал хендлер и повесил его на
-    логгеры. Точка расширения для форматтеров, которые нельзя описать строкой в
-    ini — например `structlog.stdlib.ProcessorFormatter` или JSON-формат.
+    Called once after the plugin creates the handler and attaches it to
+    loggers. Extension point for formatters that cannot be expressed as an
+    ini, such as `structlog.stdlib.ProcessorFormatter` or JSON formatting.
 
-    :param handler: хендлер, который пишет логи в файлы тестов
-    :param config: конфигурация pytest
+    :param handler: handler that writes logs to test files
+    :param config: pytest configuration
     """

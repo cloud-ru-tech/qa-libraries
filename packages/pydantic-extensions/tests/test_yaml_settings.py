@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 def test_yaml_settings(tmp_path: Path) -> None:
-    """Тест загрузки настроек из yaml файла."""
+    """Test loading settings from a yaml file."""
     yaml_content: str = """
     app_name: test_app
     debug: true
@@ -38,7 +38,7 @@ def test_yaml_settings(tmp_path: Path) -> None:
 
 
 def test_yaml_settings_submodels(tmp_path: Path) -> None:
-    """Тест загрузки настроек из yaml файла с вложенными моделями."""
+    """Test loading settings from a yaml file with nested models."""
     yaml_content: str = """
     app_name: test_app
     debug: true
@@ -72,7 +72,7 @@ def test_yaml_settings_submodels(tmp_path: Path) -> None:
 
 
 def test_yaml_settings_multiple_files(tmp_path: Path) -> None:
-    """Тест загрузки настроек из нескольких yaml файлов."""
+    """Test loading settings from multiple yaml files."""
     yaml_content_main: str = """
     app_name: test_app
     debug: true
@@ -111,7 +111,7 @@ def test_yaml_settings_multiple_files(tmp_path: Path) -> None:
 
 
 def test_yaml_settings_with_env(tmp_path: Path) -> None:
-    """Тест загрузки настроек из нескольких yaml файлов."""
+    """Test loading settings from multiple yaml files."""
     yaml_content: str = """
     app_name: test_app
     debug: true
@@ -154,7 +154,7 @@ def test_yaml_settings_with_env(tmp_path: Path) -> None:
 
 
 def test_yaml_settings_required_key_from_env_not_in_file(tmp_path: Path) -> None:
-    """Обязательное поле без default может приходить из env, а не из файла."""
+    """A required field without a default may come from env rather than a file."""
     yaml_content: str = """
     app_name: test_app
     """
@@ -181,7 +181,7 @@ def test_yaml_settings_required_key_from_env_not_in_file(tmp_path: Path) -> None
 
 
 def test_yaml_settings_raises_when_required_key_absent_in_all_sources(tmp_path: Path) -> None:
-    """Если обязательного ключа нет ни в файле, ни в env, проверка падает."""
+    """Validation fails if a required key is missing from both the file and env."""
     yaml_content: str = """
     app_name: test_app
     """
@@ -206,7 +206,7 @@ def test_yaml_settings_raises_when_required_key_absent_in_all_sources(tmp_path: 
 
 
 def test_yaml_settings_uses_custom_encoding(tmp_path: Path) -> None:
-    """Тест проверяет работу с пользовательской кодировкой файла."""
+    """Test using a custom file encoding."""
     yaml_content: str = """
     message: привет мир
     """
@@ -227,7 +227,7 @@ def test_yaml_settings_uses_custom_encoding(tmp_path: Path) -> None:
 
 
 def test_yaml_settings_raises_error_when_file_not_specified() -> None:
-    """Тест проверяет, что при отсутствии объявления yaml_file возникает ошибка."""
+    """Test that a missing yaml_file declaration raises an error."""
 
     class TestSettings(YamlBaseSettings):
         app_name: str = Field(default="")
@@ -238,7 +238,7 @@ def test_yaml_settings_raises_error_when_file_not_specified() -> None:
 
 
 def test_yaml_settings_raises_error_when_file_not_found() -> None:
-    """Тест проверяет, что при отсутствии файла возникает ошибка."""
+    """Test that a missing file raises an error."""
 
     class TestSettings(YamlBaseSettings):
         app_name: str = Field(default="")
@@ -249,7 +249,7 @@ def test_yaml_settings_raises_error_when_file_not_found() -> None:
 
 
 def test_yaml_settings_raises_error_when_yaml_is_list(tmp_path: Path) -> None:
-    """Тест проверяет, что когда yaml содержит список, то возникает ошибка."""
+    """Test that a yaml list raises an error."""
     yaml_content: str = """
     - item1
     - item2
@@ -268,7 +268,7 @@ def test_yaml_settings_raises_error_when_yaml_is_list(tmp_path: Path) -> None:
 
 
 def test_yaml_settings_validation_error_on_invalid_type(tmp_path: Path) -> None:
-    """Тест проверяет валидацию типов данных."""
+    """Test data type validation."""
     yaml_content: str = """
     port: not_a_number
     """
@@ -284,7 +284,7 @@ def test_yaml_settings_validation_error_on_invalid_type(tmp_path: Path) -> None:
 
 
 def test_yaml_settings_raises_error_on_unknown_keys(tmp_path: Path) -> None:
-    """Тест проверяет, что лишние ключи в yaml вызывают ошибку."""
+    """Test that extra yaml keys raise an error."""
     yaml_content: str = """
     app_name: test_app
     unknown_key: value
@@ -301,7 +301,7 @@ def test_yaml_settings_raises_error_on_unknown_keys(tmp_path: Path) -> None:
 
 
 def test_yaml_settings_raises_error_on_missing_required_keys(tmp_path: Path) -> None:
-    """Тест проверяет, что отсутствие обязательного ключа в yaml вызывает ошибку."""
+    """Test that a missing required yaml key raises an error."""
     yaml_content: str = """
     debug: true
     """
@@ -318,7 +318,7 @@ def test_yaml_settings_raises_error_on_missing_required_keys(tmp_path: Path) -> 
 
 
 def test_yaml_settings_raises_error_on_multiple_missing_required_keys(tmp_path: Path) -> None:
-    """Тест проверяет, что перечисляются все отсутствующие обязательные ключи."""
+    """Test that all missing required keys are listed."""
     yaml_content: str = """
     debug: true
     """
@@ -336,7 +336,7 @@ def test_yaml_settings_raises_error_on_multiple_missing_required_keys(tmp_path: 
 
 
 def test_yaml_settings_skips_unknown_keys_validation_when_disabled(tmp_path: Path) -> None:
-    """Тест проверяет отключение валидации неизвестных ключей."""
+    """Test disabling unknown key validation."""
     yaml_content: str = """
     app_name: test_app
     unknown_key: value
@@ -357,7 +357,7 @@ def test_yaml_settings_skips_unknown_keys_validation_when_disabled(tmp_path: Pat
 
 
 def test_yaml_settings_skips_required_keys_validation_when_disabled(tmp_path: Path) -> None:
-    """Тест проверяет отключение валидации обязательных ключей."""
+    """Test disabling required key validation."""
     yaml_content: str = """
     debug: true
     """
@@ -381,7 +381,7 @@ def test_yaml_settings_skips_required_keys_validation_when_disabled(tmp_path: Pa
 def test_yaml_settings_raises_validation_error_for_required_without_default_when_check_disabled(
     tmp_path: Path,
 ) -> None:
-    """Тест проверяет, что pydantic валидирует required поле без default."""
+    """Test that pydantic validates a required field without a default."""
     yaml_content: str = """
     debug: true
     """

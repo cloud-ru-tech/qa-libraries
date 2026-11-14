@@ -1,4 +1,4 @@
-"""Параметры демо-стенда httpbin."""
+"""httpbin demo environment settings."""
 
 import os
 
@@ -11,9 +11,9 @@ DEMO_API_KEY = "demo-api-key-42"
 CLIENT_NAME = "httpbin-demo"
 CLIENT_VERSION = "1.0.0"
 
-# Пути glom для маскирования. Первые две строки закрывают тело запроса,
-# остальные — эхо этого же тела и заголовков в ответе httpbin.
-# Типовые секреты (authorization, token, password, ...) библиотека маскирует сама.
+# Glom masking paths. The first two lines mask the request body,
+# the rest mask the echoed body and headers in the httpbin response.
+# The library masks common secrets (authorization, token, password, ...) itself.
 SANITIZE_KEYS: tuple[str, ...] = (
     "user.password",
     "items.*.token",
@@ -21,8 +21,8 @@ SANITIZE_KEYS: tuple[str, ...] = (
     "json.items.*.token",
     "headers.Authorization",
     "headers.X-Api-Key",
-    # httpbin кладёт в data сырое тело запроса одной строкой. Маскирование работает
-    # по разобранной структуре и внутрь строки не заглядывает, поэтому такое поле
-    # закрывается только целиком — иначе секрет утечёт в лог через него.
+    # httpbin puts the raw request body in data as a single string. Masking works
+    # on parsed structures and does not inspect strings, so mask this entire field
+    # to prevent secrets from leaking into logs through it.
     "data",
 )

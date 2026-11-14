@@ -5,7 +5,7 @@ from syrupy.assertion import SnapshotAssertion
 
 
 def test_to_curl_simple_get_request(snapshot: SnapshotAssertion) -> None:
-    """Преобразование простого GET запроса."""
+    """Convert a simple GET request."""
     request = httpx.Request("GET", "https://example.com/api/users")
 
     result = to_curl(request)
@@ -14,7 +14,7 @@ def test_to_curl_simple_get_request(snapshot: SnapshotAssertion) -> None:
 
 
 def test_to_curl_post_request_with_json(snapshot: SnapshotAssertion) -> None:
-    """Преобразование POST запроса с JSON телом."""
+    """Convert a POST request with a JSON body."""
     request = httpx.Request(
         "POST",
         "https://example.com/api/users",
@@ -27,7 +27,7 @@ def test_to_curl_post_request_with_json(snapshot: SnapshotAssertion) -> None:
 
 
 def test_to_curl_with_custom_headers(snapshot: SnapshotAssertion) -> None:
-    """Преобразование запроса с кастомными заголовками."""
+    """Convert a request with custom headers."""
     request = httpx.Request(
         "GET",
         "https://example.com/api/data",
@@ -43,7 +43,7 @@ def test_to_curl_with_custom_headers(snapshot: SnapshotAssertion) -> None:
 
 
 def test_to_curl_with_empty_header_value(snapshot: SnapshotAssertion) -> None:
-    """Преобразование запроса с пустым значением заголовка."""
+    """Convert a request with an empty header value."""
     request = httpx.Request(
         "GET",
         "https://example.com/api/data",
@@ -56,7 +56,7 @@ def test_to_curl_with_empty_header_value(snapshot: SnapshotAssertion) -> None:
 
 
 def test_to_curl_post_request_with_form_data(snapshot: SnapshotAssertion) -> None:
-    """Преобразование POST запроса с form data."""
+    """Convert a POST request with form data."""
     request = httpx.Request(
         "POST",
         "https://example.com/api/form",
@@ -69,7 +69,7 @@ def test_to_curl_post_request_with_form_data(snapshot: SnapshotAssertion) -> Non
 
 
 def test_to_curl_with_sanitize_keys_in_headers(snapshot: SnapshotAssertion) -> None:
-    """Преобразование запроса со скрытием чувствительных данных в заголовках."""
+    """Convert a request while masking sensitive header data."""
     request = httpx.Request(
         "GET",
         "https://example.com/api/data",
@@ -85,7 +85,7 @@ def test_to_curl_with_sanitize_keys_in_headers(snapshot: SnapshotAssertion) -> N
 
 
 def test_to_curl_with_sanitize_keys_in_json(snapshot: SnapshotAssertion) -> None:
-    """Преобразование запроса со скрытием чувствительных данных в JSON."""
+    """Convert a request while masking sensitive JSON data."""
     request = httpx.Request(
         "POST",
         "https://example.com/api/login",
@@ -98,7 +98,7 @@ def test_to_curl_with_sanitize_keys_in_json(snapshot: SnapshotAssertion) -> None
 
 
 def test_to_curl_with_nested_sanitize_keys(snapshot: SnapshotAssertion) -> None:
-    """Преобразование запроса со скрытием вложенных чувствительных данных."""
+    """Convert a request while masking nested sensitive data."""
     request = httpx.Request(
         "POST",
         "https://example.com/api/data",
@@ -111,7 +111,7 @@ def test_to_curl_with_nested_sanitize_keys(snapshot: SnapshotAssertion) -> None:
 
 
 def test_to_curl_with_json_dumps_kwargs(snapshot: SnapshotAssertion) -> None:
-    """Преобразование запроса с параметрами форматирования JSON."""
+    """Convert a request with JSON formatting options."""
     request = httpx.Request(
         "POST",
         "https://example.com/api/data",
@@ -124,7 +124,7 @@ def test_to_curl_with_json_dumps_kwargs(snapshot: SnapshotAssertion) -> None:
 
 
 def test_to_curl_put_request(snapshot: SnapshotAssertion) -> None:
-    """Преобразование PUT запроса."""
+    """Convert a PUT request."""
     request = httpx.Request(
         "PUT",
         "https://example.com/api/users/123",
@@ -137,7 +137,7 @@ def test_to_curl_put_request(snapshot: SnapshotAssertion) -> None:
 
 
 def test_to_curl_delete_request(snapshot: SnapshotAssertion) -> None:
-    """Преобразование DELETE запроса."""
+    """Convert a DELETE request."""
     request = httpx.Request("DELETE", "https://example.com/api/users/123")
 
     result = to_curl(request)
@@ -146,7 +146,7 @@ def test_to_curl_delete_request(snapshot: SnapshotAssertion) -> None:
 
 
 def test_to_curl_with_query_parameters(snapshot: SnapshotAssertion) -> None:
-    """Преобразование запроса с query параметрами."""
+    """Convert a request with query parameters."""
     request = httpx.Request(
         "GET",
         "https://example.com/api/search",
@@ -159,7 +159,7 @@ def test_to_curl_with_query_parameters(snapshot: SnapshotAssertion) -> None:
 
 
 def test_to_curl_with_binary_data(snapshot: SnapshotAssertion) -> None:
-    """Преобразование запроса с бинарными данными."""
+    """Convert a request with binary data."""
     binary_data = b"\x80\x81\x82\x83"
     request = httpx.Request(
         "POST",
@@ -174,7 +174,7 @@ def test_to_curl_with_binary_data(snapshot: SnapshotAssertion) -> None:
 
 
 def test_to_curl_multiline_format(snapshot: SnapshotAssertion) -> None:
-    """Проверка, что результат содержит переносы строк."""
+    """Check that the result contains line breaks."""
     request = httpx.Request(
         "POST",
         "https://example.com/api/data",
@@ -188,7 +188,7 @@ def test_to_curl_multiline_format(snapshot: SnapshotAssertion) -> None:
 
 
 def test_to_curl_with_special_characters_in_url(snapshot: SnapshotAssertion) -> None:
-    """Преобразование запроса с специальными символами в URL."""
+    """Convert a request with special characters in its URL."""
     request = httpx.Request("GET", "https://example.com/api/search?q=test&filter=name")
 
     result = to_curl(request)

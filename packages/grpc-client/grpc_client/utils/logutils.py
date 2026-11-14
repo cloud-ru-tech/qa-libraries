@@ -16,7 +16,7 @@ TRUNCATION_SUFFIX = "... <обрезано>"
 
 
 class FormatOptions(TypedDict, total=False):
-    """Параметры оформления записей логгера."""
+    """Log record formatting options."""
 
     sanitize_keys: Sequence[str] | None
     json_indent: int | None
@@ -26,14 +26,14 @@ class FormatOptions(TypedDict, total=False):
 
 
 class LoggerOptions(FormatOptions, total=False):
-    """Оформление и уровни записей логгера."""
+    """Log record formatting and levels."""
 
     log_level: int | None
     err_log_level: int | None
 
 
 class BytesEncoder(json.JSONEncoder):
-    """Кодировщик, превращающий байты в строки."""
+    """Encoder that converts bytes to strings."""
 
     @override
     def default(self, o: object) -> object:
@@ -47,23 +47,23 @@ class BytesEncoder(json.JSONEncoder):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class LogFormat:
-    """Правила оформления логов gRPC-запросов и ответов."""
+    """Formatting rules for gRPC request and response logs."""
 
-    # Ключи метаданных и пути glom в теле сообщения, значения которых маскируются.
+    # Metadata keys and glom paths in the message body whose values are masked.
     sanitize_keys: Sequence[str] = field(default_factory=tuple)
 
-    # Ширина отступа при форматировании JSON.
+    # Indentation width for formatting JSON.
     json_indent: int | None = None
 
-    # Разносить ли свойства лога по строкам.
+    # Whether to put log properties on separate lines.
     use_line_breaks: bool = False
 
-    # Максимальная длина тела сообщения в логе.
+    # Maximum logged message body length.
     payload_maxlength: int | None = None
 
     @property
     def separator(self) -> str:
-        """Разделитель свойств лога."""
+        """Log property separator."""
         return "\n" if self.use_line_breaks else " "
 
     @classmethod
@@ -76,17 +76,17 @@ class LogFormat:
         payload_maxlength: int | None = None,
         use_default_sanitize_keys: bool = True,
     ) -> "LogFormat":
-        """Собрать правила оформления, подставив вместо `None` значения общей конфигурации.
+        """Build formatting rules, replacing `None` with shared configuration values.
 
-        Конфигурация читается в момент вызова, поэтому `configure_logging` нужно вызывать
-        до сборки клиента.
+        Configuration is read when called, so `configure_logging` must run
+        before building the client.
 
-        :param sanitize_keys: имена ключей метаданных и пути glom в теле сообщения, значения которых маскируются
-        :param json_indent: ширина отступа при форматировании JSON, по умолчанию из конфигурации
-        :param use_line_breaks: разносить ли свойства лога по строкам, по умолчанию из конфигурации
-        :param payload_maxlength: максимальная длина тела сообщения в логе, по умолчанию из конфигурации
-        :param use_default_sanitize_keys: маскировать ли типовые секреты в дополнение к `sanitize_keys`
-        :return: правила оформления логов
+        :param sanitize_keys: metadata key names and message body glom paths whose values are masked
+        :param json_indent: JSON indentation width, defaults to configuration
+        :param use_line_breaks: whether to put log properties on separate lines, defaults to configuration
+        :param payload_maxlength: maximum logged message body length, defaults to configuration
+        :param use_default_sanitize_keys: whether to mask common secrets in addition to `sanitize_keys`
+        :return: log formatting rules
         """
         keys = list(sanitize_keys or [])
         if use_default_sanitize_keys:
@@ -109,14 +109,14 @@ def request_log(
     metadata: MetadataType | None,
     log_format: LogFormat,
 ) -> str:
-    """Собрать лог отправленного gRPC-запроса.
+    """Build a log entry for a sent gRPC request.
 
-    :param trace_id: идентификатор, связывающий запрос с ответом
-    :param method: полное имя вызываемого метода
-    :param message: отправляемое сообщение, отсутствует для клиентских потоков
-    :param metadata: метаданные запроса
-    :param log_format: правила оформления лога
-    :return: строка лога
+    :param trace_id: identifier linking a request to its response
+    :param method: full name of the method to call
+    :param message: sent message, absent for client streams
+    :param metadata: request metadata
+    :param log_format: log formatting rules
+    :return: log line
     """
     parts = [f"GRPC request sent: id={trace_id}", f"Method: {method}"]
     parts.append(f"Payload: {_payload(message, log_format)}" if message is not None else "Payload: <поток сообщений>")
@@ -125,7 +125,7 @@ def request_log(
 
 
 class ResponseLogFields(TypedDict):
-    """Данные записи лога."""
+    """Log record data."""
 
     trace_id: str
     method: str
@@ -136,15 +136,15 @@ class ResponseLogFields(TypedDict):
 
 
 def response_log(**fields: Unpack[ResponseLogFields]) -> str:
-    """Собрать лог полученного gRPC-ответа.
+    """Build a log entry for a received gRPC response.
 
-    :param trace_id: идентификатор, связывающий запрос с ответом
-    :param method: полное имя вызванного метода
-    :param status_code: код статуса ответа
-    :param message: ответное сообщение, отсутствует для серверных потоков
-    :param metadata: метаданные ответа
-    :param log_format: правила оформления лога
-    :return: строка лога
+    :param trace_id: identifier linking a request to its response
+    :param method: full name of the called method
+    :param status_code: response status code
+    :param message: response message, absent for server streams
+    :param metadata: response metadata
+    :param log_format: log formatting rules
+    :return: log line
     """
     trace_id = fields["trace_id"]
     method = fields["method"]
@@ -164,7 +164,7 @@ def response_log(**fields: Unpack[ResponseLogFields]) -> str:
 
 
 class StreamResponseLogFields(TypedDict):
-    """Данные записи лога."""
+    """Log record data."""
 
     trace_id: str
     method: str
@@ -175,18 +175,18 @@ class StreamResponseLogFields(TypedDict):
 
 
 def stream_response_log(**fields: Unpack[StreamResponseLogFields]) -> str:
-    """Собрать лог завершившегося потока ответных сообщений.
+    """Build a log entry for a completed response message stream.
 
-    Сами сообщения в лог не попадают: поток может быть сколь угодно длинным, а его вычитывание
-    ради лога изменило бы поведение вызова.
+    Messages themselves are not logged: a stream may be arbitrarily long, and reading it
+    for logging would change call behavior.
 
-    :param trace_id: идентификатор, связывающий запрос с ответом
-    :param method: полное имя вызванного метода
-    :param status_code: итоговый код статуса потока
-    :param messages_count: количество полученных сообщений
-    :param metadata: метаданные ответа
-    :param log_format: правила оформления лога
-    :return: строка лога
+    :param trace_id: identifier linking a request to its response
+    :param method: full name of the called method
+    :param status_code: final stream status code
+    :param messages_count: number of received messages
+    :param metadata: response metadata
+    :param log_format: log formatting rules
+    :return: log line
     """
     trace_id = fields["trace_id"]
     method = fields["method"]
@@ -205,7 +205,7 @@ def stream_response_log(**fields: Unpack[StreamResponseLogFields]) -> str:
 
 
 class ErrorLogFields(TypedDict):
-    """Данные записи лога."""
+    """Log record data."""
 
     trace_id: str
     method: str
@@ -216,15 +216,15 @@ class ErrorLogFields(TypedDict):
 
 
 def error_log(**fields: Unpack[ErrorLogFields]) -> str:
-    """Собрать лог gRPC-запроса, завершившегося ошибкой.
+    """Build a log entry for a failed gRPC request.
 
-    :param trace_id: идентификатор, связывающий запрос с ответом
-    :param method: полное имя вызванного метода
-    :param status_code: код статуса ответа
-    :param details: текст ошибки от сервиса
-    :param metadata: метаданные ответа
-    :param log_format: правила оформления лога
-    :return: строка лога
+    :param trace_id: identifier linking a request to its response
+    :param method: full name of the called method
+    :param status_code: response status code
+    :param details: service error text
+    :param metadata: response metadata
+    :param log_format: log formatting rules
+    :return: log line
     """
     trace_id = fields["trace_id"]
     method = fields["method"]
@@ -243,16 +243,16 @@ def error_log(**fields: Unpack[ErrorLogFields]) -> str:
 
 
 def _status(status_code: grpc.StatusCode) -> str:
-    """Собрать текстовое представление кода статуса."""
+    """Build a text representation of the status code."""
     code, _ = cast("tuple[int, str]", status_code.value)
     return f"{code} ({status_code.name})"
 
 
 def _metadata_parts(metadata: MetadataType | None, log_format: LogFormat) -> list[str]:
-    """Собрать часть лога с метаданными.
+    """Build the metadata portion of the log.
 
-    Значения повторяющегося ключа собираются в список: обычный словарь оставил бы
-    только последнее из них, и лог перестал бы соответствовать отправленным метаданным.
+    Repeated key values are collected in a list: a regular dictionary would retain
+    only the last value and make the log differ from the sent metadata.
     """
     items = sanitize_metadata(metadata, log_format.sanitize_keys)
     if not items:
@@ -274,10 +274,10 @@ PAYLOAD_UNAVAILABLE = "<не удалось подготовить тело со
 
 
 def _payload(message: Message, log_format: LogFormat) -> str:
-    """Собрать часть лога с телом сообщения.
+    """Build the message body portion of the log.
 
-    Ошибка подготовки лога не должна мешать запросу: лог собирается до отправки, и падение
-    здесь — например, на предельно вложенном сообщении — сорвало бы сам вызов.
+    A log preparation error must not block requests: logs are built before sending, and a failure
+    here, for example on a deeply nested message, would break the call itself.
     """
     try:
         payload = cast("dict[str, object]", MessageToDict(message, always_print_fields_with_no_presence=True))
@@ -285,7 +285,7 @@ def _payload(message: Message, log_format: LogFormat) -> str:
         return _truncate(_to_json(masked, log_format.json_indent), log_format.payload_maxlength)
     except RecursionError:
         return PAYLOAD_UNAVAILABLE
-    except Exception:  # noqa: BLE001 — сюда попадают и ошибки glom-путей, и сбои сериализации
+    except Exception:  # noqa: BLE001 - both glom path errors and serialization failures reach here
         return PAYLOAD_UNAVAILABLE
 
 

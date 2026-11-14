@@ -17,41 +17,41 @@ from http_client_auth import (
 
 
 class IamClient(Protocol):
-    """Источник данных авторизации IAM.
+    """IAM authentication provider.
 
-    Описан протоколом, а не конкретными классами: так подойдет и клиент публичного API,
-    и клиент OpenID, и собственная реализация — например, читающая учетные данные из хранилища.
+    Defined as a protocol rather than concrete classes to support a public API client,
+    an OpenID client, or a custom implementation reading credentials from storage.
 
-    Протокол предназначен только для статической проверки: `isinstance()` не отличил бы
-    синхронную реализацию от асинхронной, поэтому `runtime_checkable` здесь не используется.
+    The protocol is for static checking only: `isinstance()` cannot distinguish
+    synchronous and asynchronous implementations, so `runtime_checkable` is not used here.
     """
 
     def authorize(self, key_id: str, key_secret: str) -> AuthData:
-        """Получить данные авторизации по ключу и секрету."""
+        """Get authentication data using a key and secret."""
         ...
 
 
 class AsyncIamClient(Protocol):
-    """Асинхронный источник данных авторизации IAM."""
+    """Asynchronous IAM authentication provider."""
 
     async def authorize(self, key_id: str, key_secret: str) -> AuthData:
-        """Получить данные авторизации по ключу и секрету."""
+        """Get authentication data using a key and secret."""
         ...
 
 
 class IamGrpcAuth:
-    """Источник токенов доступа IAM для синхронного gRPC-клиента.
+    """IAM access token provider for the synchronous gRPC client.
 
-    Реализует контракт `grpc_client.ClientAuth`: выдает действующий токен и выпускает новый,
-    когда сервис отверг предыдущий. Подстановкой заголовка и повтором запроса занимается сам клиент.
+    Implements `grpc_client.ClientAuth`: provides a valid token and issues a new one
+    when the service rejects the previous one. The client adds headers and retries requests.
 
-    Токен хранится в `AuthStore` вместе со сроком жизни, полученным от IAM, и перевыпускается
-    при истечении. Обращения к IAM защищены блокировкой, поэтому параллельные запросы
-    не приводят к нескольким походам за токеном.
+    Store the token in `AuthStore` with its IAM-provided lifetime and reissue it
+    on expiry. IAM calls are protected by a lock, so concurrent requests
+    do not trigger multiple token requests.
 
-    Блокировка принадлежит экземпляру. Гарантия «один поход в IAM на обновление» действует
-    в пределах одного объекта авторизации: два объекта с общим хранилищем могут выпустить
-    разные токены одновременно. Создавайте один объект на набор учетных данных и переиспользуйте его.
+    The lock belongs to the instance. The guarantee of one IAM request per refresh applies
+    within one authentication object: two objects sharing storage may issue
+    different tokens simultaneously. Create one object per credential set and reuse it.
     """
 
     def __init__(
@@ -61,26 +61,26 @@ class IamGrpcAuth:
         iam_client: IamClient,
         store: AuthStore | None = None,
     ) -> None:
-        """Инициализатор.
+        """Initialize the object.
 
-        :param key_id: идентификатор ключа
-        :param key_secret: секретный ключ
-        :param iam_client: клиент сервиса IAM
-        :param store: хранилище токенов, по умолчанию хранилище в памяти
+        :param key_id: key identifier
+        :param key_secret: secret key
+        :param iam_client: IAM service client
+        :param store: token storage, defaults to in-memory storage
         """
         self._key_id = key_id
         self._key_secret = key_secret
         self._iam_client = iam_client
 
-        # Сравнение с None, а не проверка на истинность: у пустого хранилища может быть __bool__ == False.
+        # Compare with None rather than truthiness: an empty storage may have __bool__ == False.
         self._store = store if store is not None else InMemoryAuthStore()
         self._lock = threading.Lock()
         self._generation = 0
 
     def token(self) -> str:
-        """Получить действующий токен доступа.
+        """Get a valid access token.
 
-        :return: токен доступа
+        :return: access token
         """
         with self._lock:
             token = self._store.get(self._key_id)
@@ -89,18 +89,18 @@ class IamGrpcAuth:
             return token.access_token
 
     def refresh(self, rejected_token: str) -> str:
-        """Выпустить новый токен взамен отвергнутого сервисом.
+        """Issue a new token to replace the one rejected by the service.
 
-        Если токен успел обновить соседний запрос этого же объекта, пока текущий ждал
-        блокировку, обращаться в IAM не нужно. Факт обновления определяется по счетчику,
-        а не по тексту токена: IAM вправе вернуть прежнее значение, и тогда сравнение строк
-        отправило бы в IAM каждого ожидающего.
+        If another request on this object refreshed the token while the current request awaited
+        the lock, no IAM request is needed. Detect refreshes using a counter,
+        rather than token text: IAM may return the same value, so string comparison
+        would send every waiting caller to IAM.
 
-        Учитываются обновления, случившиеся с момента входа в этот метод. Обновление,
-        завершившееся раньше, распознается по тексту токена — если IAM вернул новое значение.
+        Account for refreshes since entering this method. A refresh
+        completed earlier is detected by token text if IAM returned a new value.
 
-        :param rejected_token: токен, который сервис отверг с ошибкой UNAUTHENTICATED
-        :return: токен доступа
+        :param rejected_token: token rejected by the service with UNAUTHENTICATED
+        :return: access token
         """
         seen_generation = self._generation
 
@@ -121,22 +121,22 @@ class IamGrpcAuth:
         auth_data = self._iam_client.authorize(self._key_id, self._key_secret)
         token = Token.with_lifetime(auth_data.access_token, auth_data.expires_in)
         self._store.set(self._key_id, token)
-        # Поколение растет при любом выпуске, включая обновление истекшего токена в token():
-        # иначе запрос, чей токен отвергли, не увидел бы уже случившееся обновление.
+        # The generation increases on every issue, including expired token refresh in token():
+        # otherwise a request whose token was rejected would miss a refresh that already happened.
         self._generation += 1
         return token
 
 
 class IamGrpcAsyncAuth:
-    """Источник токенов доступа IAM для асинхронного gRPC-клиента.
+    """IAM access token provider for the asynchronous gRPC client.
 
-    Реализует контракт `grpc_client.AsyncClientAuth` и ведет себя так же, как `IAM_GrpcAuth`,
-    включая ограничение: гарантия единственного обращения в IAM действует в пределах
-    одного объекта авторизации.
+    Implements `grpc_client.AsyncClientAuth` and behaves like `IAM_GrpcAuth`,
+    including the restriction that a single IAM request is guaranteed within
+    a single authentication object.
 
-    Объект можно использовать из нескольких циклов событий: блокировка своя у каждого цикла,
-    поэтому клиент из другого потока не зависает. Дедупликация обращений в IAM при этом
-    работает внутри цикла — токен, выпущенный в одном, остальные увидят в общем хранилище.
+    The object supports multiple event loops: each loop has its own lock,
+    so a client in another thread does not hang. IAM request deduplication
+    applies within each loop; tokens issued in one are visible to others in shared storage.
     """
 
     def __init__(
@@ -146,28 +146,28 @@ class IamGrpcAsyncAuth:
         iam_client: AsyncIamClient,
         store: AsyncAuthStore | None = None,
     ) -> None:
-        """Инициализатор.
+        """Initialize the object.
 
-        :param key_id: идентификатор ключа
-        :param key_secret: секретный ключ
-        :param iam_client: асинхронный клиент сервиса IAM
-        :param store: хранилище токенов, по умолчанию хранилище в памяти
+        :param key_id: key identifier
+        :param key_secret: secret key
+        :param iam_client: asynchronous IAM service client
+        :param store: token storage, defaults to in-memory storage
         """
         self._key_id = key_id
         self._key_secret = key_secret
         self._iam_client = iam_client
 
-        # Сравнение с None, а не проверка на истинность: у пустого хранилища может быть __bool__ == False.
+        # Compare with None rather than truthiness: an empty storage may have __bool__ == False.
         self._store = store if store is not None else InMemoryAsyncAuthStore()
-        # asyncio.Lock привязан к своему циклу событий: общий объект блокировки заставил бы
-        # клиент из другого потока ждать пробуждения, которого не будет.
+        # asyncio.Lock is bound to its event loop: sharing one lock would cause
+        # a client in another thread to wait for a wakeup that will never happen.
         self._locks: MutableMapping[asyncio.AbstractEventLoop, asyncio.Lock] = weakref.WeakKeyDictionary()
         self._locks_guard = threading.Lock()
         self._generation = 0
 
     @property
     def _lock(self) -> asyncio.Lock:
-        """Блокировка текущего цикла событий."""
+        """Lock for the current event loop."""
         loop = asyncio.get_running_loop()
 
         with self._locks_guard:
@@ -178,9 +178,9 @@ class IamGrpcAsyncAuth:
             return lock
 
     async def token(self) -> str:
-        """Получить действующий токен доступа.
+        """Get a valid access token.
 
-        :return: токен доступа
+        :return: access token
         """
         async with self._lock:
             token = await self._store.get(self._key_id)
@@ -189,14 +189,14 @@ class IamGrpcAsyncAuth:
             return token.access_token
 
     async def refresh(self, rejected_token: str) -> str:
-        """Выпустить новый токен взамен отвергнутого сервисом.
+        """Issue a new token to replace the one rejected by the service.
 
-        Если токен успела обновить соседняя корутина этого же объекта, пока текущая ждала
-        блокировку, обращаться в IAM не нужно. Факт обновления определяется по счетчику,
-        а не по тексту токена: IAM вправе вернуть прежнее значение.
+        If another coroutine on this object refreshed the token while the current coroutine awaited
+        the lock, no IAM request is needed. Detect refreshes using a counter,
+        rather than token text: IAM may return the same value.
 
-        :param rejected_token: токен, который сервис отверг с ошибкой UNAUTHENTICATED
-        :return: токен доступа
+        :param rejected_token: token rejected by the service with UNAUTHENTICATED
+        :return: access token
         """
         seen_generation = self._generation
 
@@ -217,7 +217,7 @@ class IamGrpcAsyncAuth:
         auth_data = await self._iam_client.authorize(self._key_id, self._key_secret)
         token = Token.with_lifetime(auth_data.access_token, auth_data.expires_in)
         await self._store.set(self._key_id, token)
-        # Поколение растет при любом выпуске, включая обновление истекшего токена в token().
+        # The generation increases on every issue, including expired token refresh in token().
         self._generation += 1
         return token
 

@@ -2,25 +2,25 @@ import httpx
 
 
 def read_request_body(request: httpx.Request) -> bytes:
-    """Прочитать тело запроса.
+    """Read the request body.
 
-    httpx кеширует прочитанное тело и подставляет его обратно в поток,
-    поэтому отправку это не ломает.
+    httpx caches the body it reads and puts it back into the stream,
+    so sending still works.
     """
     return request.read()
 
 
 async def aread_request_body(request: httpx.Request) -> bytes:
-    """Асинхронный вариант read_request_body."""
+    """Asynchronous version of read_request_body."""
     return await request.aread()
 
 
 def peek_request_body(request: httpx.Request) -> bytes | None:
-    """Вернуть тело запроса, только если оно уже загружено.
+    """Return a request body only if it has already been loaded.
 
-    Используется на потоковых запросах: чтение несозданного тела съело бы поток выгрузки.
+    Use for streaming requests: reading an unbuilt body would consume the upload stream.
 
-    :return: тело запроса либо None, если тело потоковое и еще не прочитано
+    :return: Request body, or None if it is streaming and has not been read
     """
     if not _is_loaded(request):
         return None
@@ -29,10 +29,10 @@ def peek_request_body(request: httpx.Request) -> bytes | None:
 
 
 def read_response_body(response: httpx.Response, *, streaming: bool) -> bytes | None:
-    """Прочитать тело ответа, кроме потокового.
+    """Read a non-streaming response body.
 
-    :param streaming: ответ получен в потоковом режиме и читать его нельзя
-    :return: тело ответа либо None для потокового ответа
+    :param streaming: The response is streaming and must not be read
+    :return: Response body, or None for a streaming response
     """
     if streaming:
         return None
@@ -41,7 +41,7 @@ def read_response_body(response: httpx.Response, *, streaming: bool) -> bytes | 
 
 
 async def aread_response_body(response: httpx.Response, *, streaming: bool) -> bytes | None:
-    """Асинхронный вариант read_response_body."""
+    """Asynchronous version of read_response_body."""
     if streaming:
         return None
 
@@ -49,9 +49,9 @@ async def aread_response_body(response: httpx.Response, *, streaming: bool) -> b
 
 
 def peek_response_body(response: httpx.Response) -> bytes | None:
-    """Вернуть тело потокового ответа, только если его уже прочитал вызывающий код.
+    """Return a streaming response body only if the caller has already read it.
 
-    :return: тело ответа либо None, если поток не вычитывали
+    :return: Response body, or None if the stream has not been read
     """
     if not _is_loaded(response):
         return None
@@ -60,5 +60,5 @@ def peek_response_body(response: httpx.Response) -> bytes | None:
 
 
 def _is_loaded(message: httpx.Request | httpx.Response) -> bool:
-    """Проверить, что httpx уже загрузил тело в память."""
+    """Check whether httpx has loaded the body into memory."""
     return hasattr(message, "_content")

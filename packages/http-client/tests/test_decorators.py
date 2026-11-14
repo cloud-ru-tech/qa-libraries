@@ -24,7 +24,7 @@ from .support.clients import AsyncClientFactory, SyncClientFactory
 
 
 def test_send_decorator_sees_sent_request(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Декоратор send получает отправляемый запрос."""
+    """The send decorator receives the outgoing request."""
     seen: list[httpx.Request] = []
 
     def decorator(send: SyncSendMethod) -> SyncSendMethod:
@@ -45,7 +45,7 @@ def test_send_decorator_sees_sent_request(httpx_mock: HTTPXMock, new_client: Syn
 
 
 def test_send_decorator_sees_received_response(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Декоратор send получает полученный ответ."""
+    """The send decorator receives the incoming response."""
     seen: list[int] = []
 
     def decorator(send: SyncSendMethod) -> SyncSendMethod:
@@ -66,7 +66,7 @@ def test_send_decorator_sees_received_response(httpx_mock: HTTPXMock, new_client
 
 
 def test_send_returns_response_through_decorator(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Ответ доходит до вызывающего кода сквозь декоратор."""
+    """The response reaches the caller through the decorator."""
     payload: dict[str, bool] = {"queued": True}
 
     def decorator(send: SyncSendMethod) -> SyncSendMethod:
@@ -85,7 +85,7 @@ def test_send_returns_response_through_decorator(httpx_mock: HTTPXMock, new_clie
 
 
 def test_last_registered_send_decorator_wraps_the_others(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Декоратор, добавленный последним, оказывается самым внешним."""
+    """The decorator added last becomes the outermost decorator."""
     calls: list[str] = []
 
     def recording_decorator(name: str) -> SyncSendDecorator:
@@ -117,7 +117,7 @@ async def test_async_send_decorator_sees_sent_request(
     httpx_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
 ) -> None:
-    """Декоратор send асинхронного клиента получает отправляемый запрос."""
+    """The asynchronous client send decorator receives the outgoing request."""
     seen: list[httpx.Request] = []
 
     def decorator(send: AsyncSendMethod) -> AsyncSendMethod:
@@ -141,7 +141,7 @@ async def test_async_send_returns_response_through_decorator(
     httpx_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
 ) -> None:
-    """Ответ асинхронного клиента доходит до вызывающего кода сквозь декоратор."""
+    """The asynchronous client response reaches the caller through the decorator."""
     payload: dict[str, bool] = {"accepted": True}
 
     def decorator(send: AsyncSendMethod) -> AsyncSendMethod:
@@ -163,7 +163,7 @@ async def test_async_send_decorator_runs_in_registration_order(
     httpx_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
 ) -> None:
-    """Асинхронный декоратор send, добавленный последним, оказывается самым внешним."""
+    """The asynchronous send decorator added last becomes the outermost decorator."""
     calls: list[str] = []
 
     def recording_decorator(name: str) -> AsyncSendDecorator:
@@ -192,7 +192,7 @@ async def test_async_send_decorator_runs_in_registration_order(
 
 
 def test_stream_decorator_sees_sent_request(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Декоратор stream_request получает отправляемый запрос."""
+    """The stream_request decorator receives the outgoing request."""
     seen: list[httpx.Request] = []
 
     def decorator(stream: SyncStreamRequestMethod) -> SyncStreamRequestMethod:
@@ -216,7 +216,7 @@ def test_stream_decorator_sees_sent_request(httpx_mock: HTTPXMock, new_client: S
 
 
 def test_stream_decorator_wraps_the_whole_context(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Декоратор stream_request охватывает всё время жизни потока."""
+    """The stream_request decorator covers the entire stream lifetime."""
     calls: list[str] = []
 
     def decorator(stream: SyncStreamRequestMethod) -> SyncStreamRequestMethod:
@@ -245,7 +245,7 @@ def test_last_registered_stream_decorator_wraps_the_others(
     httpx_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
-    """Декоратор потока, добавленный последним, оказывается самым внешним."""
+    """The stream decorator added last becomes the outermost decorator."""
     calls: list[str] = []
 
     def recording_decorator(name: str) -> SyncStreamRequestDecorator:
@@ -279,7 +279,7 @@ async def test_async_stream_decorator_sees_sent_request(
     httpx_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
 ) -> None:
-    """Декоратор stream_request асинхронного клиента получает отправляемый запрос."""
+    """The asynchronous client stream_request decorator receives the outgoing request."""
     seen: list[httpx.Request] = []
 
     def decorator(stream: AsyncStreamRequestMethod) -> AsyncStreamRequestMethod:
@@ -306,7 +306,7 @@ async def test_last_registered_async_stream_decorator_wraps_the_others(
     httpx_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
 ) -> None:
-    """Декоратор потока асинхронного клиента, добавленный последним, оказывается самым внешним."""
+    """The asynchronous client stream decorator added last becomes the outermost decorator."""
     calls: list[str] = []
 
     def recording_decorator(name: str) -> AsyncStreamRequestDecorator:

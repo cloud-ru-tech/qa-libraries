@@ -9,7 +9,7 @@ from .store import AsyncAuthStore, AuthStore, InMemoryAsyncAuthStore, InMemoryAu
 
 
 class IamAuth(httpx.Auth):
-    """Класс, реализующий получение токена через IAM и установку полученного токена в HTTP-запросы."""
+    """Obtain a token from IAM and add it to HTTP requests."""
 
     def __init__(
         self,
@@ -18,28 +18,28 @@ class IamAuth(httpx.Auth):
         iam_client: IAM_SyncClientT,
         store: AuthStore | None = None,
     ) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param key_id: значение настройки ``key_id``.
-        :param key_secret: значение настройки ``key_secret``.
-        :param iam_client: значение настройки ``iam_client``.
-        :param store: значение настройки ``store``.
+        :param key_id: Value of ``key_id``.
+        :param key_secret: Value of ``key_secret``.
+        :param iam_client: Value of ``iam_client``.
+        :param store: Value of ``store``.
         """
         self._key_id = key_id
         self._key_secret = key_secret
         self._iam_client = iam_client
 
-        # Сравнение с None, а не проверка на истинность: у пустого хранилища может быть __bool__ == False.
+        # Compare with None rather than checking truthiness: an empty store may have __bool__ == False.
         self._store = store if store is not None else InMemoryAuthStore()
         self._lock = threading.Lock()
 
     def sync_auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response]:
-        """Подставить в запрос токен доступа и повторить запрос с новым токеном, если сервис его отверг.
+        """Add an access token to the request and retry with a new token if the service rejects it.
 
-        :param request: исходящий запрос
-        :return: генератор, отдающий запрос с заголовком Authorization
+        :param request: Outgoing request
+        :return: Generator yielding a request with an Authorization header
         """
-        # Потоковое тело исчерпывается при первой отправке, а после 401 запрос уходит повторно.
+        # A streaming body is exhausted on the first send, while a 401 causes the request to be resent.
         request.read()
 
         token = self._get_token()
@@ -59,7 +59,7 @@ class IamAuth(httpx.Auth):
             return token
 
     def _refresh_token(self, rejected: Token) -> Token:
-        # Если другой поток уже успел обновить токен, повторно ходить в IAM не нужно.
+        # Avoid another IAM call if a different thread has already refreshed the token.
         with self._lock:
             token = self._store.get(self._key_id)
             if token is None or token.is_expired or token == rejected:
@@ -74,7 +74,7 @@ class IamAuth(httpx.Auth):
 
 
 class IamAsyncAuth(httpx.Auth):
-    """Класс, реализующий асинхронное получение токена через IAM и установку полученного токена в HTTP-запросы."""
+    """Obtain a token from IAM asynchronously and add it to HTTP requests."""
 
     def __init__(
         self,
@@ -83,28 +83,28 @@ class IamAsyncAuth(httpx.Auth):
         iam_client: IAM_AsyncClientT,
         store: AsyncAuthStore | None = None,
     ) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param key_id: значение настройки ``key_id``.
-        :param key_secret: значение настройки ``key_secret``.
-        :param iam_client: значение настройки ``iam_client``.
-        :param store: значение настройки ``store``.
+        :param key_id: Value of ``key_id``.
+        :param key_secret: Value of ``key_secret``.
+        :param iam_client: Value of ``iam_client``.
+        :param store: Value of ``store``.
         """
         self._key_id = key_id
         self._key_secret = key_secret
         self._iam_client = iam_client
 
-        # Сравнение с None, а не проверка на истинность: у пустого хранилища может быть __bool__ == False.
+        # Compare with None rather than checking truthiness: an empty store may have __bool__ == False.
         self._store = store if store is not None else InMemoryAsyncAuthStore()
         self._lock = asyncio.Lock()
 
     async def async_auth_flow(self, request: httpx.Request) -> AsyncGenerator[httpx.Request, httpx.Response]:
-        """Подставить в запрос токен доступа и повторить запрос с новым токеном, если сервис его отверг.
+        """Add an access token to the request and retry with a new token if the service rejects it.
 
-        :param request: исходящий запрос
-        :return: генератор, отдающий запрос с заголовком Authorization
+        :param request: Outgoing request
+        :return: Generator yielding a request with an Authorization header
         """
-        # Потоковое тело исчерпывается при первой отправке, а после 401 запрос уходит повторно.
+        # A streaming body is exhausted on the first send, while a 401 causes the request to be resent.
         await request.aread()
 
         token = await self._get_token()
@@ -124,7 +124,7 @@ class IamAsyncAuth(httpx.Auth):
             return token
 
     async def _refresh_token(self, rejected: Token) -> Token:
-        # Если параллельная корутина уже успела обновить токен, повторно ходить в IAM не нужно.
+        # Avoid another IAM call if a concurrent coroutine has already refreshed the token.
         async with self._lock:
             token = await self._store.get(self._key_id)
             if token is None or token.is_expired or token == rejected:

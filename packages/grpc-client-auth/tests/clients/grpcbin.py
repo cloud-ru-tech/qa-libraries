@@ -14,7 +14,7 @@ class GrpcbinStub(Protocol):
     SpecificError: grpc.UnaryUnaryMultiCallable[grpcbin_pb2.SpecificErrorRequest, grpcbin_pb2.EmptyMessage]
 
     def __init__(self, channel: grpc.Channel) -> None:
-        """Создать stub тестового сервиса."""
+        """Create a test service stub."""
 
 
 class AsyncGrpcbinStub(Protocol):
@@ -22,30 +22,30 @@ class AsyncGrpcbinStub(Protocol):
     SpecificError: grpc.aio.UnaryUnaryMultiCallable[grpcbin_pb2.SpecificErrorRequest, grpcbin_pb2.EmptyMessage]
 
     def __init__(self, channel: grpc.aio.Channel) -> None:
-        """Создать stub тестового сервиса."""
+        """Create a test service stub."""
 
 
 class GRPCbinServiceClient(GRPCClient[GrpcbinStub]):
-    """gRPC-клиент сервиса «GRPCBin»."""
+    """gRPC client for the GRPCBin service."""
 
     @property
     def stub_class(self) -> type[GrpcbinStub]:
         return cast("type[GrpcbinStub]", grpcbin_pb2_grpc.GRPCBinStub)
 
     def get_headers(self, metadata: MetadataType | None = None) -> GRPCResponse[grpcbin_pb2.HeadersMessage]:
-        """Получить метаданные, которые сервис увидел в запросе.
+        """Get the metadata received by the service in the request.
 
-        :param metadata: метаданные запроса
-        :return: ответ с метаданными запроса
+        :param metadata: request metadata
+        :return: response with request metadata
         """
         return self.send_unary_unary_request(grpcbin_pb2.EmptyMessage(), self.stub.HeadersUnary, metadata)
 
     def specific_error(self, code: int, reason: str) -> GRPCResponse[grpcbin_pb2.EmptyMessage]:
-        """Попросить сервис ответить заданной ошибкой.
+        """Ask the service to return the specified error.
 
-        :param code: код ошибки gRPC
-        :param reason: текст ошибки
-        :return: ответ с запрошенной ошибкой
+        :param code: gRPC error code
+        :param reason: error text
+        :return: response with the requested error
         """
         return self.send_unary_unary_request(
             grpcbin_pb2.SpecificErrorRequest(code=code, reason=reason),
@@ -54,26 +54,26 @@ class GRPCbinServiceClient(GRPCClient[GrpcbinStub]):
 
 
 class AsyncGRPCbinServiceClient(AsyncGRPCClient[AsyncGrpcbinStub]):
-    """Асинхронный gRPC-клиент сервиса «GRPCBin»."""
+    """Asynchronous gRPC client for the GRPCBin service."""
 
     @property
     def stub_class(self) -> type[AsyncGrpcbinStub]:
         return cast("type[AsyncGrpcbinStub]", grpcbin_pb2_grpc.GRPCBinStub)
 
     async def get_headers(self, metadata: MetadataType | None = None) -> GRPCResponse[grpcbin_pb2.HeadersMessage]:
-        """Получить метаданные, которые сервис увидел в запросе.
+        """Get the metadata received by the service in the request.
 
-        :param metadata: метаданные запроса
-        :return: ответ с метаданными запроса
+        :param metadata: request metadata
+        :return: response with request metadata
         """
         return await self.send_unary_unary_request(grpcbin_pb2.EmptyMessage(), self.stub.HeadersUnary, metadata)
 
     async def specific_error(self, code: int, reason: str) -> GRPCResponse[grpcbin_pb2.EmptyMessage]:
-        """Попросить сервис ответить заданной ошибкой.
+        """Ask the service to return the specified error.
 
-        :param code: код ошибки gRPC
-        :param reason: текст ошибки
-        :return: ответ с запрошенной ошибкой
+        :param code: gRPC error code
+        :param reason: error text
+        :return: response with the requested error
         """
         return await self.send_unary_unary_request(
             grpcbin_pb2.SpecificErrorRequest(code=code, reason=reason),

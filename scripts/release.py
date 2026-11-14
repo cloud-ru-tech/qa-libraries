@@ -19,12 +19,12 @@ class _Arguments(argparse.Namespace):
 
 
 def select_release(root: Path, tag: str) -> Package:
-    """Выбрать пакет по тегу и проверить его версию.
+    """Select a package by tag and validate its version.
 
-    :param root: корень репозитория
-    :param tag: тег в формате имени пакета и версии
-    :returns: пакет для публикации
-    :raises ValueError: тег, имя или версия не соответствуют метаданным
+    :param root: Repository root.
+    :param tag: Tag containing the package name and version.
+    :returns: Package to publish.
+    :raises ValueError: The tag, name, or version does not match the metadata.
     """
     match = _TAG.fullmatch(tag)
     if match is None:
@@ -44,13 +44,13 @@ def select_release(root: Path, tag: str) -> Package:
 
 
 def prepare_artifacts(package: Package, source: Path, destination: Path) -> None:
-    """Скопировать только wheel и sdist выбранного релиза.
+    """Copy only the wheel and sdist for the selected release.
 
-    :param package: выбранная библиотека
-    :param source: каталог со сборками workspace
-    :param destination: новый каталог артефактов релиза
-    :raises FileNotFoundError: wheel или sdist отсутствует
-    :raises FileExistsError: каталог назначения уже существует
+    :param package: Selected library.
+    :param source: Directory containing workspace builds.
+    :param destination: New directory for release artifacts.
+    :raises FileNotFoundError: The wheel or sdist is missing.
+    :raises FileExistsError: The destination directory already exists.
     """
     artifacts = (source / package.wheel, source / package.sdist)
     for artifact in artifacts:
@@ -62,7 +62,7 @@ def prepare_artifacts(package: Package, source: Path, destination: Path) -> None
 
 
 def main() -> None:
-    """Записать параметры выбранного релиза в GitHub Actions output-файл."""
+    """Write the selected release parameters to a GitHub Actions output file."""
     parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument("tag")
     parser.add_argument("--output", type=Path, required=True)

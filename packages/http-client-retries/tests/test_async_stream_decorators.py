@@ -1,7 +1,7 @@
-"""Поведение опций повторных попыток на потоковых запросах асинхронного клиента.
+"""Retry option behavior for asynchronous client streaming requests.
 
-Как и в синхронном варианте, тесты ходят через реальный AsyncHttpClient.stream_request:
-соединение открывается на __aenter__, поэтому только так проверяется работа повторов.
+As in the synchronous version, tests use the real AsyncHttpClient.stream_request:
+the connection opens in __aenter__, so this is required to test retry behavior.
 """
 
 import logging

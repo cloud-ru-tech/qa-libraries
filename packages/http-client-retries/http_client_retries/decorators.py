@@ -36,15 +36,15 @@ __all__ = [
 
 
 def retry_if[**P, R](retry_condition: ResponseCondition) -> Callable[[Callable[P, R]], Callable[P, R]]:
-    """Декоратор для повторных попыток в случае, если выполняется условие retry_condition."""
+    """Decorate a function to retry when retry_condition is met."""
     return send_decorator(RetryPolicy(conditions=[retry_condition]))
 
 
 def retry_if_failed[**P, R](func: Callable[P, R]) -> Callable[P, R]:
-    """Декоратор для повторных попыток запроса в случае ошибки соединения с сервером.
+    """Decorate a function to retry requests on server connection errors.
 
-    Исходное исключение не подменяется: при `reraise=True` оно возбуждается повторно,
-    при `reraise=False` доступно через `RetryError.last_attempt.exception()`.
+    Preserve the original exception: `reraise=True` raises it again,
+    while `reraise=False` exposes it through `RetryError.last_attempt.exception()`.
     """
     return send_decorator(RetryPolicy(retry_on_network_errors=True))(func)
 
@@ -52,33 +52,33 @@ def retry_if_failed[**P, R](func: Callable[P, R]) -> Callable[P, R]:
 def retry_stream_if_failed[**P](
     func: Callable[P, AbstractContextManager[Response]],
 ) -> Callable[P, AbstractContextManager[Response]]:
-    """Декоратор потокового запроса: повторяет открытие потока при ошибке соединения."""
+    """Streaming request decorator that retries opening a stream on connection errors."""
     return stream_decorator(RetryPolicy(retry_on_network_errors=True))(func)
 
 
 def retry_stream_if[**P](
     retry_condition: ResponseCondition,
 ) -> Callable[[Callable[P, AbstractContextManager[Response]]], Callable[P, AbstractContextManager[Response]]]:
-    """Декоратор потокового запроса для повторных попыток при выполнении условия retry_condition."""
+    """Streaming request decorator for retries when retry_condition is met."""
     return stream_decorator(RetryPolicy(conditions=[retry_condition]))
 
 
 def async_retry_stream_if_failed[**P](
     func: Callable[P, AbstractAsyncContextManager[Response]],
 ) -> Callable[P, AbstractAsyncContextManager[Response]]:
-    """Асинхронный вариант :func:`retry_stream_if_failed`."""
+    """Asynchronous version of :func:`retry_stream_if_failed`."""
     return async_stream_decorator(RetryPolicy(retry_on_network_errors=True))(func)
 
 
 def async_retry_stream_if[**P](
     retry_condition: ResponseCondition,
 ) -> Callable[[Callable[P, AbstractAsyncContextManager[Response]]], Callable[P, AbstractAsyncContextManager[Response]]]:
-    """Асинхронный вариант :func:`retry_stream_if`."""
+    """Asynchronous version of :func:`retry_stream_if`."""
     return async_stream_decorator(RetryPolicy(conditions=[retry_condition]))
 
 
 def send_decorator[**P, R](policy: RetryPolicy) -> Callable[[Callable[P, R]], Callable[P, R]]:
-    """Декоратор метода `send`, работающий по общей политике клиента."""
+    """Decorate the `send` method using the shared client policy."""
 
     def decorator(func: Callable[P, R]) -> Callable[P, R]:
         if _is_async_callable(func):
@@ -92,10 +92,10 @@ def send_decorator[**P, R](policy: RetryPolicy) -> Callable[[Callable[P, R]], Ca
 def stream_decorator[**P](
     policy: RetryPolicy,
 ) -> Callable[[Callable[P, AbstractContextManager[Response]]], Callable[P, AbstractContextManager[Response]]]:
-    """Декоратор синхронного `stream_request`.
+    """Decorate synchronous `stream_request`.
 
-    Оборачивается вход в контекстный менеджер: соединение устанавливается на `__enter__`,
-    а не в момент вызова, поэтому обычный декоратор для потока не сработал бы.
+    Wrap context manager entry: the connection is established in `__enter__`,
+    not at call time, so a regular stream decorator would not work.
     """
 
     def decorator(
@@ -106,15 +106,15 @@ def stream_decorator[**P](
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> Iterator[Response]:
             rewind = body_rewinder(args, kwargs)
             if rewind is None:
-                # Повторить нельзя, но условие вычисляем — ответ отдаём как есть.
+                # A retry is impossible, but evaluate the condition and return the response unchanged.
                 with func(*args, **kwargs) as response:
                     _evaluate_once(response, policy)
                     yield response
                 return
 
             with ExitStack() as stack:
-                # Аргументы прокидываются насквозь, чтобы before_sleep_hook видел запрос
-                # в retry_state.args.
+                # Forward arguments so before_sleep_hook can access the request
+                # in retry_state.args.
                 def open_stream(*call_args: P.args, **call_kwargs: P.kwargs) -> Response:
                     rewind()
                     stream = func(*call_args, **call_kwargs)
@@ -122,12 +122,12 @@ def stream_decorator[**P](
                     try:
                         rejected = policy.rejects(response)
                     except BaseException:
-                        # Условие пользователя упало — поток уже открыт, закрываем его сами.
+                        # The user condition failed after the stream opened, so close it here.
                         stream.__exit__(*sys.exc_info())
                         raise
 
                     if rejected:
-                        # Закрываем сразу, иначе соединение проживёт до конца внешнего with.
+                        # Close immediately; otherwise the connection remains open until the outer with ends.
                         stream.__exit__(None, None, None)
                     else:
                         stack.push(stream)
@@ -146,7 +146,7 @@ def stream_decorator[**P](
 def async_stream_decorator[**P](
     policy: RetryPolicy,
 ) -> Callable[[Callable[P, AbstractAsyncContextManager[Response]]], Callable[P, AbstractAsyncContextManager[Response]]]:
-    """Декоратор асинхронного `stream_request`."""
+    """Decorate asynchronous `stream_request`."""
 
     def decorator(
         func: Callable[P, AbstractAsyncContextManager[Response]],
@@ -194,8 +194,8 @@ def _sync_send[**P, R](func: Callable[P, R], policy: RetryPolicy) -> Callable[P,
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         rewind = body_rewinder(args, kwargs)
         if rewind is None:
-            # Тело запроса переотправить нельзя — повтор молча испортил бы данные.
-            # Условие всё равно вычисляем один раз, а ответ отдаём вызывающему как есть.
+            # The request body cannot be resent: a retry would silently corrupt data.
+            # Still evaluate the condition once and return the response unchanged to the caller.
             result = func(*args, **kwargs)
             _evaluate_once(result, policy)
 
@@ -236,13 +236,13 @@ def _async_send[**P, R](func: Callable[P, Awaitable[R]], policy: RetryPolicy) ->
 
 
 def _reject(result: object, policy: RetryPolicy) -> None:
-    """Пометить неподходящий ответ и освободить его соединение."""
+    """Mark a rejected response and release its connection."""
     if not is_http_response(result):
         return
 
     rejected = _ask_policy(result, policy)
     if rejected and not result.is_closed:
-        # send(stream=True) отдаёт непрочитанный ответ: без close() соединение утекает.
+        # send(stream=True) returns an unread response: without close(), the connection leaks.
         result.close()
 
     set_rejected(result, rejected=rejected)
@@ -260,7 +260,7 @@ async def _reject_async(result: object, policy: RetryPolicy) -> None:
 
 
 def _evaluate_once(result: object, policy: RetryPolicy) -> None:
-    """Вычислить условие, не трогая ответ: повторить запрос всё равно нельзя."""
+    """Evaluate the condition without touching the response: the request cannot be retried anyway."""
     if is_http_response(result):
         _ask_policy(result, policy)
 
@@ -271,7 +271,7 @@ async def _evaluate_once_async(result: object, policy: RetryPolicy) -> None:
 
 
 def _ask_policy(response: Response, policy: RetryPolicy) -> bool:
-    """Спросить условие пользователя, не оставив ответ открытым при его падении."""
+    """Evaluate the user condition and close the response if it fails."""
     try:
         return policy.rejects(response)
     except BaseException:
@@ -293,7 +293,7 @@ def _is_async_callable(func: object) -> bool:
     if inspect.iscoroutinefunction(func):
         return True
 
-    call = cast("object", getattr(func, "__call__", None))  # noqa: B004 - объект-хук с async def __call__
+    call = cast("object", getattr(func, "__call__", None))  # noqa: B004 - Hook object with async def __call__
 
     return call is not None and inspect.iscoroutinefunction(call)
 
@@ -307,11 +307,11 @@ def _reject_async_hook(hook: RetryHookT) -> None:
 
 
 def _sync_hook(hook: RetryHookT | None) -> Callable[[RetryCallState], None] | None:
-    """Подготовить хук для синхронного цикла повторов.
+    """Prepare a hook for a synchronous retry loop.
 
-    Синхронный `tenacity.Retrying` не ожидает результат хука: корутина просто не выполнится,
-    оставив после себя `never awaited`. Асинхронный хук отсеивается сразу, а обычная функция,
-    которая возвращает awaitable, — по факту возврата: тип хука это разрешает.
+    Synchronous `tenacity.Retrying` does not await hook results: a coroutine will not run,
+    causing `never awaited`. Reject asynchronous hooks immediately; reject a regular function
+    that returns an awaitable when it returns, since the hook type allows it.
     """
     if hook is None:
         return None

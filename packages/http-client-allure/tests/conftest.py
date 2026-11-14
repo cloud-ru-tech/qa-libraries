@@ -11,7 +11,7 @@ from .config import SRC_ROOT
 
 
 class CustomSnapshotDirectoryExtension(SingleFileAmberSnapshotExtension):
-    """Расширение syrupy для переопределения директории со снепшотами."""
+    """Syrupy extension that overrides the snapshot directory."""
 
     SNAPSHOTS_DIRECTORY = SRC_ROOT / "data" / "snapshots"
 
@@ -27,7 +27,7 @@ def snapshot(snapshot: SnapshotAssertion) -> SnapshotAssertion:
 
 @pytest.fixture()
 def report(monkeypatch: pytest.MonkeyPatch) -> Report:
-    """Подменить Allure фейком, который запоминает шаги и вложения."""
+    """Replace Allure with a fake that records steps and attachments."""
     recorder = Report()
     monkeypatch.setattr(allure, "step", recorder.step)
     monkeypatch.setattr(allure, "attach", recorder.attach)

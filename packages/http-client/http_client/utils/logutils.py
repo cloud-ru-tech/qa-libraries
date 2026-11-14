@@ -35,17 +35,17 @@ def create_request_log(
     *,
     use_line_breaks: bool = True,
 ) -> str:
-    """Собрать лог HTTP-запроса.
+    """Build an HTTP request log.
 
-    :param r: объект запроса с данными для логирования
-    :param sanitize_keys: ключи в формате [glom](https://glom.readthedocs.io/en/latest/),
-                          которые необходимо скрыть в данных запроса
-    :param json_indent: ширина отступа для JSON свойств (по умолчанию отступ отсутствует)
-    :param use_line_breaks: использовать ли переносы строк между свойствами запроса
-    :returns: лог запроса
+    :param r: Request containing data to log
+    :param sanitize_keys: Keys in [glom](https://glom.readthedocs.io/en/latest/) format,
+                          to mask in request data
+    :param json_indent: JSON indentation width (no indentation by default)
+    :param use_line_breaks: Whether to add line breaks between request properties
+    :returns: Request log
     """
-    # NOTE: тут trace_id - это просто идентификатор, который связывает запрос с ответом.
-    # Он не имеет ничего общего с trace_id от сервера, в котором включена телеметрия.
+    # NOTE: trace_id here only correlates the request and response.
+    # It is unrelated to the trace_id of a server with telemetry enabled.
     trace_id = str(uuid4())
     extensions = cast("dict[str, object]", r.extensions)
     extensions["trace_id"] = trace_id
@@ -70,14 +70,14 @@ def create_response_log(
     *,
     use_line_breaks: bool = True,
 ) -> str:
-    """Собрать лог ответа на HTTP-запрос.
+    """Build an HTTP response log.
 
-    :param r: объект ответа на запрос с данными для логирования
-    :param sanitize_keys: ключи в формате [glom](https://glom.readthedocs.io/en/latest/),
-                          которые необходимо скрыть в данных ответа
-    :param json_indent: ширина отступа для JSON свойств (по умолчанию отступ отсутствует)
-    :param use_line_breaks: использовать ли переносы строк между свойствами запроса
-    :returns: лог ответа на запрос
+    :param r: Response containing data to log
+    :param sanitize_keys: Keys in [glom](https://glom.readthedocs.io/en/latest/) format,
+                          to mask in response data
+    :param json_indent: JSON indentation width (no indentation by default)
+    :param use_line_breaks: Whether to add line breaks between request properties
+    :returns: Response log
     """
     extensions = cast("dict[str, object]", r.request.extensions)
     trace_id = extensions.get("trace_id", "<none>")
@@ -98,23 +98,23 @@ async def create_response_log_async(
     *,
     use_line_breaks: bool = True,
 ) -> str:
-    """Собрать лог ответа асинхронного клиента.
+    """Build an asynchronous client response log.
 
-    Response hook у httpx срабатывает до того, как клиент дочитал тело, поэтому
-    у асинхронного ответа поток ещё асинхронный и синхронный read() к нему неприменим.
+    The httpx response hook runs before the client finishes reading the body, so
+    an asynchronous response still has an asynchronous stream that cannot use synchronous read().
 
-    :returns: лог ответа на запрос
+    :returns: Response log
     """
     await _aread_buffered(r)
     return create_response_log(r, sanitize_keys, json_indent, use_line_breaks=use_line_breaks)
 
 
 async def _aread_buffered(r: Response) -> None:
-    """Дочитать тело ответа, если оно не потоковое."""
+    """Finish reading a non-streaming response body."""
     if is_streamed(r):
         return
 
-    # Лог не должен ронять запрос: нечитаемое тело обработает _add_body.
+    # Logging must not fail the request: _add_body handles unreadable bodies.
     with suppress(Exception):
         await r.aread()
 
@@ -125,7 +125,7 @@ def _add_query_params(
     sanitize_keys: Sequence[str],
     json_indent: int | None,
 ) -> None:
-    """Добавить query параметры в лог."""
+    """Add query parameters to the log."""
     if not r.url.query:
         return
 
@@ -142,7 +142,7 @@ def _add_headers(
     sanitize_keys: Sequence[str],
     json_indent: int | None,
 ) -> None:
-    """Добавить HTTP заголовки в лог."""
+    """Add HTTP headers to the log."""
     try:
         sanitized_headers = sanitize(dict(r.headers.items()), sanitize_keys)
         log_parts.append(f"Headers: {to_json(sanitized_headers, json_indent)}")
@@ -158,7 +158,7 @@ def _add_body(
     *,
     streamed: bool,
 ) -> None:
-    """Добавить тело запроса или ответа в лог."""
+    """Add the request or response body to the log."""
     if streamed:
         log_parts.append("Body: <streamed content>")
         return
@@ -188,32 +188,32 @@ def _octet_stream(content: bytes) -> str:
 
 
 def is_streamed(r: Response) -> bool:
-    """Является ли ответ потоковым и ещё не вычитанным."""
+    """Check whether a response is streaming and unread."""
     extensions = cast("dict[str, object]", r.request.extensions)
     return bool(extensions.get("is_streaming", False)) and not r.is_stream_consumed
 
 
 def is_buffered(r: Request) -> bool:
-    """Лежит ли тело запроса в памяти.
+    """Check whether the request body is in memory.
 
-    У запроса с потоковым телом чтение израсходовало бы поток до отправки.
+    Reading a streaming request body would consume the stream before sending it.
     """
     return hasattr(r, "_content")
 
 
 def decode(r: Request | Response) -> str:
-    """Декодировать тело с учётом charset из Content-Type."""
+    """Decode the body using the charset from Content-Type."""
     content = r.read()
     headers: Mapping[str, str] = r.headers
     return content.decode(_charset(headers.get("Content-Type", "")), errors="replace")
 
 
 def _charset(content_type: str) -> str:
-    """Достать кодировку из Content-Type.
+    """Extract the encoding from Content-Type.
 
-    У заголовка может быть несколько параметров (`text/plain; charset=utf-8; format=flowed`),
-    поэтому charset выбирается по имени параметра, а не по остатку строки после `charset=`.
-    Неизвестное имя кодировки не должно прятать тело, поэтому подменяется на utf-8.
+    A header may have multiple parameters (`text/plain; charset=utf-8; format=flowed`),
+    so select charset by its parameter name rather than taking everything after `charset=`.
+    Replace unknown encodings with utf-8 to avoid hiding the body.
     """
     for parameter in content_type.split(";")[1:]:
         name, _, value = parameter.partition("=")
@@ -235,29 +235,29 @@ def _charset(content_type: str) -> str:
 
 
 def parse_error(e: Exception) -> str:
-    """Собрать безопасное описание ошибки разбора.
+    """Build a safe description of a parsing error.
 
-    Текст исключения не подставляется: он может содержать фрагменты тела или URL с секретами.
+    Do not include exception text: it may contain body fragments or URLs with secrets.
     """
     return f"<Error parse: {type(e).__name__}>"
 
 
 def to_json(value: object, indent: int | None) -> str:
-    """Сериализовать значение в JSON с сохранением Unicode.
+    """Serialize a value to JSON while preserving Unicode.
 
-    :param value: сериализуемое значение
-    :param indent: ширина отступа
-    :returns: JSON-представление
+    :param value: Value to serialize
+    :param indent: Indentation width
+    :returns: JSON representation
     """
     return json.dumps(value, indent=indent, ensure_ascii=False)
 
 
 def trim(text: str, length: int | None) -> str:
-    """Сократить строку, сохранив её начало и конец.
+    """Truncate a string while preserving its beginning and end.
 
-    :param text: исходная строка
-    :param length: ограничение длины; None и неположительные числа отключают его
-    :returns: исходная либо сокращённая строка
+    :param text: Original string
+    :param length: Length limit; None and nonpositive numbers disable it
+    :returns: Original or truncated string
     """
     if not length or length < 0 or len(text) <= length:
         return text

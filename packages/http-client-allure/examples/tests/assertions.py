@@ -13,14 +13,14 @@ else:
 
 
 class HttpbinAssertions(_Builder):
-    """Проверки ответов httpbin.
+    """Assertions for httpbin responses.
 
-    Прячут разбор эха httpbin и распаковку RetryError, чтобы тело теста
-    говорило только о том, какое поведение ожидается.
+    Hide httpbin echo parsing and RetryError unpacking so the test body
+    describes only the expected behavior.
     """
 
     def has_status(self, expected: int) -> Self:
-        """Проверить код ответа."""
+        """Check the response status code."""
         actual = cast("httpx.Response", self.val).status_code
         if actual != expected:
             self.error(f"Expected status <{expected}>, but was <{actual}>")
@@ -28,7 +28,7 @@ class HttpbinAssertions(_Builder):
         return self
 
     def has_text(self, expected: str) -> Self:
-        """Проверить текстовое тело ответа."""
+        """Check the text response body."""
         actual = cast("httpx.Response", self.val).text
         if actual != expected:
             self.error(f"Expected body <{expected}>, but was <{actual}>")
@@ -36,7 +36,7 @@ class HttpbinAssertions(_Builder):
         return self
 
     def has_empty_body(self) -> Self:
-        """Проверить, что тело ответа пустое."""
+        """Check that the response body is empty."""
         actual = cast("httpx.Response", self.val).content
         if actual:
             self.error(f"Expected an empty body, but was <{actual!r}>")
@@ -44,7 +44,7 @@ class HttpbinAssertions(_Builder):
         return self
 
     def has_response_header(self, name: str, expected: str) -> Self:
-        """Проверить заголовок, который вернул сервер."""
+        """Check a header returned by the server."""
         actual = cast("str | None", cast("httpx.Response", self.val).headers.get(name))
         if actual != expected:
             self.error(f"Expected response header <{name}> to be <{expected}>, but was <{actual}>")
@@ -52,7 +52,7 @@ class HttpbinAssertions(_Builder):
         return self
 
     def hits_path(self, expected: str) -> Self:
-        """Проверить путь, на котором запрос остановился после редиректов."""
+        """Check the final request path after redirects."""
         actual = cast("httpx.Response", self.val).url.path
         if actual != expected:
             self.error(f"Expected the request to land on <{expected}>, but landed on <{actual}>")
@@ -60,7 +60,7 @@ class HttpbinAssertions(_Builder):
         return self
 
     def has_json_field(self, path: str, *, expected: object) -> Self:
-        """Проверить поле тела ответа по точечному пути."""
+        """Check a response body field using a dotted path."""
         actual = _read_field(self._body(), path)
         if actual != expected:
             self.error(f"Expected field <{path}> to be <{expected}>, but was <{actual}>")
@@ -68,7 +68,7 @@ class HttpbinAssertions(_Builder):
         return self
 
     def have_distinct_json_field(self, path: str) -> Self:
-        """Проверить, что каждый ответ списка принес свое значение поля."""
+        """Check that each response in the list has its own field value."""
         values = [
             _read_field(cast("object", response.json()), path) for response in cast("list[httpx.Response]", self.val)
         ]
@@ -78,7 +78,7 @@ class HttpbinAssertions(_Builder):
         return self
 
     def echoes_json(self, expected: object) -> Self:
-        """Проверить JSON тело запроса, которое httpbin вернул обратно."""
+        """Check the JSON request body echoed by httpbin."""
         actual = self._body()["json"]
         if actual != expected:
             self.error(f"Expected httpbin to echo <{expected}>, but echoed <{actual}>")
@@ -86,7 +86,7 @@ class HttpbinAssertions(_Builder):
         return self
 
     def echoes_body(self, expected: str) -> Self:
-        """Проверить сырое тело запроса, которое httpbin вернул обратно."""
+        """Check the raw request body echoed by httpbin."""
         actual = self._body()["data"]
         if actual != expected:
             self.error(f"Expected httpbin to echo <{expected}>, but echoed <{actual}>")
@@ -94,7 +94,7 @@ class HttpbinAssertions(_Builder):
         return self
 
     def echoes_query_param(self, name: str, expected: list[str]) -> Self:
-        """Проверить query параметр, дошедший до сервера."""
+        """Check a query parameter received by the server."""
         actual = cast("dict[str, list[str]]", self._body()["args"]).get(name)
         if actual != expected:
             self.error(f"Expected query parameter <{name}> to be <{expected}>, but was <{actual}>")
@@ -102,7 +102,7 @@ class HttpbinAssertions(_Builder):
         return self
 
     def echoes_header(self, name: str, expected: list[str]) -> Self:
-        """Проверить заголовок, дошедший до сервера."""
+        """Check a header received by the server."""
         actual = self._headers().get(name.lower())
         if actual != expected:
             self.error(f"Expected header <{name}> to be <{expected}>, but was <{actual}>")
@@ -110,7 +110,7 @@ class HttpbinAssertions(_Builder):
         return self
 
     def carries_header(self, name: str) -> Self:
-        """Проверить, что заголовок дошел до сервера с непустым значением."""
+        """Check that the header reached the server with a nonempty value."""
         actual = self._headers().get(name.lower())
         if not actual or not all(actual):
             self.error(f"Expected header <{name}> to carry a value, but was <{actual}>")
@@ -118,7 +118,7 @@ class HttpbinAssertions(_Builder):
         return self
 
     def kept_response_with_status(self, expected: int) -> Self:
-        """Проверить ответ последней попытки, сохраненный в RetryError."""
+        """Check the last attempt response stored in RetryError."""
         error = self.val
         if not isinstance(error, RetryError):
             self.error(f"Expected <RetryError>, but was <{type(error).__name__}>")
@@ -141,7 +141,7 @@ class HttpbinAssertions(_Builder):
 
 
 def assert_that(actual: object) -> HttpbinAssertions:
-    """Локальная замена assertpy.assert_that с матчерами этого проекта."""
+    """Local replacement for assertpy.assert_that with project-specific matchers."""
     return HttpbinAssertions(actual)
 
 

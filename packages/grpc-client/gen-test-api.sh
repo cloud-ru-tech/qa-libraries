@@ -1,7 +1,7 @@
 #!/bin/bash
-# Скрипт для генерации API для тестов.
-# Генерирует pb2.py файлы для gRPC клиента
-# на основе protobuf файлов в директории proto.
+# Script for generating the test API.
+# Generate pb2.py files for the gRPC client
+# from protobuf files in the proto directory.
 
 set -euo pipefail
 

@@ -7,10 +7,10 @@ from structlog.stdlib import BoundLogger
 
 
 class LogEntry:
-    """Запись, попавшая в логгер."""
+    """Record received by the logger."""
 
     def __init__(self, level: int, event: str, params: dict[str, object]) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self.level = level
         self.event = event
         self.params = params
@@ -24,19 +24,19 @@ class LogMethod(Protocol):
 
 
 class CapturingSink:
-    """Приемник записей structlog, который запоминает их вместо вывода.
+    """Structlog record sink that stores records instead of printing them.
 
-    Заменяет собой логгер, который structlog создает фабрикой: bound-логгер вызывает у него
-    метод по имени уровня и передает поля записи именованными аргументами.
+    Replace the logger created by the structlog factory: the bound logger calls its
+    method named for the level, passing record fields as keyword arguments.
     """
 
     def __init__(self, level: int) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self.level = level
         self.calls: list[tuple[str, dict[str, object]]] = []
 
-    def isEnabledFor(self, level: int) -> bool:  # noqa: N802 — имя метода задано stdlib-логгером
-        """Проверить, что записи указанного уровня доходят до вывода."""
+    def isEnabledFor(self, level: int) -> bool:  # noqa: N802 - the stdlib logger defines this method name
+        """Check whether records at the specified level reach the output."""
         return level >= self.level
 
     def __getattr__(self, name: str) -> LogMethod:
@@ -47,16 +47,16 @@ class CapturingSink:
 
 
 class StructlogRecorder:
-    """Bound-логгер вместе с записями, которые он получил."""
+    """Bound logger and the records it received."""
 
     def __init__(self, logger: StructLogger, sink: CapturingSink) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         self.logger = logger
         self._sink = sink
 
     @property
     def entries(self) -> list[LogEntry]:
-        """Все записи в порядке поступления."""
+        """All records in arrival order."""
         levels = logging.getLevelNamesMapping()
         return [
             LogEntry(
@@ -69,30 +69,30 @@ class StructlogRecorder:
 
     @property
     def requests(self) -> list[LogEntry]:
-        """Записи об отправленных запросах."""
+        """Records of sent requests."""
         return [entry for entry in self.entries if entry.event == REQUEST_EVENT]
 
     @property
     def responses(self) -> list[LogEntry]:
-        """Записи о полученных ответах."""
+        """Records of received responses."""
         return [entry for entry in self.entries if entry.event == RESPONSE_EVENT]
 
     @property
     def request(self) -> LogEntry:
-        """Запись о первом отправленном запросе."""
+        """Record of the first sent request."""
         return self.requests[0]
 
     @property
     def response(self) -> LogEntry:
-        """Запись о первом полученном ответе."""
+        """Record of the first received response."""
         return self.responses[0]
 
 
 def build_stdlib_logger(level: int = logging.DEBUG) -> StructlogRecorder:
-    """Собрать логгер так, как его собирает `structlog.configure(wrapper_class=BoundLogger)`.
+    """Build a logger as `structlog.configure(wrapper_class=BoundLogger)` does.
 
-    :param level: уровень, начиная с которого записи доходят до вывода
-    :returns: логгер вместе с полученными им записями
+    :param level: minimum level for records to reach output
+    :returns: logger with its received records
     """
     sink = CapturingSink(level)
     context: dict[str, object] = {}
@@ -100,22 +100,22 @@ def build_stdlib_logger(level: int = logging.DEBUG) -> StructlogRecorder:
 
 
 class ExplodingSink(CapturingSink):
-    """Приемник записей, у которого не работает проверка уровня.
+    """Record sink with a broken level check.
 
-    Так ведет себя связка `structlog.stdlib.BoundLogger` + `structlog.PrintLogger`: bound-логгер
-    перекладывает вопрос об уровне на логгер под собой, а у `PrintLogger` отвечать на него нечем.
+    This matches `structlog.stdlib.BoundLogger` with `structlog.PrintLogger`: the bound logger
+    delegates the level query to its underlying logger, while `PrintLogger` cannot answer it.
     """
 
-    def isEnabledFor(self, level: int) -> bool:  # noqa: N802, ARG002 — сигнатуру задает stdlib-логгер
-        """Не ответить на вопрос об уровне так же, как это делает `PrintLogger`."""
+    def isEnabledFor(self, level: int) -> bool:  # noqa: N802, ARG002 - the stdlib logger defines the signature
+        """Fail to answer the level query in the same way as `PrintLogger`."""
         message = "'PrintLogger' object has no attribute 'isEnabledFor'"
         raise AttributeError(message)
 
 
 def build_logger_with_broken_level_check() -> StructlogRecorder:
-    """Собрать логгер, у которого падает проверка уровня, но запись работает.
+    """Build a logger whose level check fails but whose writes work.
 
-    :returns: логгер вместе с полученными им записями
+    :returns: logger with its received records
     """
     sink = ExplodingSink(logging.DEBUG)
     context: dict[str, object] = {}
@@ -123,13 +123,13 @@ def build_logger_with_broken_level_check() -> StructlogRecorder:
 
 
 def build_filtering_logger(level: int = logging.DEBUG) -> StructlogRecorder:
-    """Собрать логгер так, как его собирает `wrapper_class=make_filtering_bound_logger(...)`.
+    """Build a logger as `wrapper_class=make_filtering_bound_logger(...)` does.
 
-    Такой логгер и уронил gRPC-клиент: проверка уровня у него называется `is_enabled_for`,
-    а не `isEnabledFor`.
+    This logger previously crashed the gRPC client: its level check is named `is_enabled_for`,
+    rather than `isEnabledFor`.
 
-    :param level: уровень, начиная с которого записи доходят до вывода
-    :returns: логгер вместе с полученными им записями
+    :param level: minimum level for records to reach output
+    :returns: logger with its received records
     """
     sink = CapturingSink(level)
     logger = cast(

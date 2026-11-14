@@ -7,23 +7,23 @@ from .support import code_number
 
 
 def test_sends_metadata_from_dict(grpcbin_client: GRPCbinServiceClient) -> None:
-    """Метаданные, переданные словарем, доходят до сервиса."""
+    """Metadata supplied as a dictionary reaches the service."""
     response = grpcbin_client.get_headers({"x-order-id": "A-1024"})
 
     assert_that(response).received_metadata("x-order-id", "A-1024")
 
 
 def test_sends_binary_metadata(grpcbin_client: GRPCbinServiceClient) -> None:
-    """Двоичные метаданные доходят до сервиса."""
+    """Binary metadata reaches the service."""
     response = grpcbin_client.get_headers({"x-payload-bin": b"raw-bytes"})
 
     assert_that(response).received_metadata("x-payload-bin", "raw-bytes")
 
 
 def test_sends_repeated_metadata_keys(grpcbin_client: GRPCbinServiceClient) -> None:
-    """Повторяющиеся ключи метаданных доходят до сервиса все.
+    """All repeated metadata keys reach the service.
 
-    Так сервисы передают, например, несколько меток эксперимента в одном запросе.
+    Services use this to send, for example, several experiment labels in one request.
     """
     response = grpcbin_client.get_headers([("x-feature", "search"), ("x-feature", "ranking")])
 
@@ -31,7 +31,7 @@ def test_sends_repeated_metadata_keys(grpcbin_client: GRPCbinServiceClient) -> N
 
 
 def test_sends_default_metadata_of_client(service_addr: str) -> None:
-    """Метаданные клиента добавляются к каждому запросу."""
+    """Client metadata is added to every request."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -43,7 +43,7 @@ def test_sends_default_metadata_of_client(service_addr: str) -> None:
 
 
 def test_sends_request_metadata_together_with_default(service_addr: str) -> None:
-    """Метаданные запроса не вытесняют метаданные клиента."""
+    """Request metadata does not override client metadata."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -55,42 +55,42 @@ def test_sends_request_metadata_together_with_default(service_addr: str) -> None
 
 
 def test_sends_metadata_from_call_options(grpcbin_client: GRPCbinServiceClient) -> None:
-    """Метаданные из параметров вызова доходят до сервиса."""
+    """Metadata from call options reaches the service."""
     response = grpcbin_client.get_headers(options=CallOptions(metadata={"x-attempt": "2"}))
 
     assert_that(response).received_metadata("x-attempt", "2")
 
 
 def test_returns_trailing_metadata_of_response(grpcbin_client: GRPCbinServiceClient) -> None:
-    """Ответ содержит trailing-метаданные сервиса."""
+    """The response contains trailing metadata from the service."""
     response = grpcbin_client.specific_error(code=code_number(grpc.StatusCode.NOT_FOUND), reason="нет такого")
 
     assert_that(response.trailing_metadata).is_instance_of(Metadata)
 
 
 def test_keeps_all_values_of_repeated_metadata_key() -> None:
-    """Метаданные сохраняют все значения повторяющегося ключа."""
+    """Metadata preserves all values of a repeated key."""
     metadata = Metadata([("x-label", "alpha"), ("x-label", "beta")])
 
     assert_that(metadata.get_all("x-label")).is_equal_to(("alpha", "beta"))
 
 
 def test_reads_metadata_key_ignoring_case() -> None:
-    """Ключ метаданных читается независимо от регистра."""
+    """A metadata key can be read regardless of case."""
     metadata = Metadata([("X-Request-Id", "42")])
 
     assert_that(metadata["x-request-id"]).is_equal_to("42")
 
 
 def test_returns_first_value_of_repeated_metadata_key() -> None:
-    """По ключу с повторами метаданные отдают первое значение."""
+    """Metadata returns the first value for a repeated key."""
     metadata = Metadata([("x-shard", "one"), ("x-shard", "two")])
 
     assert_that(metadata["x-shard"]).is_equal_to("one")
 
 
 def test_counts_repeated_metadata_key_once() -> None:
-    """Повторяющийся ключ считается одним при подсчете размера."""
+    """A repeated key counts once when calculating size."""
     metadata = Metadata([("x-zone", "eu"), ("x-zone", "us"), ("x-region", "north")])
 
     assert_that(len(metadata)).is_equal_to(2)

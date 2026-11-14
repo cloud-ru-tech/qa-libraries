@@ -1,1 +1,1 @@
-"""Тесты для библиотеки http_client_retries."""
+"""Tests for the http_client_retries library."""

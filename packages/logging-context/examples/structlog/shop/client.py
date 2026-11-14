@@ -8,7 +8,7 @@ logger = structlog.stdlib.get_logger("shop.client")
 
 @dataclass(frozen=True)
 class Product:
-    """Товар в каталоге магазина."""
+    """Product in the shop catalog."""
 
     sku: str
     title: str
@@ -27,12 +27,12 @@ _DISCOUNT: Final = 0.9
 
 
 class ShopClient:
-    """Заглушка вместо настоящего API-клиента: по сети ничего не ходит, только пишет логи."""
+    """Fake API client that only logs and makes no network calls."""
 
     def __init__(self, base_url: str) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param base_url: значение настройки ``base_url``.
+        :param base_url: ``base_url`` setting value.
         """
         self._base_url = base_url
         self._items: dict[str, int] = {}
@@ -40,7 +40,7 @@ class ShopClient:
         self._log.debug("клиент создан")
 
     def product(self, sku: str) -> Product:
-        """Возвращает товар по артикулу."""
+        """Return a product by its SKU."""
         self._log.debug("запрос каталога", method="GET", path="/catalog", sku=sku)
         product = CATALOG.get(sku)
         if product is None:
@@ -51,24 +51,24 @@ class ShopClient:
         return product
 
     def add_to_cart(self, sku: str, quantity: int) -> None:
-        """Добавляет товар в корзину."""
+        """Add a product to the cart."""
         product = self.product(sku)
         self._items[sku] = self._items.get(sku, 0) + quantity
         self._log.info("товар добавлен в корзину", sku=sku, title=product.title, quantity=quantity)
 
     def clear_cart(self) -> None:
-        """Очищает корзину."""
+        """Clear the cart."""
         self._log.info("корзина очищена", items=len(self._items))
         self._items.clear()
 
     def total(self) -> int:
-        """Считает сумму корзины."""
+        """Calculate the cart total."""
         total = sum(CATALOG[sku].price * quantity for sku, quantity in self._items.items())
         self._log.info("сумма корзины посчитана", total=total, items=len(self._items))
         return total
 
     def apply_promo(self, code: str) -> int:
-        """Считает сумму корзины с учётом промокода."""
+        """Calculate the cart total with a promo code."""
         if code in EXPIRED_PROMO_CODES:
             self._log.warning("промокод просрочен, скидки не будет", promo_code=code)
             return self.total()
@@ -77,7 +77,7 @@ class ShopClient:
         return discounted
 
     def pay(self, amount: int) -> str:
-        """Оплачивает заказ и возвращает его номер."""
+        """Pay for the order and return its number."""
         order_id = f"ORD-{amount}"
         self._log.info("заказ оплачен", method="POST", path="/payments", amount=amount, order_id=order_id)
         return order_id

@@ -16,17 +16,17 @@ def with_structlogger(
     *,
     use_default_sanitize_keys: bool = True,
 ) -> ClientOption:
-    """Установить структурированный логгер для логирования запросов и ответов в HTTP-клиенте.
+    """Set a structured logger for HTTP client requests and responses.
 
-    :param logger: структурированный логгер
-    :param sanitize_keys: пути в формате [glom](https://glom.readthedocs.io/en/latest/)
-                          к полям, которые нужно скрыть
-    :param json_indent: ширина отступа для логирования JSON свойств (по умолчанию отступ отсутствует)
-    :param log_level: уровень логов HTTP-клиент, по умолчанию INFO
-    :param use_default_sanitize_keys: скрывать ли поля с типовыми именами секретов
-                                      (см. `http_client.event_hooks.DEFAULT_SANITIZE_KEYS`)
-                                      на любой глубине, в дополнение к `sanitize_keys`
-    :returns: опция, которая применяется к HTTP-клиенту для установки логгера и хуков
+    :param logger: Structured logger
+    :param sanitize_keys: Paths in [glom](https://glom.readthedocs.io/en/latest/) format
+                          to fields to mask
+    :param json_indent: JSON log indentation width (no indentation by default)
+    :param log_level: HTTP client log level, INFO by default
+    :param use_default_sanitize_keys: Whether to mask fields with common secret names
+                                      (see `http_client.event_hooks.DEFAULT_SANITIZE_KEYS`)
+                                      at any depth, in addition to `sanitize_keys`
+    :returns: Option that sets the HTTP client logger and hooks
     """
     sanitizer = Sanitizer(
         glom_paths=sanitize_keys or (),

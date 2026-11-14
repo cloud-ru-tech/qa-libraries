@@ -25,13 +25,13 @@ class _TicketedTimeoutError(TimeoutExpiredError):
         attempts: int,
         elapsed_seconds: float,
     ) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param code: значение настройки ``code``.
-        :param waiting_for: значение настройки ``waiting_for``.
-        :param timeout_seconds: значение настройки ``timeout_seconds``.
-        :param attempts: значение настройки ``attempts``.
-        :param elapsed_seconds: значение настройки ``elapsed_seconds``.
+        :param code: Value of ``code``.
+        :param waiting_for: Value of ``waiting_for``.
+        :param timeout_seconds: Value of ``timeout_seconds``.
+        :param attempts: Value of ``attempts``.
+        :param elapsed_seconds: Value of ``elapsed_seconds``.
         """
         self.code = code
         super().__init__(

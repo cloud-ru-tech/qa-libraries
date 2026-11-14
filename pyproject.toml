@@ -68,16 +68,16 @@ extend-exclude = ["docs/plans", "**/api", "**/*_pb2.py", "**/*_pb2_grpc.py"]
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-    # Конфликтует с ruff format: форматтер сам решает, где нужна висящая запятая.
+    # Conflicts with ruff format, which decides where trailing commas belong.
     "COM812",
-    # Взаимоисключающие пары: выбраны D211 и D212.
+    # Mutually exclusive pairs: D211 and D212 are enabled.
     "D203",
     "D213",
-    # Срабатывают на кириллицу в строках, docstring и комментариях.
+    # Flag Cyrillic characters in strings, docstrings, and comments.
     "RUF001",
     "RUF002",
     "RUF003",
-    # Не требуем docstring модулей и пакетов и строку копирайта в каждом файле.
+    # Do not require module or package docstrings or a copyright line in every file.
     "CPY001",
     "D100",
     "D104",
@@ -113,9 +113,9 @@ namespace_packages = true
 explicit_package_bases = true
 exclude = ["docs/plans", "(^|/)api/", "_pb2(_grpc)?\\.py$"]
 
-# googleapis-common-protos поставляет .pyi без маркера py.typed: читаем их вместо своего стаба.
-# Решение согласовано с владельцем репозитория, не заменять стабом в typings/.
-# Заметка mypy "unused section" в пакетах без google.rpc ожидаема и не является ошибкой.
+# googleapis-common-protos provides .pyi files without py.typed; use them instead of a local stub.
+# Agreed with the repository owner: do not replace these with a stub in typings/.
+# The mypy "unused section" note is expected in packages without google.rpc and is not an error.
 [[tool.mypy.overrides]]
 module = ["google.rpc.*"]
 follow_untyped_imports = true

@@ -21,7 +21,7 @@ def _mixed_predicate() -> str | Awaitable[str] | None:
 
 
 async def check_async_overloads() -> None:
-    """Закрепить вывод типов перегрузок: этот модуль проверяется mypy, а не pytest."""
+    """Verify overload type inference: mypy checks this module, not pytest."""
     assert_type(await async_wait_until(_coroutine_predicate), str)
     assert_type(await async_wait_until(_plain_predicate), str)
     assert_type(await async_wait_until(_awaitable_predicate), str)
@@ -31,6 +31,6 @@ async def check_async_overloads() -> None:
 
 
 def check_sync_signatures() -> None:
-    """Закрепить вывод типов синхронных функций ожидания."""
+    """Verify type inference for synchronous wait functions."""
     assert_type(wait_until(_plain_predicate), str)
     assert_type(wait_or_none(_plain_predicate), str | None)

@@ -9,7 +9,7 @@ from .sanitaizer import sanitize
 
 
 class JsonDumpsOptions(TypedDict, total=False):
-    """Параметры сериализации JSON, передаваемые в ``json.dumps``."""
+    """JSON serialization options passed to ``json.dumps``."""
 
     skipkeys: bool
     ensure_ascii: bool
@@ -27,12 +27,12 @@ def to_curl(
     sanitize_keys: Sequence[str] = (),
     json_dumps_kwargs: JsonDumpsOptions | None = None,
 ) -> str:
-    """Сериализовать HTTP-запрос в строку в формате curl.
+    """Serialize an HTTP request to a curl command string.
 
-    :param request: HTTP-запрос
-    :param sanitize_keys: Ключи для скрытия секретных данных в запросе
-    :param json_dumps_kwargs: Параметры для json.dumps, если запрос имеет content-type = application/json
-    :return: Строка в формате curl
+    :param request: HTTP request
+    :param sanitize_keys: Keys for masking secrets in the request
+    :param json_dumps_kwargs: Options for json.dumps when the request has content-type = application/json
+    :return: Curl command string
     """
     command = ["-X " + quote(request.method)]
 
@@ -69,12 +69,12 @@ def to_curl(
 
 
 def _format_json(payload: str, sanitize_keys: Sequence[str], **kwargs: Unpack[JsonDumpsOptions]) -> str:
-    """Форматировать JSON строку для удобного отображения в формате curl.
+    """Format a JSON string for readable output in a curl command.
 
-    :param payload: JSON строка
-    :param sanitize_keys: Ключи для скрытия секретных данных в JSON
-    :param kwargs: Параметры для json.dumps
-    :return: Форматированная JSON строка
+    :param payload: JSON string
+    :param sanitize_keys: Keys for masking secrets in JSON
+    :param kwargs: Options for json.dumps
+    :return: Formatted JSON string
     """
     json_payload = sanitize(cast("object", json.loads(payload)), sanitize_keys)
 

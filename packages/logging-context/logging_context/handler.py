@@ -12,14 +12,14 @@ from .naming import slugify
 DEFAULT_FILE_MODE: Final = 0o600
 DEFAULT_DIR_MODE: Final = 0o700
 
-# O_NOFOLLOW есть только на POSIX. Защищает от подмены файла логов симлинком
-# в предсказуемом каталоге.
+# O_NOFOLLOW is POSIX-only. It prevents replacing a log file with a symlink
+# in a predictable directory.
 _O_NOFOLLOW: Final = cast("int", getattr(os, "O_NOFOLLOW", 0))
 
 
 @dataclass(frozen=True, slots=True)
 class HandlerOptions:
-    """Настройки кодировки, прав доступа и имён файлов логов."""
+    """Log encoding, permissions, and filename settings."""
 
     name_suffix: str = ""
     encoding: str = "utf-8"
@@ -32,13 +32,13 @@ _DEFAULT_OPTIONS = HandlerOptions()
 
 
 class LoggingContextHandler(logging.Handler):
-    """Пишет логи текущего теста в отдельный файл.
+    """Write current test logs to a separate file.
 
-    Пока тест не привязан (`bind`), записи идут в общий файл фикстур — туда
-    попадает всё, что логируется между тестами и в session-scoped фикстурах.
+    Until a test is bound (`bind`), records go to the shared fixture file, which receives
+    all logs between tests and in session-scoped fixtures.
 
-    Переключение файла выполняется под тем же локом, что и `emit`, поэтому
-    логирование из фоновых потоков не приводит к записи в закрытый файл.
+    File switching uses the same lock as `emit`, so
+    background thread logging cannot write to a closed file.
     """
 
     def __init__(
@@ -48,11 +48,11 @@ class LoggingContextHandler(logging.Handler):
         *,
         options: HandlerOptions = _DEFAULT_OPTIONS,
     ) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param output_dir: значение настройки ``output_dir``.
-        :param fixtures_filename: имя общего файла логов фикстур.
-        :param options: кодировка, права доступа и суффикс имени файла.
+        :param output_dir: ``output_dir`` setting value.
+        :param fixtures_filename: shared fixture log filename.
+        :param options: encoding, permissions, and filename suffix.
         """
         super().__init__()
         self._output_dir = output_dir
@@ -72,25 +72,25 @@ class LoggingContextHandler(logging.Handler):
 
     @property
     def output_dir(self) -> Path:
-        """Каталог, в который пишутся файлы логов."""
+        """Directory where log files are written."""
         return self._output_dir
 
     @property
     def fixtures_file(self) -> Path:
-        """Файл, в который пишутся логи вне тестов."""
+        """File used for logs outside tests."""
         return self._fixtures_path
 
     @property
     def current_file(self) -> Path | None:
-        """Файл логов текущего теста или None, если тест не привязан."""
+        """Current test log file, or None if no test is bound."""
         return self._test_path
 
     def bind(self, test_name: str) -> Path:
-        """Направить логи в отдельный файл теста.
+        """Route logs to a separate test file.
 
-        :param test_name: читаемое имя теста, станет основой имени файла
-        :return: путь до созданного файла логов
-        :raises RuntimeError: если предыдущий тест не был отвязан
+        :param test_name: readable test name used as the filename base
+        :return: path to the created log file
+        :raises RuntimeError: if the previous test was not unbound
         """
         with self._locked():
             if self._closed:
@@ -109,14 +109,14 @@ class LoggingContextHandler(logging.Handler):
             return path
 
     def unbind(self) -> None:
-        """Вернуть логи в общий файл фикстур."""
+        """Route logs back to the shared fixture file."""
         with self._locked():
             self._close_stream(self._test_stream)
             self._test_stream = None
             self._test_path = None
 
     def emit(self, record: logging.LogRecord) -> None:
-        """Записать сообщение в файл текущего теста либо в файл фикстур."""
+        """Write a message to the current test file or the fixture file."""
         if self._closed:
             return
 
@@ -124,14 +124,14 @@ class LoggingContextHandler(logging.Handler):
             stream = self._test_stream or self._fixtures()
             stream.write(self.format(record) + "\n")
             stream.flush()
-        except Exception:  # noqa: BLE001 — контракт logging.Handler
+        except Exception:  # noqa: BLE001 - logging.Handler contract
             self.handleError(record)
 
     def flush(self) -> None:
-        """Сбросить буферы уже открытых файлов.
+        """Flush buffers of already open files.
 
-        Никогда не открывает файл: `logging.shutdown()` вызывает flush у всех
-        хендлеров, и создание файла на этом этапе было бы побочным эффектом.
+        Never open files: `logging.shutdown()` calls flush on all
+        handlers, and creating a file at this stage would be a side effect.
         """
         with self._locked():
             for stream in (self._test_stream, self._fixtures_stream):
@@ -139,7 +139,7 @@ class LoggingContextHandler(logging.Handler):
                     stream.flush()
 
     def close(self) -> None:
-        """Закрыть все открытые файлы. Идемпотентен."""
+        """Close all open files. Idempotent."""
         with self._locked():
             if self._closed:
                 return
@@ -152,9 +152,9 @@ class LoggingContextHandler(logging.Handler):
         super().close()
 
     def __enter__(self) -> Self:
-        """Получить хендлер с автоматическим закрытием.
+        """Get a handler that closes automatically.
 
-        :return: текущий хендлер.
+        :return: current handler.
         """
         return self
 
@@ -164,12 +164,12 @@ class LoggingContextHandler(logging.Handler):
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
-        """Закрыть файлы при выходе из контекста."""
+        """Close files on context exit."""
         self.close()
 
     @contextmanager
     def _locked(self) -> Iterator[None]:
-        """Лок хендлера, тот же, под которым `logging` вызывает `emit`."""
+        """Acquire the handler lock also used by `logging` when calling `emit`."""
         self.acquire()
         try:
             yield
@@ -181,24 +181,24 @@ class LoggingContextHandler(logging.Handler):
             return
 
         self._output_dir.mkdir(parents=True, exist_ok=True)
-        # Не на всех файловых системах права можно выставить; логи важнее.
+        # Some filesystems do not support setting permissions; preserving logs matters more.
         with suppress(OSError):
             self._output_dir.chmod(dir_mode)
 
     def _fixtures(self) -> TextIO:
-        """Файл фикстур открывается один раз и остаётся открытым до `close()`.
+        """Open the fixture file once and keep it open until `close()`.
 
-        Повторное открытие обнуляло бы уже записанные логи.
+        Reopening would truncate logs already written.
         """
         if self._fixtures_stream is None:
             self._fixtures_stream = self._open(self._fixtures_path, append=False)
         return self._fixtures_stream
 
     def _reserve_path(self, test_name: str) -> Path:
-        """Подобрать незанятое имя файла, добавляя числовой суффикс при повторе."""
+        """Choose an available filename, adding a numeric suffix on collision."""
         slug = slugify(test_name)
         if self._name_suffix:
-            # Разные процессы пишут в разные файлы, даже если имена тестов совпали.
+            # Different processes use different files even when test names match.
             slug = f"{slug}.{self._name_suffix}"
 
         attempt = self._used_names.get(slug, 0) + 1
@@ -207,8 +207,8 @@ class LoggingContextHandler(logging.Handler):
         filename = f"{slug}.log" if attempt == 1 else f"{slug}.{attempt}.log"
         path = self._output_dir / filename
 
-        # slugify исключает разделители пути, так что выход за output_dir невозможен.
-        # Проверка защищает от регрессии в slugify.
+        # slugify excludes path separators, so escaping output_dir is impossible.
+        # This check guards against a slugify regression.
         if path.parent != self._output_dir:
             message = f"refusing to write log outside of {self._output_dir}: {path}"
             raise RuntimeError(message)

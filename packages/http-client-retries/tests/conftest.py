@@ -15,10 +15,10 @@ MAX_ATTEMPTS = 3
 
 @pytest.fixture(autouse=True)
 def reset_config_after_each_test() -> Iterator[None]:
-    """Вернуть глобальную конфигурацию в исходное состояние после каждого теста.
+    """Restore the global configuration after each test.
 
-    Сохраняется именно копия: configure() мутирует синглтон по месту, поэтому держать
-    ссылку на него бесполезно.
+    Save a copy: configure() mutates the singleton in place, so keeping
+    a reference to it is useless.
     """
     original = replace(config.get_config())
     yield
@@ -27,7 +27,7 @@ def reset_config_after_each_test() -> Iterator[None]:
 
 @pytest.fixture()
 def fast_retries() -> None:
-    """Короткая политика повторов без пауз."""
+    """Short retry policy without delays."""
     config.configure(
         options=Config(stop=stop_after_attempt(MAX_ATTEMPTS), wait=wait_none(), before_sleep_hook=None, reraise=False),
     )
@@ -35,7 +35,7 @@ def fast_retries() -> None:
 
 @pytest.fixture()
 def reraising_retries() -> None:
-    """Короткая политика повторов, возбуждающая исходную ошибку после последней попытки."""
+    """Short retry policy that raises the original error after the final attempt."""
     config.configure(
         options=Config(stop=stop_after_attempt(MAX_ATTEMPTS), wait=wait_none(), before_sleep_hook=None, reraise=True),
     )
@@ -43,7 +43,7 @@ def reraising_retries() -> None:
 
 @pytest.fixture()
 def recorded_retries() -> RecordingHook:
-    """Короткая политика повторов с хуком, запоминающим каждый повтор."""
+    """Short retry policy with a hook that records every retry."""
     hook = RecordingHook()
     config.configure(
         options=Config(stop=stop_after_attempt(MAX_ATTEMPTS), wait=wait_none(), before_sleep_hook=hook, reraise=False),
@@ -53,7 +53,7 @@ def recorded_retries() -> RecordingHook:
 
 @pytest.fixture()
 def recorded_async_retries() -> RecordingAsyncHook:
-    """То же, что recorded_retries, но с асинхронным хуком."""
+    """Provide recorded_retries with an asynchronous hook."""
     hook = RecordingAsyncHook()
     config.configure(
         options=Config(stop=stop_after_attempt(MAX_ATTEMPTS), wait=wait_none(), before_sleep_hook=hook, reraise=False),
@@ -70,7 +70,7 @@ def retry_logger() -> logging.Logger:
 
 @pytest.fixture()
 def logging_retries(retry_logger: logging.Logger) -> logging.Logger:
-    """Короткая политика повторов, пишущая причину каждого повтора в лог."""
+    """Short retry policy that logs each retry reason."""
     config.configure(
         options=Config(
             stop=stop_after_attempt(MAX_ATTEMPTS),

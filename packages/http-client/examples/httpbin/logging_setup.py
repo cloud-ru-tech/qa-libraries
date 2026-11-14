@@ -1,4 +1,4 @@
-"""Настройка логирования для демо-клиентов httpbin."""
+"""Logging setup for httpbin demo clients."""
 
 import logging
 import sys
@@ -13,17 +13,17 @@ _LOG_FORMAT = "%(levelname)-7s %(name)-12s | %(message)s"
 
 
 def setup_logging(level: int = logging.INFO) -> None:
-    """Поднять вывод в консоль и глобальные настройки логов http_client.
+    """Set up console output and global http_client log settings.
 
-    configure_logging задаёт значения по умолчанию для всех клиентов процесса:
-    любая опция with_logger, которой не передали аргумент, читает их отсюда.
-    Переменные окружения HTTP_CLIENT_* перекрывают эти аргументы.
+    configure_logging sets defaults for all clients in the process:
+    any with_logger option without an explicit argument reads them here.
+    HTTP_CLIENT_* environment variables override these arguments.
     """
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(logging.Formatter(_LOG_FORMAT))
     logging.basicConfig(level=level, handlers=[handler], force=True)
 
-    # Свой лог httpx дублировал бы строку запроса рядом с подробным логом http_client
+    # httpx logging would duplicate the request line alongside the detailed http_client log
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
     configure_logging(
@@ -32,10 +32,10 @@ def setup_logging(level: int = logging.INFO) -> None:
 
 
 def http_logger() -> logging.Logger:
-    """Логгер, в который http_client пишет запросы и ответы."""
+    """Logger that receives http_client requests and responses."""
     return logging.getLogger(HTTP_LOGGER_NAME)
 
 
 def demo_logger() -> logging.Logger:
-    """Логгер для пояснений к сценариям демо."""
+    """Logger for explanations of demo scenarios."""
     return logging.getLogger(DEMO_LOGGER_NAME)

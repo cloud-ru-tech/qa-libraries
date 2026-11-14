@@ -1,7 +1,7 @@
-"""Матчеры для тестов повторных попыток.
+"""Matchers for retry tests.
 
-Прячут механику проверок (разбор логов, распаковку RetryError, подсчёт попыток),
-чтобы тело теста говорило только о том, какое поведение ожидается.
+Hide assertion mechanics (log parsing, RetryError unpacking, attempt counting)
+so the test body describes only the expected behavior.
 """
 
 from __future__ import annotations
@@ -25,10 +25,10 @@ else:
 
 
 class RetryAssertions(_Assertions):
-    """Проверки поведения повторных попыток."""
+    """Assertions for retry behavior."""
 
     def made_attempts(self, expected: int) -> Self:
-        """Проверить, сколько запросов реально ушло в транспорт."""
+        """Check the number of requests actually sent to the transport."""
         actual = len(self._requests())
         if actual != expected:
             self.error(f"Expected <{expected}> HTTP attempt(s), but was <{actual}>")
@@ -36,7 +36,7 @@ class RetryAssertions(_Assertions):
         return self
 
     def requested_path(self, expected: str) -> Self:
-        """Проверить, что все попытки ушли на один и тот же путь."""
+        """Check that all attempts were sent to the same path."""
         paths = {request.url.path for request in self._requests()}
         if paths != {expected}:
             self.error(f"Expected every attempt to hit <{expected}>, but paths were <{sorted(paths)}>")
@@ -44,7 +44,7 @@ class RetryAssertions(_Assertions):
         return self
 
     def is_same_across_attempts(self) -> Self:
-        """Проверить, что снятые в момент отправки значения совпали на всех попытках."""
+        """Check that values captured at send time match across all attempts."""
         values: list[str | None] = list(cast("Sequence[str | None]", self.val))
         minimum_attempts = 2
         if len(values) < minimum_attempts:
@@ -59,7 +59,7 @@ class RetryAssertions(_Assertions):
         return self
 
     def wraps_error(self, expected: type[BaseException]) -> Self:
-        """Проверить, что RetryError сохранил исходную ошибку последней попытки."""
+        """Check that RetryError retains the original error from the last attempt."""
         error = self.val
         if not isinstance(error, RetryError):
             self.error(f"Expected <RetryError>, but was <{type(error).__name__}>")
@@ -71,7 +71,7 @@ class RetryAssertions(_Assertions):
         return self
 
     def returned_response(self) -> Self:
-        """Проверить, что RetryError сохранил ответ последней попытки, а не служебный объект."""
+        """Check that RetryError retains the last response rather than an internal object."""
         error = self.val
         if not isinstance(error, RetryError):
             self.error(f"Expected <RetryError>, but was <{type(error).__name__}>")
@@ -83,7 +83,7 @@ class RetryAssertions(_Assertions):
         return self
 
     def logged_retry_of(self, method: str, url: str) -> Self:
-        """Проверить, что среди записей лога есть повтор указанного запроса."""
+        """Check that the logs contain a retry of the specified request."""
         expected = f"Failed http request [{method}] {url}"
         if not any(expected in message for message in self._messages()):
             self.error(f"Expected a log record containing <{expected}>, but records were <{self._messages()}>")
@@ -91,7 +91,7 @@ class RetryAssertions(_Assertions):
         return self
 
     def logged_error(self, expected: str) -> Self:
-        """Проверить, что в логе повтора названа причина."""
+        """Check that the retry log names the reason."""
         if not any(expected in message for message in self._messages()):
             self.error(f"Expected a log record mentioning <{expected}>, but records were <{self._messages()}>")
 
@@ -105,5 +105,5 @@ class RetryAssertions(_Assertions):
 
 
 def assert_that(actual: object) -> RetryAssertions:
-    """Локальная замена assertpy.assert_that с матчерами этого проекта."""
+    """Local replacement for assertpy.assert_that with project-specific matchers."""
     return RetryAssertions(actual)

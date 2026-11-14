@@ -54,7 +54,7 @@ def _mark_streaming(request: httpx.Request) -> None:
 
 
 def _ensure_async_hook[T](hook: Callable[[T], Awaitable[None] | None]) -> Callable[[T], Awaitable[None]]:
-    """Обернуть синхронный event hook в асинхронную обёртку, если он ещё не async."""
+    """Wrap a synchronous event hook in an asynchronous wrapper if needed."""
 
     async def async_hook(message: T) -> None:
         result = hook(message)
@@ -65,15 +65,15 @@ def _ensure_async_hook[T](hook: Callable[[T], Awaitable[None] | None]) -> Callab
 
 
 def _resolve_auth(auth: AuthTypes | None, client_auth: AuthTypes | None) -> AuthTypes | None:
-    """Выбрать авторизацию запроса.
+    """Select request authentication.
 
-    Сравнение с None, а не проверка на истинность: у валидного Auth может быть __bool__ == False.
+    Compare with None rather than checking truthiness: a valid Auth may have __bool__ == False.
     """
     return auth if auth is not None else client_auth
 
 
 class BaseHttpClient(metaclass=ABCMeta):
-    """Базовый класс HTTP-клиента."""
+    """Base HTTP client class."""
 
     DEFAULT_URL_SUFFIX = ""
     DEFAULT_TIMEOUT = httpx.Timeout(60)
@@ -83,10 +83,10 @@ class BaseHttpClient(metaclass=ABCMeta):
         base_url: URLTypes,
         *options: ClientOption,
     ) -> None:
-        """Применить опции к настройкам до создания транспорта.
+        """Apply options to the settings before creating the transport.
 
-        :param base_url: адрес HTTP-сервиса
-        :param options: встроенные и пользовательские опции клиента
+        :param base_url: HTTP service address
+        :param options: Built-in and custom client options
         """
         self._config = HttpClientConfig(
             base_url=base_url, timeout=self.DEFAULT_TIMEOUT, url_suffix=self.DEFAULT_URL_SUFFIX
@@ -99,7 +99,7 @@ class BaseHttpClient(metaclass=ABCMeta):
 
     @property
     def verify(self) -> ssl.SSLContext | str | bool:
-        """Вернуть настройку проверки сертификатов транспорта."""
+        """Return the transport certificate verification setting."""
         return self._config.verify
 
     @verify.setter
@@ -109,7 +109,7 @@ class BaseHttpClient(metaclass=ABCMeta):
 
     @property
     def auth(self) -> AuthTypes | None:
-        """Вернуть настройку авторизации транспорта."""
+        """Return the transport authentication setting."""
         return self._config.auth
 
     @auth.setter
@@ -119,7 +119,7 @@ class BaseHttpClient(metaclass=ABCMeta):
 
     @property
     def timeout(self) -> TimeoutTypes:
-        """Вернуть таймаут транспорта."""
+        """Return the transport timeout."""
         return self._config.timeout
 
     @timeout.setter
@@ -129,7 +129,7 @@ class BaseHttpClient(metaclass=ABCMeta):
 
     @property
     def url_suffix(self) -> str:
-        """Вернуть префикс относительных путей запросов."""
+        """Return the prefix for relative request paths."""
         return self._config.url_suffix
 
     @url_suffix.setter
@@ -138,11 +138,11 @@ class BaseHttpClient(metaclass=ABCMeta):
         self._config.url_suffix = value
 
     def add_request_hook(self, hook: RequestHook, *, prepend: bool = False) -> None:
-        """Зарегистрировать хук запроса при применении опций.
+        """Register a request hook while applying options.
 
-        :param hook: обработчик HTTP-запроса
-        :param prepend: выполнить хук перед уже зарегистрированными обработчиками
-        :raises RuntimeError: создание клиента уже завершено
+        :param hook: HTTP request handler
+        :param prepend: Run the hook before previously registered handlers
+        :raises RuntimeError: Client initialization has already finished
         """
         self._assert_configuring()
         if prepend:
@@ -151,37 +151,37 @@ class BaseHttpClient(metaclass=ABCMeta):
             self._config.request_hooks.append(hook)
 
     def add_response_hook(self, hook: ResponseHook) -> None:
-        """Зарегистрировать хук ответа при применении опций.
+        """Register a response hook while applying options.
 
-        :param hook: обработчик HTTP-ответа
-        :raises RuntimeError: создание клиента уже завершено
+        :param hook: HTTP response handler
+        :raises RuntimeError: Client initialization has already finished
         """
         self._assert_configuring()
         self._config.response_hooks.append(hook)
 
     def add_send_decorator(self, decorator: SendDecorator) -> None:
-        """Зарегистрировать декоратор отправки запроса при применении опций.
+        """Register a request send decorator while applying options.
 
-        :param decorator: декоратор синхронной или асинхронной отправки
-        :raises RuntimeError: создание клиента уже завершено
+        :param decorator: Synchronous or asynchronous send decorator
+        :raises RuntimeError: Client initialization has already finished
         """
         self._assert_configuring()
         self._config.send_decorators.append(decorator)
 
     def add_stream_decorator(self, decorator: StreamRequestDecorator) -> None:
-        """Зарегистрировать декоратор потокового запроса при применении опций.
+        """Register a streaming request decorator while applying options.
 
-        :param decorator: декоратор синхронного или асинхронного контекстного менеджера
-        :raises RuntimeError: создание клиента уже завершено
+        :param decorator: Synchronous or asynchronous context manager decorator
+        :raises RuntimeError: Client initialization has already finished
         """
         self._assert_configuring()
         self._config.stream_decorators.append(decorator)
 
     def enable_redirects(self, max_redirects: int = DEFAULT_MAX_REDIRECTS) -> None:
-        """Включить обработку редиректов при применении опций.
+        """Enable redirects while applying options.
 
-        :param max_redirects: максимальное число переходов
-        :raises RuntimeError: создание клиента уже завершено
+        :param max_redirects: Maximum number of redirects
+        :raises RuntimeError: Client initialization has already finished
         """
         self._assert_configuring()
         self._config.follow_redirects = True
@@ -189,21 +189,21 @@ class BaseHttpClient(metaclass=ABCMeta):
 
     @property
     def base_url(self) -> httpx.URL:
-        """Вернуть базовый URL транспорта."""
+        """Return the transport base URL."""
         return self.client.base_url
 
     @property
     @abstractmethod
     def client(self) -> httpx._client.BaseClient:
-        """Вернуть синхронный либо асинхронный HTTP-транспорт."""
+        """Return the synchronous or asynchronous HTTP transport."""
         ...
 
     def endpoint(self, path: str) -> str:
-        """Построить URL-адрес с учетом суффикса.
+        """Build a URL using the suffix.
 
-        :param path: относительный путь эндпоинта
-        :raises ValueError: если путь абсолютный или выходит вверх за пределы суффикса
-        :returns: путь с подставленным суффиксом
+        :param path: Relative endpoint path
+        :raises ValueError: If the path is absolute or traverses above the suffix
+        :returns: Path with the suffix applied
 
         >>> assert "api/v1/endpoint" == self.endpoint("api/v1/endpoint")
         >>> self.url_suffix = "/u-api/container-registry/v1"
@@ -254,17 +254,17 @@ class BaseHttpClient(metaclass=ABCMeta):
 
 
 class HttpClient(BaseHttpClient, metaclass=ABCMeta):
-    """Класс HTTP-клиента."""
+    """HTTP client class."""
 
     def __init__(
         self,
         base_url: URLTypes,
         *options: ClientOption,
     ) -> None:
-        """Создать синхронный HTTP-клиент.
+        """Create a synchronous HTTP client.
 
-        :param base_url: адрес HTTP-сервиса
-        :param options: встроенные и пользовательские опции
+        :param base_url: HTTP service address
+        :param options: Built-in and custom options
         """
         super().__init__(base_url, *options)
         self._client = httpx.Client(
@@ -284,11 +284,11 @@ class HttpClient(BaseHttpClient, metaclass=ABCMeta):
 
     @property
     def client(self) -> httpx.Client:
-        """Вернуть синхронный HTTP-транспорт."""
+        """Return the synchronous HTTP transport."""
         return self._client
 
     def __enter__(self) -> Self:
-        """Открыть пул соединений и вернуть клиент."""
+        """Open the connection pool and return the client."""
         self.client.__enter__()
         return self
 
@@ -298,53 +298,53 @@ class HttpClient(BaseHttpClient, metaclass=ABCMeta):
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        """Закрыть пул соединений при выходе из контекста.
+        """Close the connection pool when leaving the context.
 
-        :param exc_type: тип исключения в контексте
-        :param exc_val: исключение в контексте
-        :param exc_tb: traceback исключения
+        :param exc_type: Type of the exception in the context
+        :param exc_val: Exception in the context
+        :param exc_tb: Exception traceback
         """
         self.client.__exit__(exc_type, exc_val, exc_tb)
 
     def close(self) -> None:
-        """Закрыть пул соединений."""
+        """Close the connection pool."""
         self.client.close()
 
     def get(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx.Response:
-        """Выполнить GET-запрос."""
+        """Send a GET request."""
         return self.request("GET", url, **options)
 
     def post(self, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx.Response:
-        """Выполнить POST-запрос."""
+        """Send a POST request."""
         return self.request("POST", url, **options)
 
     def put(self, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx.Response:
-        """Выполнить PUT-запрос."""
+        """Send a PUT request."""
         return self.request("PUT", url, **options)
 
     def patch(self, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx.Response:
-        """Выполнить PATCH-запрос."""
+        """Send a PATCH request."""
         return self.request("PATCH", url, **options)
 
     def delete(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx.Response:
-        """Выполнить DELETE-запрос."""
+        """Send a DELETE request."""
         return self.request("DELETE", url, **options)
 
     def head(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx.Response:
-        """Выполнить HEAD-запрос."""
+        """Send a HEAD request."""
         return self.request("HEAD", url, **options)
 
     def options(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx.Response:
-        """Выполнить OPTIONS-запрос."""
+        """Send an OPTIONS request."""
         return self.request("OPTIONS", url, **options)
 
     def request(self, method: str, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx.Response:
-        """Выполнить HTTP-запрос с произвольным методом."""
+        """Send an HTTP request with an arbitrary method."""
         request, send_options = self._prepare_request(method, url, options)
         return self.send(request, **send_options)
 
     def send(self, request: httpx.Request, **options: Unpack[SendOptions]) -> httpx.Response:
-        """Отправить HTTP-запрос."""
+        """Send an HTTP request."""
         _reject_unknown_options(options, SendOptions.__optional_keys__)
         if options.get("stream", False):
             _mark_streaming(request)
@@ -373,18 +373,18 @@ class HttpClient(BaseHttpClient, metaclass=ABCMeta):
     def stream(
         self, method: str, url: URLTypes, **options: Unpack[RequestOptions]
     ) -> AbstractContextManager[httpx.Response]:
-        """Выполнить потоковый HTTP-запрос (контракт httpx)."""
+        """Send a streaming HTTP request using the httpx contract."""
         request, send_options = self._prepare_request(method, url, options)
         return self.stream_request(request, **send_options)
 
     def stream_request(
         self, request: httpx.Request, **options: Unpack[StreamOptions]
     ) -> AbstractContextManager[httpx.Response]:
-        """Отправить потоковый HTTP-запрос.
+        """Send a streaming HTTP request.
 
-        Возвращает контекстный менеджер для работы с потоковым ответом.
+        Return a context manager for accessing the streaming response.
 
-        Пример использования:
+        Usage example:
         with client.stream_request(request) as response:
         for chunk in response.iter_bytes():
             process(chunk)
@@ -406,8 +406,8 @@ class HttpClient(BaseHttpClient, metaclass=ABCMeta):
 
         _mark_streaming(request)
 
-        # Отправляем именно переданный Request: пересборка через client.stream()
-        # ломала потоковое тело запроса и подсовывала хукам другой объект.
+        # Send the supplied Request: rebuilding it with client.stream()
+        # broke streaming request bodies and passed a different object to hooks.
         response = self.client.send(request, stream=True, auth=auth_to_use, follow_redirects=follow)
         try:
             yield response
@@ -415,30 +415,30 @@ class HttpClient(BaseHttpClient, metaclass=ABCMeta):
             response.close()
 
     def _apply_decorators(self, func: SyncSendMethod) -> SyncSendMethod:
-        """Применить все декораторы к функции."""
+        """Apply all decorators to the function."""
         for decorator in self._config.send_decorators:
             func = cast("SyncSendDecorator", decorator)(func)
         return func
 
     def _apply_stream_request_decorators(self, func: SyncStreamRequestMethod) -> SyncStreamRequestMethod:
-        """Применить все декораторы для stream_request к функции."""
+        """Apply all stream_request decorators to the function."""
         for decorator in self._config.stream_decorators:
             func = cast("SyncStreamRequestDecorator", decorator)(func)
         return func
 
 
 class AsyncHttpClient(BaseHttpClient, metaclass=ABCMeta):
-    """Класс асинхронного HTTP-клиента."""
+    """Asynchronous HTTP client."""
 
     def __init__(
         self,
         base_url: URLTypes,
         *options: ClientOption,
     ) -> None:
-        """Создать асинхронный HTTP-клиент.
+        """Create an asynchronous HTTP client.
 
-        :param base_url: адрес HTTP-сервиса
-        :param options: встроенные и пользовательские опции
+        :param base_url: HTTP service address
+        :param options: Built-in and custom options
         """
         super().__init__(base_url, *options)
         self._config.request_hooks = [_ensure_async_hook(h) for h in self._config.request_hooks]
@@ -460,11 +460,11 @@ class AsyncHttpClient(BaseHttpClient, metaclass=ABCMeta):
 
     @property
     def client(self) -> httpx.AsyncClient:
-        """Вернуть асинхронный HTTP-транспорт."""
+        """Return the asynchronous HTTP transport."""
         return self._client
 
     async def __aenter__(self) -> Self:
-        """Открыть пул соединений и вернуть клиент."""
+        """Open the connection pool and return the client."""
         await self.client.__aenter__()
         return self
 
@@ -474,53 +474,53 @@ class AsyncHttpClient(BaseHttpClient, metaclass=ABCMeta):
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        """Закрыть пул соединений при выходе из контекста.
+        """Close the connection pool when leaving the context.
 
-        :param exc_type: тип исключения в контексте
-        :param exc_val: исключение в контексте
-        :param exc_tb: traceback исключения
+        :param exc_type: Type of the exception in the context
+        :param exc_val: Exception in the context
+        :param exc_tb: Exception traceback
         """
         await self.client.__aexit__(exc_type, exc_val, exc_tb)
 
     async def aclose(self) -> None:
-        """Закрыть пул соединений."""
+        """Close the connection pool."""
         await self.client.aclose()
 
     async def get(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx.Response:
-        """Выполнить GET-запрос асинхронно."""
+        """Send a GET request asynchronously."""
         return await self.request("GET", url, **options)
 
     async def post(self, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx.Response:
-        """Выполнить POST-запрос асинхронно."""
+        """Send a POST request asynchronously."""
         return await self.request("POST", url, **options)
 
     async def put(self, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx.Response:
-        """Выполнить PUT-запрос асинхронно."""
+        """Send a PUT request asynchronously."""
         return await self.request("PUT", url, **options)
 
     async def patch(self, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx.Response:
-        """Выполнить PATCH-запрос асинхронно."""
+        """Send a PATCH request asynchronously."""
         return await self.request("PATCH", url, **options)
 
     async def delete(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx.Response:
-        """Выполнить DELETE-запрос асинхронно."""
+        """Send a DELETE request asynchronously."""
         return await self.request("DELETE", url, **options)
 
     async def head(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx.Response:
-        """Выполнить HEAD-запрос асинхронно."""
+        """Send a HEAD request asynchronously."""
         return await self.request("HEAD", url, **options)
 
     async def options(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx.Response:
-        """Выполнить OPTIONS-запрос асинхронно."""
+        """Send an OPTIONS request asynchronously."""
         return await self.request("OPTIONS", url, **options)
 
     async def request(self, method: str, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx.Response:
-        """Выполнить HTTP-запрос с произвольным методом асинхронно."""
+        """Send an HTTP request with an arbitrary method asynchronously."""
         request, send_options = self._prepare_request(method, url, options)
         return await self.send(request, **send_options)
 
     async def send(self, request: httpx.Request, **options: Unpack[SendOptions]) -> httpx.Response:
-        """Отправить HTTP-запрос асинхронно."""
+        """Send an HTTP request asynchronously."""
         _reject_unknown_options(options, SendOptions.__optional_keys__)
         if options.get("stream", False):
             _mark_streaming(request)
@@ -549,18 +549,18 @@ class AsyncHttpClient(BaseHttpClient, metaclass=ABCMeta):
     def stream(
         self, method: str, url: URLTypes, **options: Unpack[RequestOptions]
     ) -> AbstractAsyncContextManager[httpx.Response]:
-        """Выполнить потоковый HTTP-запрос асинхронно (контракт httpx)."""
+        """Send a streaming HTTP request asynchronously using the httpx contract."""
         request, send_options = self._prepare_request(method, url, options)
         return self.stream_request(request, **send_options)
 
     def stream_request(
         self, request: httpx.Request, **options: Unpack[StreamOptions]
     ) -> AbstractAsyncContextManager[httpx.Response]:
-        """Отправить потоковый HTTP-запрос асинхронно.
+        """Send a streaming HTTP request asynchronously.
 
-        Возвращает асинхронный контекстный менеджер для работы с потоковым ответом.
+        Return an asynchronous context manager for accessing the streaming response.
 
-        Пример использования:
+        Usage example:
         async with client.stream_request(request) as response:
         async for chunk in response.aiter_bytes():
             await process(chunk)
@@ -582,8 +582,8 @@ class AsyncHttpClient(BaseHttpClient, metaclass=ABCMeta):
 
         _mark_streaming(request)
 
-        # Отправляем именно переданный Request: пересборка через client.stream()
-        # ломала потоковое тело запроса и подсовывала хукам другой объект.
+        # Send the supplied Request: rebuilding it with client.stream()
+        # broke streaming request bodies and passed a different object to hooks.
         response = await self.client.send(request, stream=True, auth=auth_to_use, follow_redirects=follow)
         try:
             yield response
@@ -591,13 +591,13 @@ class AsyncHttpClient(BaseHttpClient, metaclass=ABCMeta):
             await response.aclose()
 
     def _apply_decorators(self, func: AsyncSendMethod) -> AsyncSendMethod:
-        """Применить все декораторы к функции."""
+        """Apply all decorators to the function."""
         for decorator in self._config.send_decorators:
             func = cast("AsyncSendDecorator", decorator)(func)
         return func
 
     def _apply_stream_request_decorators(self, func: AsyncStreamRequestMethod) -> AsyncStreamRequestMethod:
-        """Применить все декораторы для stream_request к функции."""
+        """Apply all stream_request decorators to the function."""
         for decorator in self._config.stream_decorators:
             func = cast("AsyncStreamRequestDecorator", decorator)(func)
         return func

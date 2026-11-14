@@ -8,63 +8,63 @@ from structlog.typing import FilteringBoundLogger
 
 from .parser import parse_error, parse_request, parse_response, parse_stream_response
 
-# Bound-логгер structlog: стандартный поверх stdlib либо класс из `make_filtering_bound_logger`.
-# Второй не подходит под первый: у него другое написание методов проверки уровня.
+# Structlog bound logger: stdlib-based or a class from `make_filtering_bound_logger`.
+# The second does not fit the first: its level check methods have different names.
 StructLogger = BoundLogger | FilteringBoundLogger
 
-# Событие отправленного запроса.
+# Sent request event.
 REQUEST_EVENT = "grpc request sent"
 
-# Событие полученного ответа: и успешного, и с ошибкой, и завершения потока.
+# Received response event: success, failure, or stream completion.
 RESPONSE_EVENT = "grpc response received"
 
-# Уровни, которыми умеет писать structlog.
+# Levels supported by structlog.
 #
-# stdlib-логгер принимает любое число, а bound-логгер structlog выбирает метод по имени уровня,
-# и имена есть только у этих пяти. Промежуточное значение вроде 15 stdlib-логгер записал бы,
-# а structlog роняет с `KeyError`.
+# A stdlib logger accepts any number, while a structlog bound logger selects a method by level name,
+# and only these five levels have names. A stdlib logger would write an intermediate value such as 15,
+# but structlog raises `KeyError`.
 SUPPORTED_LOG_LEVELS = (logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR, logging.CRITICAL)
 
 
 class StructlogSink:
-    """Приемник, пишущий записи о gRPC вызовах в structlog отдельными полями."""
+    """Sink that writes gRPC call records to structlog as separate fields."""
 
     def __init__(self, logger: StructLogger, log_format: LogFormat | None = None) -> None:
-        """Инициализатор.
+        """Initialize the object.
 
-        :param logger: структурированный логгер, в который пишутся запросы и ответы
-        :param log_format: правила оформления лога, по умолчанию из общей конфигурации
+        :param logger: structured logger used for requests and responses
+        :param log_format: log formatting rules, defaults to shared configuration
         """
         self._logger = logger
         self._format = log_format if log_format is not None else LogFormat.from_config()
 
     def is_enabled_for(self, level: int) -> bool:
-        """Проверить, что логгер пишет записи указанного уровня.
+        """Check whether the logger writes records at the specified level.
 
-        Проверка может не ответить: класс bound-логгера задает пользователь в `structlog.configure`,
-        и, например, `structlog.stdlib.BoundLogger` перекладывает вопрос на логгер под собой,
-        а у `structlog.PrintLogger` отвечать на него нечем. Такой логгер считается пишущим:
-        молча потерять записи хуже, чем собрать лишнюю, а ронять из-за вопроса об уровне сам
-        вызов нельзя тем более.
+        The check may fail: users set the bound logger class in `structlog.configure`,
+        and `structlog.stdlib.BoundLogger`, for example, delegates the query to its underlying logger,
+        while `structlog.PrintLogger` cannot answer it. Treat such a logger as enabled:
+        silently losing records is worse than building an extra one, and breaking the
+        call itself over this query is even worse.
 
-        :param level: уровень записи
-        :returns: True, если запись такого уровня дойдет до вывода
+        :param level: record level
+        :returns: True if a record at this level reaches output
         """
         try:
             return self._logger.is_enabled_for(level)
-        except Exception:  # noqa: BLE001 — нерабочая проверка не должна ломать вызов
+        except Exception:  # noqa: BLE001 - a broken check must not break the call
             return True
 
     def write_request(self, level: int, record: RequestRecord) -> None:
-        """Записать отправленный запрос."""
+        """Log a sent request."""
         self._write(level, REQUEST_EVENT, parse_request(record, self._format))
 
     def write_response(self, level: int, record: ResponseRecord) -> None:
-        """Записать завершившийся вызов."""
+        """Log a completed call."""
         self._write(level, RESPONSE_EVENT, self._response_properties(record))
 
     def _response_properties(self, record: ResponseRecord) -> dict[str, object]:
-        """Собрать поля лога, подходящие исходу вызова."""
+        """Build log fields suitable for the call outcome."""
         if record.status_code is not grpc.StatusCode.OK:
             return parse_error(record, self._format)
         if record.messages_count is not None:
@@ -72,20 +72,20 @@ class StructlogSink:
         return parse_response(record, self._format)
 
     def _write(self, level: int, event: str, properties: dict[str, object]) -> None:
-        """Записать событие с полями в структурированный логгер."""
+        """Write an event with fields to the structured logger."""
         self._logger.log(level, event, **properties)
 
 
 def check_supported_level(name: str, level: int) -> None:
-    """Проверить, что structlog умеет писать таким уровнем.
+    """Check whether structlog supports writing at this level.
 
-    Проверка делается на сборке клиента, а не на первом запросе: иначе опечатка в настройке
-    уровня превращается в `KeyError` из недр structlog, и запрос при этом даже не уходит —
-    запись о нем строится до вызова.
+    Validate when building the client rather than on the first request: otherwise a logging
+    level typo becomes a `KeyError` inside structlog before the request is even sent;
+    its record is built before the call.
 
-    :param name: имя параметра, в котором пришел уровень
-    :param level: проверяемый уровень
-    :raises ValueError: если уровень не из `SUPPORTED_LOG_LEVELS`
+    :param name: name of the parameter that supplied the level
+    :param level: level to check
+    :raises ValueError: if the level is not in `SUPPORTED_LOG_LEVELS`
     """
     if level in SUPPORTED_LOG_LEVELS:
         return

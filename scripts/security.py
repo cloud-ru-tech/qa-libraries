@@ -11,11 +11,11 @@ class _Arguments(argparse.Namespace):
 
 
 def count_findings(report: Path) -> int:
-    """Проверить SARIF-отчёт и посчитать находки.
+    """Validate a SARIF report and count findings.
 
-    :param report: файл SARIF, созданный CodeQL
-    :returns: количество находок во всех запусках анализа
-    :raises ValueError: отчёт неполный или имеет неподдерживаемую структуру
+    :param report: SARIF file created by CodeQL.
+    :returns: Number of findings across all analysis runs.
+    :raises ValueError: The report is incomplete or has an unsupported structure.
     """
     document = cast("dict[str, object]", json.loads(report.read_text(encoding="utf-8")))
     if document.get("version") != "2.1.0":
@@ -41,7 +41,7 @@ def count_findings(report: Path) -> int:
 
 
 def main() -> None:
-    """Завершить CI с ошибкой при находках CodeQL или отсутствии отчётов."""
+    """Fail CI if CodeQL reports findings or reports are missing."""
     parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument("directory", type=Path)
     args = parser.parse_args(namespace=_Arguments())

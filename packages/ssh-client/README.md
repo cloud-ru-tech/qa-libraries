@@ -1,68 +1,70 @@
-# SSH-клиент
+# SSH client
 
 [![PyPI](https://img.shields.io/pypi/v/cloudru-qa-ssh-client)](https://pypi.org/project/cloudru-qa-ssh-client/)
 [![Python](https://img.shields.io/pypi/pyversions/cloudru-qa-ssh-client)](https://pypi.org/project/cloudru-qa-ssh-client/)
 [![License](https://img.shields.io/pypi/l/cloudru-qa-ssh-client)](https://github.com/cloud-ru-tech/qa-libraries/blob/master/LICENSE)
 
-Простая библиотека SSH-клиента для автотестов: синхронный и асинхронный клиенты с опциями
-конструктора, декораторами команд и логированием.
+English | [Русский](README.ru.md)
 
-## Установка
+A simple SSH client library for automated tests: synchronous and asynchronous clients with
+constructor options, command decorators, and logging.
 
-Требуется Python 3.13 или новее.
+## Installation
+
+Requires Python 3.13 or later.
 
 ```shell
 pip install cloudru-qa-ssh-client
 ```
 
-Для структурированного логирования через structlog поставьте библиотеку с дополнением `structlog`:
+For structured logging with structlog, install the `structlog` extra:
 
 ```shell
 pip install "cloudru-qa-ssh-client[structlog]"
 ```
 
-Библиотека импортируется как модуль `ssh_client`.
+Import the library as the module `ssh_client`.
 
-## Скиллы для AI-агентов
+## Skills for AI agents
 
-У этой библиотеки собственного скилла пока нет. Если в проекте установлены другие
-библиотеки набора со [скиллами для AI-агентов](https://github.com/cloud-ru-tech/qa-libraries#скиллы-для-ai-агентов),
-выбрать и подключить их можно из корня проекта (нужен [`uv`](https://docs.astral.sh/uv/)):
+This library does not have its own skill yet. If your project uses other
+libraries from this suite with [skills for AI agents](https://github.com/cloud-ru-tech/qa-libraries#skills-for-ai-agents),
+select and enable them from your project root (requires [`uv`](https://docs.astral.sh/uv/)):
 
 ```shell
 uvx library-skills
 ```
 
-Для Claude Code добавьте `--claude`.
+For Claude Code, add `--claude`.
 
-## Основные возможности
+## Main features
 
-1. Подключение к удаленному хосту по паролю и по ключу
-2. Выполнение команд в виде строки или списка фрагментов shell-команды
-3. Настройка таймаута для клиента и для отдельных запросов
-4. Проверка кода завершения через `raise_for_status=True` для отдельных команд
-5. Настройка количества повторных попыток и интервала между ними
-6. Повторные попытки при ошибках подключения и при ошибках выполнения команд
-7. Результаты в виде объекта с полями stdout, stderr и exit code
-8. Логирование запросов и ответов с использованием переданного логгера
-9. Маскирование текста в логах запросов/ответов по строкам/регулярным выражениям
-10. Асинхронная поддержка через asyncssh
-11. Получение данных в реальном времени для интерактивных команд
-12. Прерывание выполнения команд по условию с помощью callback-функций
+1. Connect to remote hosts using a password or a key
+2. Run commands as strings or lists of shell command fragments
+3. Set timeouts for the client and individual requests
+4. Check exit codes with `raise_for_status=True` for individual commands
+5. Configure retry counts and intervals
+6. Retry connection and command failures
+7. Get result objects with stdout, stderr, and exit code fields
+8. Log requests and responses with a supplied logger
+9. Mask request and response logs using strings or regular expressions
+10. Use asynchronous clients through asyncssh
+11. Receive output in real time for interactive commands
+12. Interrupt commands with conditional callbacks
 
-## Пример использования
+## Usage example
 
-### Синхронный клиент
+### Synchronous client
 
 ```python
 import logging
 from ssh_client import SyncSSHClient, options
 
-# Создаем логгер
+# Create a logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# Создаем клиент
+# Create a client
 client = SyncSSHClient(
     "example.com",
     22,
@@ -71,17 +73,17 @@ client = SyncSSHClient(
     options.with_logger(logger),
 )
 
-# Выполняем команду
+# Run a command
 result = client.execute(["ls", "-la"])
 print(f"Exit code: {result.exit_code}")
 print(f"Stdout: {result.stdout}")
 print(f"Stderr: {result.stderr}")
 
-# Закрываем соединение
+# Close the connection
 client.close()
 ```
 
-### Асинхронный клиент
+### Asynchronous client
 
 ```python
 import asyncio
@@ -90,11 +92,11 @@ from ssh_client import AsyncSSHClient, options
 
 
 async def main():
-    # Создаем логгер
+    # Create a logger
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
 
-    # Создаем клиент
+    # Create a client
     client = AsyncSSHClient(
         "example.com",
         22,
@@ -103,51 +105,51 @@ async def main():
         options.with_logger(logger),
     )
 
-    # Выполняем команду
+    # Run a command
     result = await client.execute(["ls", "-la"])
     print(f"Exit code: {result.exit_code}")
     print(f"Stdout: {result.stdout}")
     print(f"Stderr: {result.stderr}")
 
-    # Закрываем соединение
+    # Close the connection
     await client.aclose()
 
 
-# Запускаем асинхронную функцию
+# Run the asynchronous function
 asyncio.run(main())
 ```
 
-## Конфигурирование
+## Configuration
 
-Для конфигурирования клиента используются опции `ClientOption`. Готовые опции находятся в модуле `options`.
+Configure the client using `ClientOption` options. Built-in options are in the `options` module.
 
-По умолчанию оба клиента проверяют ключ сервера по стандартному `~/.ssh/known_hosts`.
-Неизвестный или изменившийся ключ отклоняется. Для отдельного файла используйте
-`options.with_known_hosts("/path/to/known_hosts")`; этот файл должен содержать заранее проверенный ключ сервера.
+By default, both clients verify server keys against the standard `~/.ssh/known_hosts` file.
+Unknown or changed keys are rejected. To use a separate file, set
+`options.with_known_hosts("/path/to/known_hosts")`; the file must contain a previously verified server key.
 
-### Доступные опции:
+### Available options
 
-* `with_request_timeout` - настраивает таймаут для запросов SSH-клиента
-* `with_connection_timeout` - настраивает таймаут для подключения SSH-клиента
-* `with_password` - настраивает имя пользователя и пароль для аутентификации
-* `with_private_key` - настраивает имя пользователя и путь к приватному ключу для аутентификации
-* `with_known_hosts` - выбирает файл доверенных ключей сервера
-* `with_logger` - устанавливает логгер для логирования SSH-запросов и ответов
-* `with_structlogger` - устанавливает структурированный логгер для логирования SSH-запросов и ответов (требуется установка с опцией structlog)
-* `retry_if_connection_fails` - устанавливает повторы на подключения, которые завершились ошибкой
-* `retry_if_command_fails` - устанавливает повторы на команды, которые завершились ошибкой
-* `with_connect_decorators` - добавляет пользовательские декораторы для метода подключения
-* `with_execute_decorators` - добавляет пользовательские декораторы для метода выполнения команд
-* `with_live_execute_callback` - добавляет callback-функции для обработки строк stdout и stderr в реальном времени при выполнении команд
+* `with_request_timeout`: set the SSH request timeout
+* `with_connection_timeout`: set the SSH connection timeout
+* `with_password`: set the username and password for authentication
+* `with_private_key`: set the username and private key path for authentication
+* `with_known_hosts`: choose a trusted server keys file
+* `with_logger`: set a logger for SSH requests and responses
+* `with_structlogger`: set a structured logger for SSH requests and responses (requires the structlog extra)
+* `retry_if_connection_fails`: retry failed connections
+* `retry_if_command_fails`: retry failed commands
+* `with_connect_decorators`: add custom decorators to the connection method
+* `with_execute_decorators`: add custom decorators to the command execution method
+* `with_live_execute_callback`: add callbacks to process stdout and stderr lines in real time
 
-### Пример использования with_live_execute_callback
+### Using with_live_execute_callback
 
 ```python
 import logging
 from ssh_client import SyncSSHClient, options
 
 
-# Определяем callback-функции для обработки вывода в реальном времени
+# Define callbacks for live output
 def stdout_callback(line):
     print(f"STDOUT: {line}")
 
@@ -156,7 +158,7 @@ def stderr_callback(line):
     print(f"STDERR: {line}")
 
 
-# Создаем клиент с callback-функциями
+# Create a client with callbacks
 client = SyncSSHClient(
     "example.com",
     22,
@@ -164,35 +166,35 @@ client = SyncSSHClient(
     options.with_live_execute_callback(stdout_callback, stderr_callback),
 )
 
-# Выполняем команду с живым выводом
+# Run a command with live output
 result = client.execute_live(["ping", "-c", "3", "google.com"])
 
-# Все строки будут напечатаны в реальном времени через callback-функции
+# Callbacks print all lines in real time
 print(f"Exit code: {result.exit_code}")
 
-# Закрываем соединение
+# Close the connection
 client.close()
 ```
 
-### Прерывание выполнения команд с помощью callback-функций
+### Interrupting commands with callbacks
 
-Функционал прерывания позволяет остановить выполнение команды при достижении определенного условия. Это особенно полезно для длительных команд, когда вы хотите остановить их при появлении определенного текста в выводе.
+Interrupt a command when a condition is met. This is useful for long-running commands that should stop when particular text appears in the output.
 
-#### Пример прерывания по stdout (синхронный клиент)
+#### Interrupting on stdout (synchronous client)
 
 ```python
 import logging
 from ssh_client import SyncSSHClient, options
 
 
-# Определяем callback-функцию для прерывания по условию
+# Define a conditional interrupt callback
 def interrupt_on_keyword(line):
-    """Прерываем выполнение, если в строке содержится слово 'ERROR'"""
+    """Interrupt execution if the line contains 'ERROR'."""
     print(f"Processing line: {line}")
     return "ERROR" in line
 
 
-# Создаем клиент
+# Create a client
 client = SyncSSHClient(
     "example.com",
     22,
@@ -200,7 +202,7 @@ client = SyncSSHClient(
 )
 
 try:
-    # Выполняем команду с прерыванием по условию
+    # Run a command with conditional interruption
     result = client.execute_live(
         ["tail", "-f", "/var/log/application.log"], interrupt_stdout_callback=interrupt_on_keyword
     )
@@ -213,7 +215,7 @@ finally:
     client.close()
 ```
 
-#### Пример прерывания по stderr (асинхронный клиент)
+#### Interrupting on stderr (asynchronous client)
 
 ```python
 import asyncio
@@ -221,13 +223,13 @@ from ssh_client import AsyncSSHClient, options
 
 
 async def main():
-    # Определяем callback-функцию для прерывания по stderr
+    # Define a stderr interrupt callback
     def interrupt_on_error(line):
-        """Прерываем выполнение, если в stderr появляется критическая ошибка"""
+        """Interrupt execution if stderr contains a critical error."""
         print(f"Error detected: {line}")
         return "CRITICAL" in line or "FATAL" in line
 
-    # Создаем клиент
+    # Create a client
     client = AsyncSSHClient(
         "example.com",
         22,
@@ -235,7 +237,7 @@ async def main():
     )
 
     try:
-        # Выполняем команду с прерыванием по stderr
+        # Run a command with stderr interruption
         result = await client.execute_live(["some-long-running-command"], interrupt_stderr_callback=interrupt_on_error)
 
         print(f"Command was interrupted with exit code: {result.exit_code}")
@@ -246,25 +248,25 @@ async def main():
         await client.aclose()
 
 
-# Запускаем асинхронную функцию
+# Run the asynchronous function
 asyncio.run(main())
 ```
 
-В синхронном `execute_live` stdout и stderr объединены через терминал; отдельные stderr callbacks доступны асинхронному клиенту.
+Synchronous `execute_live` merges stdout and stderr through a terminal. Separate stderr callbacks are available on the asynchronous client.
 
-При срабатывании interrupt callback-функции команда будет прервана, и метод `execute_live` вернет результат с отрицательным кодом выхода (-1 для синхронного клиента, -2 для асинхронного клиента), содержащий все строки, полученные до момента прерывания.
+When an interrupt callback fires, the command stops and `execute_live` returns a result with a negative exit code (-1 for the synchronous client, -2 for the asynchronous client), including all lines received before the interruption.
 
-## Расширенные возможности
+## Advanced features
 
-### Временные опции с with_options
+### Temporary options with with_options
 
-Метод `with_options` позволяет создавать временные клиенты с дополнительными опциями для однократного выполнения команд:
+Use `with_options` to create temporary clients with additional options for a single command:
 
 ```python
 import logging
 from ssh_client import SyncSSHClient, options
 
-# Создаем базовый клиент
+# Create the base client
 client = SyncSSHClient(
     "example.com",
     22,
@@ -273,40 +275,40 @@ client = SyncSSHClient(
     options.with_logger(logging.getLogger(__name__)),
 )
 
-# Используем with_options для выполнения команды с особыми параметрами
+# Use with_options for a command with custom settings
 result = client.with_options(
-    options.with_request_timeout(60),  # Увеличенный таймаут только для этой команды
+    options.with_request_timeout(60),  # Longer timeout for this command only
     options.retry_if_command_fails(
         retries_attempts_number=3, retries_interval_in_seconds=1
-    ),  # Повторные попытки только для этой команды
+    ),  # Retries for this command only
 ).execute(["sleep", "10", "&&", "echo", "Done"])
 
-# Базовый клиент остается без изменений
+# The base client stays unchanged
 client.close()
 ```
 
-### Структурированное логирование
+### Structured logging
 
-Для использования структурированного логирования необходимо установить библиотеку `structlog`:
+Install the `structlog` extra to use structured logging:
 
 ```shell
 pip install "cloudru-qa-ssh-client[structlog]"
 ```
 
-Пример использования структурированного логирования:
+Structured logging example:
 
 ```python
 import structlog
 from ssh_client import SyncSSHClient, options
 
-# Настройка structlog
+# Configure structlog
 structlog.configure(
     processors=[structlog.processors.TimeStamper(fmt="iso"), structlog.processors.JSONRenderer()],
     context_class=dict,
     logger_factory=structlog.PrintLoggerFactory(),
 )
 
-# Создаем клиент с структурированным логгером
+# Create a client with a structured logger
 client = SyncSSHClient(
     "example.com",
     22,
@@ -314,17 +316,17 @@ client = SyncSSHClient(
     options.with_structlogger(structlog.get_logger()),
 )
 
-# Выполняем команду с структурированным логированием
+# Run a command with structured logging
 result = client.execute(["ls", "-la"])
 print(f"Exit code: {result.exit_code}")
 
-# Закрываем соединение
+# Close the connection
 client.close()
 ```
 
-### Механизмы повторных попыток
+### Retries
 
-Клиент поддерживает настройку повторных попыток как для подключения, так и для выполнения команд:
+Configure retries for both connections and command execution:
 
 ```python
 from ssh_client import SyncSSHClient, options
@@ -333,31 +335,31 @@ client = SyncSSHClient(
     "unstable-server.com",
     22,
     options.with_password("user", "password"),
-    # Повторные попытки подключения
+    # Connection retries
     options.retry_if_connection_fails(
         retries_attempts_number=5, retries_interval_in_seconds=10.0, reraise_exception=True
     ),
-    # Повторные попытки выполнения команд
+    # Command retries
     options.retry_if_command_fails(retries_attempts_number=3, retries_interval_in_seconds=5.0, reraise_exception=True),
 )
 
-# Выполняем команду с повторными попытками
+# Run a command with retries
 result = client.execute(["some-unstable-command"])
 
-# Закрываем соединение
+# Close the connection
 client.close()
 ```
 
-### Маскирование данных в логах
+### Masking log data
 
-Для защиты конфиденциальных данных в логах можно использовать маскирование:
+Mask confidential data in logs:
 
 ```python
 import logging
 import re
 from ssh_client import SyncSSHClient, options
 
-# Настройка логгера
+# Configure a logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -365,28 +367,28 @@ client = SyncSSHClient(
     "example.com",
     22,
     options.with_password("user", "password"),
-    # Маскируем конфиденциальные данные в логах
+    # Mask confidential log data
     options.with_logger(
         logger,
         mask_patterns=[
-            "password",  # Простая строка для замены
-            "secret",  # Еще одна строка для замены
-            re.compile(r"token=\w+"),  # Регулярное выражение
+            "password",  # String to replace
+            "secret",  # Another string to replace
+            re.compile(r"token=\w+"),  # Regular expression
         ],
     ),
 )
 
-# Выполняем команду с конфиденциальными данными
-# В логах эти данные будут замаскированы
+# Run a command with confidential data
+# The data is masked in logs
 result = client.execute(["echo", "password=secret123", "token=abc123def456"])
 
-# Закрываем соединение
+# Close the connection
 client.close()
 ```
 
-### Пользовательские декораторы
+### Custom decorators
 
-Можно добавлять пользовательские декораторы для методов подключения и выполнения команд:
+Add custom decorators to connection and command execution methods:
 
 ```python
 import time
@@ -394,7 +396,7 @@ from functools import wraps
 from ssh_client import SyncSSHClient, options
 
 
-# Пример декоратора для измерения времени выполнения
+# Decorator to measure execution time
 def timing_decorator(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -407,7 +409,7 @@ def timing_decorator(func):
     return wrapper
 
 
-# Пример декоратора для обработки ошибок
+# Decorator to handle errors
 def error_handler_decorator(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -415,7 +417,7 @@ def error_handler_decorator(func):
             return func(*args, **kwargs)
         except Exception as e:
             print(f"Error in {func.__name__}: {e}")
-            # Можно повторить попытку или выполнить другие действия
+            # Retry or take another action here
             raise
 
     return wrapper
@@ -425,42 +427,42 @@ client = SyncSSHClient(
     "example.com",
     22,
     options.with_password("user", "password"),
-    # Добавляем декораторы для подключения
+    # Add connection decorators
     options.with_connect_decorators(timing_decorator, error_handler_decorator),
-    # Добавляем декораторы для выполнения команд
+    # Add command execution decorators
     options.with_execute_decorators(timing_decorator),
 )
 
-# Выполняем команду с декораторами
+# Run a command with decorators
 result = client.execute(["ls", "-la"])
 
-# Закрываем соединение
+# Close the connection
 client.close()
 ```
 
-## Разработка
+## Development
 
-Библиотека развивается в монорепозитории [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries)
-вместе с остальными библиотеками `cloudru-qa-*`. Нужны [`uv`](https://docs.astral.sh/uv/), GNU Make
-и [`checkmake`](https://github.com/checkmake/checkmake),
-команды запускаются из корня репозитория:
+This library is developed in the [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries) monorepo
+alongside the other `cloudru-qa-*` libraries. You need [`uv`](https://docs.astral.sh/uv/), GNU Make
+and [`checkmake`](https://github.com/checkmake/checkmake);
+run the commands from the repository root:
 
 ```shell
-make sync                   # зависимости всех библиотек строго по uv.lock
-make test-ssh-client        # тесты этой библиотеки
-make typecheck-ssh-client   # mypy для этой библиотеки
-make check                  # форматирование, ruff, mypy и тесты всего набора
+make sync                   # dependencies for all libraries from uv.lock
+make test-ssh-client        # tests for this library
+make typecheck-ssh-client   # mypy for this library
+make check                  # formatting, Ruff, mypy, and tests for the whole suite
 ```
 
-Тестам нужен запущенный Docker: SSH-сервер поднимается в контейнере автоматически. Ключи сервера
-и клиента генерируются на каждый прогон и в репозитории не хранятся.
+Tests require Docker to be running: the SSH server starts in a container automatically. Server
+and client keys are generated for each run and are not stored in the repository.
 
-Тесты прогоняются на Python 3.13 и 3.14. Окружение для другой версии создаётся отдельно:
+Tests run on Python 3.13 and 3.14. Each version uses a separate environment:
 `make sync test-ssh-client PYTHON_VERSION=3.14`.
 
-Релиз выпускается git-тегом `ssh-client/v<версия>`. Версия в теге должна совпадать с версией
-в `packages/ssh-client/pyproject.toml`.
+Create a release with the Git tag `ssh-client/v<version>`. The tag version must match the version
+in `packages/ssh-client/pyproject.toml`.
 
-## Лицензия
+## License
 
 [Apache-2.0](https://github.com/cloud-ru-tech/qa-libraries/blob/master/LICENSE)

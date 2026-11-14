@@ -1,7 +1,7 @@
-"""Повтор допустим только тогда, когда тело запроса можно отправить заново.
+"""Allow retries only when the request body can be resent.
 
-Проверки идут через ScriptedTransport: httpx.MockTransport буферизует тело запроса
-и скрывает как раз ту проблему, ради которой эти тесты написаны.
+Tests use ScriptedTransport: httpx.MockTransport buffers the request body
+and hides the very problem these tests cover.
 """
 
 import io
@@ -48,7 +48,7 @@ class BodyOptions(TypedDict, total=False):
 
 
 def send_body(transport: ScriptedTransport, **content: Unpack[BodyOptions]) -> httpx.Response:
-    """Отправить запрос с указанным телом. Исключения намеренно не перехватываются."""
+    """Send a request with the supplied body. Deliberately leave exceptions uncaught."""
     with attach_transport(HttpClient("https://uploads.test", with_retries_failed_requests()), transport) as client:
         return client.send(client.client.build_request("POST", "/documents", **content))
 

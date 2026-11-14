@@ -9,7 +9,7 @@ from ._types import is_http_request, is_http_response
 
 
 def log_retry_error_hook(logger: logging.Logger) -> Callable[[RetryCallState], None]:
-    """Подготовить sleep_hook для логирования ошибки при повторной попытке запроса."""
+    """Prepare a sleep_hook to log the error when retrying a request."""
 
     def before_sleep_hook(retry_state: RetryCallState) -> None:
         request = _extract_request(retry_state)
@@ -34,7 +34,7 @@ def log_retry_error_hook(logger: logging.Logger) -> Callable[[RetryCallState], N
 
 
 def _extract_request(retry_state: RetryCallState) -> Request | None:
-    """Найти запрос среди аргументов вызова: он может быть передан и позиционно, и по имени."""
+    """Find the request in positional or keyword call arguments."""
     for candidate in (
         *cast("tuple[object, ...]", retry_state.args),
         cast("dict[str, object]", retry_state.kwargs).get("request"),
@@ -46,7 +46,7 @@ def _extract_request(retry_state: RetryCallState) -> Request | None:
 
 
 def _prepare_retry_error_context(retry_state: RetryCallState) -> tuple[str, str]:
-    """Извлечь из результата попытки информацию об ошибке."""
+    """Extract error information from an attempt result."""
     outcome = retry_state.outcome
     if outcome is None:
         return "UnknownError", "result = None"

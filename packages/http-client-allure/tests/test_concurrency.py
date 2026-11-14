@@ -14,8 +14,8 @@ from .assertions import assert_attachment
 if TYPE_CHECKING:
     from .json_types import JsonValue
 
-# Порядок завершения совпадает с порядком запуска, а не обратен ему: при обратном
-# порядке ошибочная привязка вложений к чужому шагу маскируется и тест ничего не ловит.
+# Completion follows start order rather than reversing it: reverse
+# order hides attachments assigned to the wrong step and the test catches nothing.
 DELAYS = {"/fast": 0.01, "/medium": 0.03, "/slow": 0.05}
 
 

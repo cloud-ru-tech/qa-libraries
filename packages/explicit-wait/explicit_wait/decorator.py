@@ -22,16 +22,16 @@ def wait_for(
     clock: Clock = time.monotonic,
     sleeper: Sleeper = time.sleep,
 ) -> Callable[[Callable[P, T | None]], Callable[P, T]]:
-    """Обернуть функцию в ожидание её первого truthy-результата.
+    """Wrap a function to wait for its first truthy result.
 
-    Декорированная функция вызывается повторно до успеха, поэтому её можно передавать
-    как обычный вызов, не заворачивая каждый раз в лямбду.
+    The decorated function is called repeatedly until success, so it can be used
+    as a regular call without wrapping it in a lambda each time.
 
-    :param options: параметры ожидания; None использует значения по умолчанию.
-    :param clock: источник монотонного времени.
-    :param sleeper: функция сна между попытками.
-    :return: декоратор синхронной функции.
-    :raises InvalidPredicateError: если декорируется корутинная функция.
+    :param options: wait parameters; None uses the defaults.
+    :param clock: monotonic time source.
+    :param sleeper: sleep function between attempts.
+    :return: synchronous function decorator.
+    :raises InvalidPredicateError: if decorating a coroutine function.
     """
 
     def decorator(function: Callable[P, T | None]) -> Callable[P, T]:
@@ -67,12 +67,12 @@ def async_wait_for(
     clock: Clock = time.monotonic,
     sleeper: AsyncSleeper = asyncio.sleep,
 ) -> Callable[[Callable[P, Awaitable[T | None]]], Callable[P, Coroutine[None, None, T]]]:
-    """Обернуть корутинную функцию в ожидание её первого truthy-результата.
+    """Wrap a coroutine function to wait for its first truthy result.
 
-    :param options: параметры ожидания; None использует значения по умолчанию.
-    :param clock: источник монотонного времени.
-    :param sleeper: асинхронная функция сна между попытками.
-    :return: декоратор асинхронной функции.
+    :param options: wait parameters; None uses the defaults.
+    :param clock: monotonic time source.
+    :param sleeper: asynchronous sleep function between attempts.
+    :return: asynchronous function decorator.
     """
 
     def decorator(function: Callable[P, Awaitable[T | None]]) -> Callable[P, Coroutine[None, None, T]]:

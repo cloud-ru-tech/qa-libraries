@@ -8,14 +8,14 @@ E = TypeVar("E", bound=BaseException)
 
 
 def error_from[E: BaseException](action: Callable[[], object], expected: type[E]) -> E:
-    """Выполнить действие и вернуть исключение, которое оно выбросило.
+    """Run an action and return the exception it raises.
 
-    Позволяет тесту закончиться единственной проверкой: сам факт исключения проверяется
-    здесь, а тело теста утверждает что-то одно о его содержимом.
+    Lets a test end with one assertion: the exception is checked here,
+    and the test body checks one aspect of its contents.
 
-    :param action: действие, которое должно завершиться исключением.
-    :param expected: ожидаемый тип исключения.
-    :return: перехваченное исключение.
+    :param action: action expected to raise an exception.
+    :param expected: expected exception type.
+    :return: caught exception.
     """
     with pytest.raises(expected) as raised:
         action()
@@ -23,11 +23,11 @@ def error_from[E: BaseException](action: Callable[[], object], expected: type[E]
 
 
 def async_error_from[E: BaseException](action: Coroutine[None, None, object], expected: type[E]) -> E:
-    """Выполнить корутину и вернуть исключение, которое она выбросила.
+    """Run a coroutine and return the exception it raises.
 
-    :param action: корутина, которая должна завершиться исключением.
-    :param expected: ожидаемый тип исключения.
-    :return: перехваченное исключение.
+    :param action: coroutine expected to raise an exception.
+    :param expected: expected exception type.
+    :return: caught exception.
     """
     with pytest.raises(expected) as raised:
         asyncio.run(action)

@@ -20,15 +20,15 @@ class _Arguments(argparse.Namespace):
 
 
 def local_overrides(packages: Sequence[Package], directory: Path) -> str:
-    """Составить overrides uv, которые подставляют собранные wheel вместо версий из PyPI.
+    """Build uv overrides that use local wheels instead of PyPI releases.
 
-    Без них uv может взять библиотеку-зависимость той же версии из PyPI,
-    и проверка установит старый опубликованный код вместо собранного.
+    Without overrides, uv may fetch a dependency with the same version from PyPI,
+    causing the check to install old published code instead of the local build.
 
-    :param packages: библиотеки workspace
-    :param directory: каталог с собранными wheel
-    :returns: содержимое файла overrides, по строке на библиотеку
-    :raises FileNotFoundError: wheel библиотеки отсутствует
+    :param packages: Workspace libraries.
+    :param directory: Directory containing built wheels.
+    :returns: Overrides file contents, with one line per library.
+    :raises FileNotFoundError: A library wheel is missing.
     """
     lines = []
     for package in packages:
@@ -40,10 +40,10 @@ def local_overrides(packages: Sequence[Package], directory: Path) -> str:
 
 
 def main() -> None:
-    """Пересобрать sdist, проверить скиллы и установить каждый wheel в пустое окружение.
+    """Rebuild sdists, validate skills, and install each wheel in an empty environment.
 
-    Проверка ловит зависимости, которые библиотека использует, но не объявляет:
-    в общем окружении workspace их ставят соседние библиотеки.
+    This catches dependencies that a library uses but does not declare:
+    other libraries install them in the shared workspace environment.
     """
     parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument("directory", type=Path)
@@ -97,12 +97,12 @@ def _environment(uv: str, path: Path) -> str:
 
 
 def _uv(uv: str, *arguments: str) -> None:
-    # export дублирует результат в stdout, а он здесь не нужен.
+    # export also writes to stdout, which is not needed here.
     _run(uv, "--quiet", *arguments, stdout=subprocess.DEVNULL)
 
 
 def _run(*command: str, stdout: int | None = None) -> None:
-    # Команда передаётся списком без shell; аргументы берутся из метаданных workspace.
+    # Arguments come from workspace metadata and are passed without a shell.
     subprocess.run(command, check=True, stdout=stdout)  # noqa: S603
 
 

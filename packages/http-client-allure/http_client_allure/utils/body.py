@@ -12,7 +12,7 @@ JSON_CONTENT_TYPE = "application/json"
 
 
 def decode(body: bytes) -> str:
-    """Декодировать тело запроса или ответа, не падая на бинарных данных."""
+    """Decode a request or response body without failing on binary data."""
     try:
         return body.decode()
     except UnicodeDecodeError:
@@ -20,9 +20,9 @@ def decode(body: bytes) -> str:
 
 
 class Unparsed:
-    """Признак того, что тело не удалось разобрать как JSON.
+    """Marker for a body that could not be parsed as JSON.
 
-    Отдельный тип, а не None или str: разобранным значением может быть и то, и другое.
+    Use a separate type because both None and str can be valid parsed values.
     """
 
 
@@ -30,18 +30,18 @@ UNPARSED = Unparsed()
 
 
 def parse_json_body(text: str, sanitize_keys: Sequence[str]) -> object:
-    """Разобрать JSON тело и замаскировать в нем секреты.
+    """Parse a JSON body and mask its secrets.
 
-    :param text: текстовое представление тела
-    :param sanitize_keys: ключи в формате glom для маскирования секретов
-    :return: разобранное значение либо UNPARSED, если тело не является JSON
+    :param text: Text representation of the body
+    :param sanitize_keys: Keys in glom format for masking secrets
+    :return: Parsed value, or UNPARSED if the body is not JSON
     """
     try:
         parsed = cast("object", json.loads(text))
     except json.JSONDecodeError:
         return UNPARSED
 
-    # Ветки раздельные: у sanitize TypeVar ограничен значениями dict и list, объединение он не примет.
+    # Keep branches separate: the sanitize TypeVar is constrained to dict and list and cannot accept a union.
     if isinstance(parsed, dict):
         return sanitizer.sanitize(cast("dict[str, object]", parsed), sanitize_keys)
 
@@ -56,12 +56,12 @@ def render_body(
     content_type: str,
     sanitize_keys: Sequence[str],
 ) -> object:
-    """Подготовить тело к сериализации во вложение.
+    """Prepare a body for serialization as an attachment.
 
-    :param body: тело запроса или ответа, None означает непрочитанный поток
-    :param content_type: значение заголовка Content-Type
-    :param sanitize_keys: ключи в формате glom для маскирования секретов
-    :return: разобранный и замаскированный JSON либо текстовое представление тела
+    :param body: Request or response body; None indicates an unread stream
+    :param content_type: Content-Type header value
+    :param sanitize_keys: Keys in glom format for masking secrets
+    :return: Parsed and masked JSON, or a text representation of the body
     """
     if body is None:
         return STREAMED_CONTENT
@@ -72,8 +72,8 @@ def render_body(
 
     parsed = parse_json_body(text, sanitize_keys)
 
-    # Заголовок обещал JSON, но тело им не является - показываем как есть,
-    # ломать запрос из-за оформления отчета нельзя.
+    # The header declared JSON but the body is not JSON; display it unchanged because
+    # report formatting must not break the request.
     return text if parsed is UNPARSED else parsed
 
 
@@ -81,10 +81,10 @@ QueryParams = dict[str, str | list[str]]
 
 
 def sanitize_query_params(request: httpx.Request, sanitize_keys: Sequence[str]) -> QueryParams:
-    """Вернуть query параметры запроса с замаскированными секретами.
+    """Return request query parameters with secrets masked.
 
-    Повторяющиеся ключи собираются в список, иначе отчет расходился бы с тем,
-    что реально ушло на сервер: из `tag=a&tag=b` оставался только `tag=a`.
+    Collect repeated keys into a list to keep the report consistent with
+    what was sent to the server: otherwise `tag=a&tag=b` would become only `tag=a`.
     """
     params: QueryParams = {}
 
@@ -101,7 +101,7 @@ def sanitize_query_params(request: httpx.Request, sanitize_keys: Sequence[str]) 
 
 
 def encode_query_params(params: QueryParams) -> str:
-    """Собрать query строку, не схлопывая повторяющиеся ключи."""
+    """Build a query string while preserving repeated keys."""
     pairs: list[tuple[str, str]] = []
 
     for key, value in params.items():
@@ -110,5 +110,5 @@ def encode_query_params(params: QueryParams) -> str:
         else:
             pairs.append((key, value))
 
-    # safe="*", чтобы маска **** не превратилась в %2A%2A%2A%2A
+    # safe="*" prevents the **** mask from becoming %2A%2A%2A%2A
     return urlencode(pairs, safe="*")

@@ -5,10 +5,10 @@ pytest_plugins = ["pytester"]
 
 @pytest.fixture(autouse=True)
 def isolate_nested_plugins(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Загружать во вложенном pytest только плагины, явно переданные через ``-p``.
+    """Load only plugins explicitly passed through ``-p`` in nested pytest runs.
 
-    В общем окружении workspace установлены все плагины набора, и автозагрузка
-    регистрирует их повторно под другими именами.
+    All plugins in the suite are installed in the shared workspace environment, and autoloading
+    registers them again under different names.
     """
     monkeypatch.setenv("PYTEST_DISABLE_PLUGIN_AUTOLOAD", "1")
 

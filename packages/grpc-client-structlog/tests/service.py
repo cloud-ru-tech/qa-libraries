@@ -14,20 +14,20 @@ SERVER_STREAM_METHOD = f"/{SERVICE_NAME}/ServerStream"
 CLIENT_STREAM_METHOD = f"/{SERVICE_NAME}/ClientStream"
 BIDIRECTIONAL_METHOD = f"/{SERVICE_NAME}/BidirectionalStream"
 
-# Поля, которыми запрос просит сервис ответить ошибкой.
+# Request fields asking the service to return an error.
 ERROR_CODE_FIELD = "error_code"
 ERROR_REASON_FIELD = "error_reason"
 
-# Поле, которым запрос задает длину потока ответных сообщений.
+# Request field specifying the response message stream length.
 STREAM_LENGTH_FIELD = "stream_length"
 
-# Поле, которым запрос просит сервис вернуть метаданные ответа, и ключ, под которым они вернутся.
+# Request field asking the service to return response metadata and the key used for it.
 TRAILING_METADATA_FIELD = "trailing_value"
 TRAILING_METADATA_KEY = "x-trailing"
 
 DEFAULT_STREAM_LENGTH = 3
 
-# Порт, который сервис слушает внутри контейнера.
+# Port the service listens on inside the container.
 CONTAINER_PORT = 50051
 
 
@@ -45,13 +45,13 @@ class _HandlerFactory(Protocol):
 
 
 def start_service(addr: str) -> grpc.Server:
-    """Поднять тестовый gRPC сервис.
+    """Start the test gRPC service.
 
-    Сервис отвечает на все четыре типа вызовов и по просьбе клиента завершает вызов ошибкой,
-    возвращает метаданные ответа и поток заданной длины.
+    The service supports all four call types and can finish with an error at the client's request,
+    returns response metadata and a stream of the specified length.
 
-    :param addr: адрес, который слушать, вида `host:port`
-    :returns: запущенный сервер
+    :param addr: listen address such as `host:port`
+    :returns: running server
     """
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=8))
     server.add_generic_rpc_handlers((_build_handlers(),))
@@ -61,10 +61,10 @@ def start_service(addr: str) -> grpc.Server:
 
 
 def build_message(**fields: StructValue) -> Struct:
-    """Собрать сообщение тестового сервиса.
+    """Build a test service message.
 
-    :param fields: поля сообщения
-    :returns: сообщение с указанными полями
+    :param fields: message fields
+    :returns: message with the specified fields
     """
     message = Struct()
     message.update(fields)
@@ -72,20 +72,20 @@ def build_message(**fields: StructValue) -> Struct:
 
 
 def build_failing_message(status_code: grpc.StatusCode, reason: str) -> Struct:
-    """Собрать сообщение, на которое сервис ответит ошибкой.
+    """Build a message that makes the service return an error.
 
-    :param status_code: код статуса, которым сервис завершит вызов
-    :param reason: текст ошибки
-    :returns: сообщение с просьбой ответить ошибкой
+    :param status_code: status code the service will use to finish the call
+    :param reason: error text
+    :returns: message requesting an error response
     """
     return build_message(**{ERROR_CODE_FIELD: status_code.name, ERROR_REASON_FIELD: reason})
 
 
 def build_message_with_trailing_metadata(value: str) -> Struct:
-    """Собрать сообщение, на которое сервис ответит метаданными.
+    """Build a message that makes the service return metadata.
 
-    :param value: значение, которое сервис вернет ключом `TRAILING_METADATA_KEY`
-    :returns: сообщение с просьбой вернуть метаданные ответа
+    :param value: value the service will return under `TRAILING_METADATA_KEY`
+    :returns: message requesting response metadata
     """
     return build_message(**{TRAILING_METADATA_FIELD: value})
 
@@ -130,14 +130,14 @@ def _stream_back(request: Struct, context: grpc.ServicerContext) -> Iterator[Str
 
 def _count_received(
     request_iterator: Iterator[Struct],
-    context: grpc.ServicerContext,  # noqa: ARG001 — сигнатуру обработчика задает grpcio
+    context: grpc.ServicerContext,  # noqa: ARG001 - grpcio defines the handler signature
 ) -> Struct:
     return build_message(received=sum(1 for _ in request_iterator))
 
 
 def _echo_each(
     request_iterator: Iterator[Struct],
-    context: grpc.ServicerContext,  # noqa: ARG001 — сигнатуру обработчика задает grpcio
+    context: grpc.ServicerContext,  # noqa: ARG001 - grpcio defines the handler signature
 ) -> Iterator[Struct]:
     yield from request_iterator
 

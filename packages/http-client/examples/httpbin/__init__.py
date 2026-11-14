@@ -1,6 +1,6 @@
-"""Демо-клиенты http_client к локальному httpbin.
+"""http_client demo clients for local httpbin.
 
-Запуск: docker compose up -d && uv run python -m examples.httpbin
+Run: docker compose up -d && uv run python -m examples.httpbin
 """
 
 from .async_client import AsyncEchoApiClient, AsyncHttpbinClient, build_async_echo_client, build_async_httpbin_client

@@ -4,7 +4,7 @@ from syrupy.extensions.single_file import SingleFileSnapshotExtension, WriteMode
 
 
 class TextSnapshotExtension(SingleFileSnapshotExtension):
-    """Расширение для создания снепшотов в виде отдельных текстовых файлов."""
+    """Extension for creating snapshots as separate text files."""
 
     _file_extension = "txt"
     _write_mode = WriteMode.TEXT
@@ -12,5 +12,5 @@ class TextSnapshotExtension(SingleFileSnapshotExtension):
 
 @pytest.fixture()
 def snapshot(snapshot: SnapshotAssertion) -> SnapshotAssertion:
-    """Фикстура для использования текстовых снепшотов."""
+    """Fixture for text snapshots."""
     return snapshot.use_extension(TextSnapshotExtension)

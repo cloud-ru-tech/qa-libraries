@@ -1,6 +1,6 @@
-"""Прогон всех демо-сценариев.
+"""Run all demo scenarios.
 
-Запуск:
+Run:
     docker compose up -d
     uv run python -m examples.httpbin
 """
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 class SecretPayload(TypedDict):
-    """Структура демонстрационного JSON с маскируемыми полями."""
+    """Demo JSON structure with fields to mask."""
 
     user: dict[str, str]
     items: list[dict[str, str]]
@@ -35,13 +35,13 @@ class SecretPayload(TypedDict):
 
 
 class HeaderEcho(TypedDict):
-    """Заголовки, возвращаемые локальным httpbin."""
+    """Headers returned by local httpbin."""
 
     headers: dict[str, str]
 
 
 class JsonEcho(TypedDict):
-    """JSON-эхо, возвращаемое локальным httpbin."""
+    """JSON echo returned by local httpbin."""
 
     json: SecretPayload
 
@@ -54,13 +54,13 @@ SECRET_PAYLOAD: SecretPayload = {
 
 
 def banner(log: Logger, title: str) -> None:
-    """Отбить сценарий в логе."""
+    """Mark a scenario in the log."""
     log.info("%s", "─" * 100)
     log.info("СЦЕНАРИЙ: %s", title)
 
 
 def scenario_crud(client: HttpbinClient, log: Logger) -> None:
-    """Базовые методы: у каждого свой эндпоинт-метод клиента."""
+    """Demonstrate basic methods, each with its own client endpoint method."""
     banner(log, "базовые методы GET/POST/PUT/PATCH/DELETE")
     client.get_echo(page="1", size="20")
     client.post_json({"name": "заказ", "amount": 100})
@@ -78,7 +78,7 @@ def scenario_crud(client: HttpbinClient, log: Logger) -> None:
 
 
 def scenario_masking(client: HttpbinClient, log: Logger) -> None:
-    """Маскирование секретов в логах запроса и ответа."""
+    """Mask secrets in request and response logs."""
     banner(log, "маскирование секретов")
     log.info("В теле ниже password и token заменены на ****, а comment виден целиком")
     response = client.post_json(SECRET_PAYLOAD)
@@ -90,7 +90,7 @@ def scenario_masking(client: HttpbinClient, log: Logger) -> None:
 
 
 def scenario_auth(client: HttpbinClient, log: Logger) -> None:
-    """Basic-авторизация клиента и её отключение на один вызов."""
+    """Client Basic authentication and disabling it for one call."""
     banner(log, "авторизация и anonymous=True")
     authorized = client.basic_auth(settings.DEMO_USER, settings.DEMO_PASSWORD)
     log.info("С авторизацией клиента: %s", authorized.status_code)
@@ -104,7 +104,7 @@ def scenario_auth(client: HttpbinClient, log: Logger) -> None:
 
 
 def scenario_redirects(client: HttpbinClient, log: Logger) -> None:
-    """Редиректы: клиент их не следует, вызов может это перекрыть."""
+    """Redirects: the client does not follow them, but a call can override this."""
     banner(log, "редиректы")
     kept = client.redirect(3)
     log.info("Без опции with_follow_redirects клиент отдаёт сам редирект: %s", kept.status_code)
@@ -120,7 +120,7 @@ def scenario_redirects(client: HttpbinClient, log: Logger) -> None:
 
 
 def scenario_timeout(client: HttpbinClient, log: Logger) -> None:
-    """Таймаут на вызов перекрывает таймаут клиента."""
+    """Demonstrate a per-call timeout overriding the client timeout."""
     banner(log, "таймаут")
     fast = client.delay(1, timeout_seconds=5.0)
     log.info("Задержка 1 с при таймауте 5 с: %s", fast.status_code)
@@ -132,7 +132,7 @@ def scenario_timeout(client: HttpbinClient, log: Logger) -> None:
 
 
 def scenario_errors(client: HttpbinClient, log: Logger) -> None:
-    """Ошибочный статус: хук предупреждает, raise_for_status поднимает исключение."""
+    """Error status: the hook warns and raise_for_status raises an exception."""
     banner(log, "ошибка сервера")
     response = client.status(500)
     try:
@@ -142,14 +142,14 @@ def scenario_errors(client: HttpbinClient, log: Logger) -> None:
 
 
 def scenario_binary(client: HttpbinClient, log: Logger) -> None:
-    """Бинарное тело: логгер сам решает, писать текст или размер."""
+    """Binary body: the logger chooses between logging text and size."""
     banner(log, "бинарный ответ")
     response = client.get_bytes(512)
     log.info("Получено %s байт; в логе тело показано как binary content", len(response.content))
 
 
 def scenario_streaming(client: HttpbinClient, log: Logger) -> None:
-    """Стриминг: тело читается внутри контекстного менеджера."""
+    """Streaming: read the body inside the context manager."""
     banner(log, "стриминг")
     log.info("В логе ответа тело помечено как <streamed content>: на момент хука оно ещё не прочитано")
 
@@ -166,7 +166,7 @@ def scenario_streaming(client: HttpbinClient, log: Logger) -> None:
 
 
 def scenario_url_suffix(log: Logger) -> None:
-    """Префикс пути через DEFAULT_URL_SUFFIX и endpoint()."""
+    """Path prefix using DEFAULT_URL_SUFFIX and endpoint()."""
     banner(log, "префикс пути")
     with build_echo_client() as client:
         response = client.ping()
@@ -179,7 +179,7 @@ def scenario_url_suffix(log: Logger) -> None:
 
 
 def run_sync_demo(metrics: TransportMetrics, log: Logger) -> None:
-    """Прогнать сценарии синхронного клиента."""
+    """Run the synchronous client scenarios."""
     banner(log, "СИНХРОННЫЙ КЛИЕНТ")
     with build_httpbin_client(metrics) as client:
         scenario_crud(client, log)
@@ -194,7 +194,7 @@ def run_sync_demo(metrics: TransportMetrics, log: Logger) -> None:
 
 
 async def async_scenario_crud(client: AsyncHttpbinClient, log: Logger) -> None:
-    """Те же эндпоинты, только через await."""
+    """Access the same endpoints using await."""
     banner(log, "асинхронно: базовые методы")
     await client.get_echo(page="1", size="20")
     await client.post_json(SECRET_PAYLOAD)
@@ -206,7 +206,7 @@ async def async_scenario_crud(client: AsyncHttpbinClient, log: Logger) -> None:
 
 
 async def async_scenario_auth(client: AsyncHttpbinClient, log: Logger) -> None:
-    """Авторизация и её отключение в асинхронном клиенте."""
+    """Asynchronous client authentication and disabling it."""
     banner(log, "асинхронно: авторизация")
     authorized = await client.basic_auth(settings.DEMO_USER, settings.DEMO_PASSWORD)
     anonymous = await client.basic_auth(settings.DEMO_USER, settings.DEMO_PASSWORD, anonymous=True)
@@ -214,7 +214,7 @@ async def async_scenario_auth(client: AsyncHttpbinClient, log: Logger) -> None:
 
 
 async def async_scenario_errors(client: AsyncHttpbinClient, log: Logger) -> None:
-    """Таймаут и ошибочный статус в асинхронном клиенте."""
+    """Timeout and error status in the asynchronous client."""
     banner(log, "асинхронно: таймаут и ошибка сервера")
     try:
         await client.delay(3, timeout_seconds=1.0)
@@ -226,7 +226,7 @@ async def async_scenario_errors(client: AsyncHttpbinClient, log: Logger) -> None
 
 
 async def async_scenario_streaming(client: AsyncHttpbinClient, log: Logger) -> None:
-    """Стриминг в асинхронном клиенте: async with без await на самом методе."""
+    """Asynchronous client streaming: use async with without awaiting the method itself."""
     banner(log, "асинхронно: стриминг")
     async with client.stream_lines(3) as response:
         response.raise_for_status()
@@ -241,7 +241,7 @@ async def async_scenario_streaming(client: AsyncHttpbinClient, log: Logger) -> N
 
 
 async def async_scenario_concurrency(client: AsyncHttpbinClient, log: Logger) -> None:
-    """То, чего нет у синхронного клиента: запросы идут одновременно."""
+    """Demonstrate concurrent requests, unavailable in the synchronous client."""
     banner(log, "асинхронно: пять запросов параллельно")
     started_at = perf_counter()
     responses = await asyncio.gather(*(client.delay(1, timeout_seconds=5.0) for _ in range(5)))
@@ -253,7 +253,7 @@ async def async_scenario_concurrency(client: AsyncHttpbinClient, log: Logger) ->
 
 
 async def async_scenario_url_suffix(log: Logger) -> None:
-    """Префикс пути в асинхронном клиенте."""
+    """Path prefix in the asynchronous client."""
     banner(log, "асинхронно: префикс пути")
     async with build_async_echo_client() as client:
         response = await client.ping()
@@ -261,7 +261,7 @@ async def async_scenario_url_suffix(log: Logger) -> None:
 
 
 async def run_async_demo(metrics: TransportMetrics, log: Logger) -> None:
-    """Прогнать сценарии асинхронного клиента."""
+    """Run the asynchronous client scenarios."""
     banner(log, "АСИНХРОННЫЙ КЛИЕНТ")
     async with build_async_httpbin_client(metrics) as client:
         await async_scenario_crud(client, log)
@@ -273,7 +273,7 @@ async def run_async_demo(metrics: TransportMetrics, log: Logger) -> None:
 
 
 def main() -> None:
-    """Поднять логирование и прогнать оба клиента."""
+    """Set up logging and run both clients."""
     setup_logging()
     log = demo_logger()
 

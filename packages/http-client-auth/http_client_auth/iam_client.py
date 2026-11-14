@@ -10,22 +10,22 @@ from .exceptions import IAM_AuthError, IAM_InvalidJsonResponseError
 PUBLIC_API_AUTHORIZE_ROUTE = "/api/v1/auth/token"
 OPEN_ID_AUTHORIZE_ROUTE = "/auth/system/openid/token"
 
-# Эти поля IAM не входят в маскирование http-client по умолчанию.
+# These IAM fields are not masked by http-client by default.
 IAM_SANITIZE_KEYS = ("client_secret", "id_token")
 
 
 @dataclass(frozen=True, slots=True)
 class AuthData:
-    """Данные авторизации, полученные от сервиса IAM."""
+    """Authentication data received from IAM."""
 
     access_token: str
     expires_in: int
     id_token: str | None = None
 
     def __post_init__(self) -> None:
-        """Проверить типы полей ответа IAM.
+        """Validate IAM response field types.
 
-        :raises TypeError: если поля ответа имеют неверный тип.
+        :raises TypeError: If response fields have an invalid type.
         """
         _validate_value_type(self.access_token, str, "access_token")
         _validate_value_type(self.expires_in, int, "expires_in")
@@ -34,11 +34,11 @@ class AuthData:
 
     @classmethod
     def from_dict(cls, data: object) -> Self:
-        """Собрать данные авторизации из тела ответа IAM, отбросив незнакомые поля.
+        """Build authentication data from the IAM response body, discarding unknown fields.
 
-        :param data: разобранное тело ответа
-        :return: данные авторизации
-        :raises TypeError: если тело не является объектом, в нем нет обязательных полей или их типы неверны
+        :param data: Parsed response body
+        :return: Authentication credentials
+        :raises TypeError: If the body is not an object, lacks required fields, or contains invalid field types
         """
         if not isinstance(data, dict):
             message = f"Тело ответа должно быть JSON-объектом, получен {type(data).__name__}"
@@ -77,12 +77,12 @@ def _openid_payload(key_id: str, key_secret: str) -> dict[str, str]:
 
 
 def _parse_auth_data(response: httpx.Response) -> AuthData:
-    """Разобрать ответ сервиса IAM.
+    """Parse an IAM response.
 
-    :param response: ответ сервиса IAM
-    :raises IAM_AuthError: если код ответа не 200
-    :raises IAM_InvalidJsonResponseError: если тело ответа не разбирается в данные авторизации
-    :return: данные авторизации
+    :param response: IAM response
+    :raises IAM_AuthError: If the response status is not 200
+    :raises IAM_InvalidJsonResponseError: If the response body cannot be parsed as authentication data
+    :return: Authentication credentials
     """
     if response.status_code != codes.OK:
         raise IAM_AuthError(response)
@@ -94,64 +94,64 @@ def _parse_auth_data(response: httpx.Response) -> AuthData:
 
 
 class IamHttpClient(HttpClient):
-    """HTTP-клиент IAM, использующий публичное API для авторизации."""
+    """IAM HTTP client using the public API for authentication."""
 
     def authorize(self, key_id: str, key_secret: str) -> AuthData:
-        """Авторизоваться и получить токен доступа к API.
+        """Authenticate and obtain an API access token.
 
-        :param key_id: идентификатор ключа
-        :param key_secret: секретный ключ
-        :raises IAM_AuthError: если сервис IAM ответил неуспешным кодом
-        :raises IAM_InvalidJsonResponseError: если тело ответа не разбирается в данные авторизации
-        :return: данные авторизации
+        :param key_id: Key ID
+        :param key_secret: Secret key
+        :raises IAM_AuthError: If IAM returns an unsuccessful status
+        :raises IAM_InvalidJsonResponseError: If the response body cannot be parsed as authentication data
+        :return: Authentication credentials
         """
         response = self.post(PUBLIC_API_AUTHORIZE_ROUTE, json=_public_api_payload(key_id, key_secret))
         return _parse_auth_data(response)
 
 
 class IamAsyncHttpClient(AsyncHttpClient):
-    """Асинхронный HTTP-клиент IAM, использующий публичное API для авторизации."""
+    """Asynchronous IAM HTTP client using the public API for authentication."""
 
     async def authorize(self, key_id: str, key_secret: str) -> AuthData:
-        """Авторизоваться и получить токен доступа к API.
+        """Authenticate and obtain an API access token.
 
-        :param key_id: идентификатор ключа
-        :param key_secret: секретный ключ
-        :raises IAM_AuthError: если сервис IAM ответил неуспешным кодом
-        :raises IAM_InvalidJsonResponseError: если тело ответа не разбирается в данные авторизации
-        :return: данные авторизации
+        :param key_id: Key ID
+        :param key_secret: Secret key
+        :raises IAM_AuthError: If IAM returns an unsuccessful status
+        :raises IAM_InvalidJsonResponseError: If the response body cannot be parsed as authentication data
+        :return: Authentication credentials
         """
         response = await self.post(PUBLIC_API_AUTHORIZE_ROUTE, json=_public_api_payload(key_id, key_secret))
         return _parse_auth_data(response)
 
 
 class IamOpenIdHttpClient(HttpClient):
-    """HTTP-клиент IAM, использующий OpenID API для авторизации."""
+    """IAM HTTP client using the OpenID API for authentication."""
 
     def authorize(self, key_id: str, key_secret: str) -> AuthData:
-        """Авторизоваться и получить токен доступа к API.
+        """Authenticate and obtain an API access token.
 
-        :param key_id: идентификатор ключа
-        :param key_secret: секретный ключ
-        :raises IAM_AuthError: если сервис IAM ответил неуспешным кодом
-        :raises IAM_InvalidJsonResponseError: если тело ответа не разбирается в данные авторизации
-        :return: данные авторизации
+        :param key_id: Key ID
+        :param key_secret: Secret key
+        :raises IAM_AuthError: If IAM returns an unsuccessful status
+        :raises IAM_InvalidJsonResponseError: If the response body cannot be parsed as authentication data
+        :return: Authentication credentials
         """
         response = self.post(OPEN_ID_AUTHORIZE_ROUTE, json=_openid_payload(key_id, key_secret))
         return _parse_auth_data(response)
 
 
 class IamOpenIdAsyncHttpClient(AsyncHttpClient):
-    """Асинхронный HTTP-клиент IAM, использующий OpenID API для авторизации."""
+    """Asynchronous IAM HTTP client using the OpenID API for authentication."""
 
     async def authorize(self, key_id: str, key_secret: str) -> AuthData:
-        """Авторизоваться и получить токен доступа к API.
+        """Authenticate and obtain an API access token.
 
-        :param key_id: идентификатор ключа
-        :param key_secret: секретный ключ
-        :raises IAM_AuthError: если сервис IAM ответил неуспешным кодом
-        :raises IAM_InvalidJsonResponseError: если тело ответа не разбирается в данные авторизации
-        :return: данные авторизации
+        :param key_id: Key ID
+        :param key_secret: Secret key
+        :raises IAM_AuthError: If IAM returns an unsuccessful status
+        :raises IAM_InvalidJsonResponseError: If the response body cannot be parsed as authentication data
+        :return: Authentication credentials
         """
         response = await self.post(OPEN_ID_AUTHORIZE_ROUTE, json=_openid_payload(key_id, key_secret))
         return _parse_auth_data(response)

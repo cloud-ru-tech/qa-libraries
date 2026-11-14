@@ -20,14 +20,14 @@ else:
 
 
 class WaitAssertions(_Assertions):
-    """Проверки, специфичные для библиотеки ожиданий."""
+    """Assertions specific to the wait library."""
 
     def yields_delays(self, expected: Sequence[float], *, rng: RandomSource | None = None) -> Self:
-        """Проверить, что стратегия выдаёт ожидаемую последовательность пауз.
+        """Check that a strategy yields the expected pause sequence.
 
-        :param expected: ожидаемые паузы в секундах.
-        :param rng: источник случайности для jitter.
-        :return: тот же объект проверок.
+        :param expected: expected pauses in seconds.
+        :param rng: randomness source for jitter.
+        :return: the same assertion object.
         """
         actual = self._take_delays(len(expected), rng)
         mismatched = [
@@ -40,12 +40,12 @@ class WaitAssertions(_Assertions):
         return self
 
     def yields_delays_between(self, lower: float, upper: float, *, count: int) -> Self:
-        """Проверить, что все паузы попадают в заданный диапазон.
+        """Check that all pauses fall within the given range.
 
-        :param lower: нижняя граница включительно.
-        :param upper: верхняя граница включительно.
-        :param count: сколько пауз проверять.
-        :return: тот же объект проверок.
+        :param lower: inclusive lower bound.
+        :param upper: inclusive upper bound.
+        :param count: number of pauses to check.
+        :return: the same assertion object.
         """
         actual = self._take_delays(count, None)
         outliers = [delay for delay in actual if not lower <= delay <= upper]
@@ -58,9 +58,9 @@ class WaitAssertions(_Assertions):
 
 
 def assert_that(actual: object) -> WaitAssertions:
-    """Начать проверку значения.
+    """Start checking a value.
 
-    :param actual: проверяемое значение.
-    :return: объект проверок.
+    :param actual: Value to check.
+    :return: assertion object.
     """
     return WaitAssertions(actual)

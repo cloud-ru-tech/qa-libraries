@@ -16,27 +16,27 @@ class EverythingStub(Protocol):
     ErrorWithDetails: grpc.UnaryUnaryMultiCallable[Empty, Empty]
 
     def __init__(self, channel: grpc.Channel) -> None:
-        """Создать stub тестового сервиса."""
+        """Create a test service stub."""
 
 
 class ABitOfEverythingServiceClient(GRPCClient[EverythingStub]):
-    """gRPC-клиент сервиса «A Bit Of Everything»."""
+    """gRPC client for the A Bit Of Everything service."""
 
     @property
     def stub_class(self) -> type[EverythingStub]:
         return cast("type[EverythingStub]", boe_pb2_grpc.ABitOfEverythingServiceStub)
 
     def echo(self, msg: StringMessage) -> GRPCResponse[StringMessage]:
-        """Отправить сообщение и получить его же в ответ.
+        """Send a message and receive the same message in response.
 
-        :param msg: сообщение серверу
-        :return: ответ с тем же сообщением
+        :param msg: message to the server
+        :return: response with the same message
         """
         return self.send_unary_unary_request(msg, self.stub.Echo)
 
     def error_with_details(self) -> GRPCResponse[Empty]:
-        """Вызвать метод, отвечающий ошибкой с расширенными деталями.
+        """Call a method that returns an error with rich details.
 
-        :return: ответ с ошибкой и деталями google.rpc.Status
+        :return: response with an error and google.rpc.Status details
         """
         return self.send_unary_unary_request(Empty(), self.stub.ErrorWithDetails)

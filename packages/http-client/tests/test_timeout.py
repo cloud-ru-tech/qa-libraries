@@ -13,10 +13,10 @@ DISABLED_TIMEOUT: TimeoutExtension = {"connect": None, "read": None, "write": No
 
 
 def test_get_uses_client_default_timeout(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """get() без явного timeout использует таймаут клиента, а не отключает его.
+    """get() uses the client timeout when timeout is not specified rather than disabling it.
 
-    Регрессия: дефолт timeout=None затирал таймаут клиента (Timeout(None) в httpx),
-    из-за чего запрос мог висеть бесконечно.
+    Regression: the timeout=None default overwrote the client timeout (Timeout(None) in httpx),
+    allowing the request to hang indefinitely.
     """
     httpx_mock.add_response(url="https://example.com/v2/", method="GET", status_code=200)
     client = new_client("https://example.com")
@@ -27,7 +27,7 @@ def test_get_uses_client_default_timeout(httpx_mock: HTTPXMock, new_client: Sync
 
 
 def test_get_uses_timeout_given_to_call(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Явно заданный для запроса timeout применяется."""
+    """Apply the timeout explicitly specified for the request."""
     httpx_mock.add_response(url="https://example.com/v2/", method="GET", status_code=200)
     client = new_client("https://example.com")
 
@@ -37,7 +37,7 @@ def test_get_uses_timeout_given_to_call(httpx_mock: HTTPXMock, new_client: SyncC
 
 
 def test_get_uses_timeout_given_to_client(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """with_timeout задаёт таймаут, применяемый к запросам без явного timeout."""
+    """with_timeout sets the timeout for requests without an explicit timeout."""
     httpx_mock.add_response(url="https://example.com/v2/", method="GET", status_code=200)
     client = new_client("https://example.com", with_timeout(30))
 
@@ -47,7 +47,7 @@ def test_get_uses_timeout_given_to_client(httpx_mock: HTTPXMock, new_client: Syn
 
 
 def test_explicit_none_disables_timeout(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """Явный timeout=None осознанно отключает таймаут."""
+    """An explicit timeout=None deliberately disables the timeout."""
     httpx_mock.add_response(url="https://example.com/v2/", method="GET", status_code=200)
     client = new_client("https://example.com")
 
@@ -57,7 +57,7 @@ def test_explicit_none_disables_timeout(httpx_mock: HTTPXMock, new_client: SyncC
 
 
 def test_post_uses_client_default_timeout(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """post() без явного timeout также использует таймаут клиента."""
+    """post() also uses the client timeout when timeout is not specified."""
     httpx_mock.add_response(url="https://example.com/v2/", method="POST", status_code=201)
     client = new_client("https://example.com")
 
@@ -67,7 +67,7 @@ def test_post_uses_client_default_timeout(httpx_mock: HTTPXMock, new_client: Syn
 
 
 def test_stream_uses_client_default_timeout(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
-    """stream(method, url) без явного timeout использует таймаут клиента."""
+    """stream(method, url) uses the client timeout when timeout is not specified."""
     httpx_mock.add_response(url="https://example.com/data", method="GET", status_code=200, content=b"x")
     client = new_client("https://example.com")
 
@@ -80,7 +80,7 @@ def test_stream_uses_client_default_timeout(httpx_mock: HTTPXMock, new_client: S
 async def test_async_get_uses_client_default_timeout(
     httpx_mock: HTTPXMock, new_async_client: AsyncClientFactory
 ) -> None:
-    """Асинхронный get() без явного timeout использует таймаут клиента."""
+    """Asynchronous get() uses the client timeout when timeout is not specified."""
     httpx_mock.add_response(url="https://example.com/v2/", method="GET", status_code=200)
     client = new_async_client("https://example.com")
 

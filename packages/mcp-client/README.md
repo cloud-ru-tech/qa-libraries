@@ -1,75 +1,77 @@
-# Клиентская библиотека MCP
+# MCP client library
 
 [![PyPI](https://img.shields.io/pypi/v/cloudru-qa-mcp-client)](https://pypi.org/project/cloudru-qa-mcp-client/)
 [![Python](https://img.shields.io/pypi/pyversions/cloudru-qa-mcp-client)](https://pypi.org/project/cloudru-qa-mcp-client/)
 [![License](https://img.shields.io/pypi/l/cloudru-qa-mcp-client)](https://github.com/cloud-ru-tech/qa-libraries/blob/master/LICENSE)
 
-## Описание
+English | [Русский](README.ru.md)
 
-Клиентская библиотека MCP (Model Context Protocol) предоставляет асинхронный клиент для взаимодействия с серверами, реализующими протокол MCP. Библиотека позволяет подключаться к серверам и выполнять различные операции, такие как вызов инструментов, получение списка доступных инструментов, проверка возможностей сервера и отправка ping-запросов.
+## Overview
 
-## Установка
+The MCP (Model Context Protocol) client library provides an asynchronous client for MCP servers. Connect to servers, call tools, list available tools, check server capabilities, and send ping requests.
 
-Требуется Python 3.13 или новее.
+## Installation
+
+Requires Python 3.13 or later.
 
 ```shell
 pip install cloudru-qa-mcp-client
 ```
 
-Для структурированного логирования через structlog поставьте библиотеку с дополнением `structlog`:
+For structured logging with structlog, install the `structlog` extra:
 
 ```shell
 pip install "cloudru-qa-mcp-client[structlog]"
 ```
 
-Библиотека импортируется как модуль `mcp_client`.
+Import the library as the module `mcp_client`.
 
-## Скиллы для AI-агентов
+## Skills for AI agents
 
-У этой библиотеки собственного скилла пока нет. Если в проекте установлены другие
-библиотеки набора со [скиллами для AI-агентов](https://github.com/cloud-ru-tech/qa-libraries#скиллы-для-ai-агентов),
-выбрать и подключить их можно из корня проекта (нужен [`uv`](https://docs.astral.sh/uv/)):
+This library does not have its own skill yet. If your project uses other
+libraries from this suite with [skills for AI agents](https://github.com/cloud-ru-tech/qa-libraries#skills-for-ai-agents),
+select and enable them from your project root (requires [`uv`](https://docs.astral.sh/uv/)):
 
 ```shell
 uvx library-skills
 ```
 
-Для Claude Code добавьте `--claude`.
+For Claude Code, add `--claude`.
 
-## Основные компоненты
+## Main components
 
 ### BaseAsyncMCPClient
 
-Основной класс клиентской библиотеки MCP. Предоставляет следующие функции:
+The main MCP client class supports:
 
-- Подключение к серверу MCP через обработчики соединений
-- Вызов инструментов сервера с передачей аргументов и метаданных
-- Получение списка доступных инструментов
-- Проверка возможностей сервера
-- Отправка ping-запросов для проверки соединения
-- Настройка различных опций клиента (таймауты, логирование, повторные попытки и т.д.)
+- Connecting to MCP servers through connection handlers
+- Calling server tools with arguments and metadata
+- Listing available tools
+- Checking server capabilities
+- Sending ping requests to check the connection
+- Configuring client options (timeouts, logging, retries, and more)
 
-### Обработчики соединений
+### Connection handlers
 
-Библиотека поддерживает следующие обработчики соединений:
+The library supports the following connection handlers:
 
 #### stdio_connection_handler
 
-Создает обработчик соединения через стандартный ввод/вывод для запуска сервера MCP.
+Create a standard input/output connection handler to start an MCP server.
 
 #### streamable_http_connection_handler
 
-Создает обработчик соединения через HTTP (Streamable HTTP transport) для подключения к удалённому серверу MCP.
+Create an HTTP connection handler (Streamable HTTP transport) for a remote MCP server.
 
-Пример использования:
+Example:
 ```python
 from mcp_client import BaseAsyncMCPClient
 from mcp_client.connection_handlers import streamable_http_connection_handler
 
-# Простое подключение по URL
+# Connect by URL
 connection_handler = streamable_http_connection_handler("http://localhost:8000/mcp")
 
-# Подключение с предварительно сконфигурированным HTTP-клиентом
+# Connect with a preconfigured HTTP client
 from http_client import AsyncHttpClient
 from http_client_retries import with_retries_failed_requests
 from http_client_structlog import with_structlogger
@@ -87,40 +89,40 @@ async with client:
     tools = await client.list_tools()
 ```
 
-### Результаты вызовов
+### Call results
 
 #### ToolCallResponse
 
-Обертка для результата вызова инструмента MCP. Предоставляет свойства для проверки успешности выполнения, получения содержимого ответа, структурированных данных и метаданных.
+A wrapper for MCP tool call results. Provides properties to check success and access response content, structured data, and metadata.
 
-## Опции клиента
+## Client options
 
-Клиентская библиотека предоставляет различные опции для настройки поведения клиента:
+Use these options to configure client behavior:
 
-### Таймауты
+### Timeouts
 
 #### with_read_timeout
 
-Устанавливает таймаут чтения для запросов клиента MCP.
+Set the read timeout for MCP client requests.
 
-Пример использования:
+Example:
 ```python
 from mcp_client import BaseAsyncMCPClient
 from mcp_client.options import with_read_timeout
 
 client = BaseAsyncMCPClient(
     connection_handler,
-    with_read_timeout(30.0),  # Таймаут 30 секунд
+    with_read_timeout(30.0),  # 30-second timeout
 )
 ```
 
-### Логирование
+### Logging
 
 #### with_logger
 
-Настраивает логгер для записи запросов и ответов клиента MCP.
+Configure a logger for MCP client requests and responses.
 
-Пример использования:
+Example:
 ```python
 import logging
 from mcp_client import BaseAsyncMCPClient
@@ -132,9 +134,9 @@ client = BaseAsyncMCPClient(connection_handler, with_logger(logger))
 
 #### with_structlogger
 
-Настраивает структурированное логирование для записи запросов и ответов клиента MCP. Требует установленную библиотеку structlog.
+Configure structured logging for MCP client requests and responses. Requires structlog.
 
-Пример использования:
+Example:
 ```python
 import structlog
 from mcp_client import BaseAsyncMCPClient
@@ -144,13 +146,13 @@ logger = structlog.get_logger()
 client = BaseAsyncMCPClient(connection_handler, with_structlogger(logger))
 ```
 
-### Метаданные
+### Metadata
 
 #### with_default_metadata
 
-Добавляет метаданные по умолчанию ко всем запросам клиента.
+Add default metadata to all client requests.
 
-Пример использования:
+Example:
 ```python
 from mcp_client import BaseAsyncMCPClient
 from mcp_client.options import with_default_metadata
@@ -160,109 +162,109 @@ client = BaseAsyncMCPClient(
 )
 ```
 
-### Автогенерация идентификаторов
+### Automatic identifiers
 
 #### with_autogenerated_request_id
 
-Добавляет новый UUID в метаданные `x-request-id` каждого вызова `call_tool`, `list_tools` и `ping_server`.
+Add a new UUID to the `x-request-id` metadata of each `call_tool`, `list_tools`, and `ping_server` call.
 
 #### with_autogenerated_traceparent
 
-Добавляет новый W3C `traceparent` в метаданные каждого вызова `call_tool`, `list_tools` и `ping_server`.
+Add a new W3C `traceparent` to the metadata of each `call_tool`, `list_tools`, and `ping_server` call.
 
-Явные метаданные вызова имеют приоритет перед значениями по умолчанию, а значения по умолчанию — перед сгенерированными.
-При повторных попытках одного вызова идентификаторы сохраняются. Одну опцию можно использовать для нескольких клиентов: каждый вызов получает собственные значения.
+Explicit call metadata takes priority over defaults, and defaults take priority over generated values.
+Identifiers stay the same across retries of one call. One option can be reused across clients: each call receives its own values.
 
-Инициализация соединения и внутренние запросы SDK не входят в эту автогенерацию. `get_server_capabilities` читает уже полученные возможности сервера и не отправляет отдельный запрос.
+Connection initialization and internal SDK requests are excluded. `get_server_capabilities` reads cached server capabilities without sending a separate request.
 
-Для собственных полей пользовательская `ClientOption` может вызвать `client.add_metadata_provider(provider)`. Функция `provider` возвращает словарь метаданных и выполняется один раз перед отправкой публичного запроса.
+For custom fields, a `ClientOption` can call `client.add_metadata_provider(provider)`. The `provider` function returns a metadata dictionary and runs once before a public request is sent.
 
-### Повторные попытки
+### Retries
 
 #### retry_if_tool_calling_fails
 
-Настраивает повторные попытки при ошибках вызова инструментов.
+Configure retries for tool call errors.
 
-Пример использования:
+Example:
 ```python
 from mcp_client import BaseAsyncMCPClient
 from mcp_client.options import retry_if_tool_calling_fails
 
 client = BaseAsyncMCPClient(
     connection_handler,
-    retry_if_tool_calling_fails(3, 1.0, True),  # 3 попытки, интервал 1 секунда, повторное выбрасывание исключения
+    retry_if_tool_calling_fails(3, 1.0, True),  # 3 attempts, 1-second interval, reraise the exception
 )
 ```
 
 #### retry_if_connection_fails
 
-Настраивает повторные попытки при ошибках подключения.
+Configure retries for connection errors.
 
-Пример использования:
+Example:
 ```python
 from mcp_client import BaseAsyncMCPClient
 from mcp_client.options import retry_if_connection_fails
 
 client = BaseAsyncMCPClient(
     connection_handler,
-    retry_if_connection_fails(5, 2.0, False),  # 5 попыток, интервал 2 секунды, без повторного выбрасывания исключения
+    retry_if_connection_fails(5, 2.0, False),  # 5 attempts, 2-second interval, do not reraise the exception
 )
 ```
 
-## Использование
+## Usage
 
-Пример использования клиентской библиотеки MCP:
+Example of using the MCP client library:
 
 ```python
 from mcp_client import BaseAsyncMCPClient
 from mcp_client.connection_handlers import stdio_connection_handler
 
-# Создание обработчика соединения
+# Create a connection handler
 connection_handler = stdio_connection_handler("path/to/mcp/server", ["--arg1", "value1"], {"ENV_VAR": "value"})
 
-# Создание клиента с опциями
+# Create a client with options
 client = BaseAsyncMCPClient(
     connection_handler, with_read_timeout(30.0), with_default_metadata({"client_version": "1.0.0"})
 )
 
-# Использование клиента
+# Use the client
 async with client:
-    # Получение списка инструментов
+    # List tools
     tools = await client.list_tools()
     print(f"Available tools: {[tool.name for tool in tools.tools]}")
 
-    # Вызов инструмента
+    # Call a tool
     response = await client.call_tool("echo", {"message": "Hello, MCP!"})
     if response.is_success:
         print(f"Tool response: {response.text_content()}")
     else:
         print(f"Tool call failed: {response.content}")
 
-    # Проверка возможностей сервера
+    # Check server capabilities
     capabilities = await client.get_server_capabilities()
     print(f"Server capabilities: {capabilities}")
 
-    # Отправка ping-запроса
+    # Send a ping request
     ping_result = await client.ping_server()
     print(f"Ping result: {ping_result}")
 ```
 
-## Разработка
+## Development
 
-Библиотека развивается в монорепозитории [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries)
-вместе с остальными библиотеками `cloudru-qa-*`. Нужны [`uv`](https://docs.astral.sh/uv/), GNU Make
-и [`checkmake`](https://github.com/checkmake/checkmake),
-команды запускаются из корня репозитория:
+This library is developed in the [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries) monorepo
+alongside the other `cloudru-qa-*` libraries. You need [`uv`](https://docs.astral.sh/uv/), GNU Make
+and [`checkmake`](https://github.com/checkmake/checkmake);
+run the commands from the repository root:
 
 ```shell
-make sync                   # зависимости всех библиотек строго по uv.lock
-make test-mcp-client        # тесты этой библиотеки
-make typecheck-mcp-client   # mypy для этой библиотеки
-make check                  # форматирование, ruff, mypy и тесты всего набора
+make sync                   # dependencies for all libraries from uv.lock
+make test-mcp-client        # tests for this library
+make typecheck-mcp-client   # mypy for this library
+make check                  # formatting, Ruff, mypy, and tests for the whole suite
 ```
 
-Тесты прогоняются на Python 3.13 и 3.14. Окружение для другой версии создаётся отдельно:
+Tests run on Python 3.13 and 3.14. Each version uses a separate environment:
 `make sync test-mcp-client PYTHON_VERSION=3.14`.
 
-Релиз выпускается git-тегом `mcp-client/v<версия>`. Версия в теге должна совпадать с версией
-в `packages/mcp-client/pyproject.toml`.
+Create a release with the Git tag `mcp-client/v<version>`. The tag version must match the version
+in `packages/mcp-client/pyproject.toml`.

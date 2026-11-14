@@ -2,17 +2,17 @@ import grpc
 
 
 class GRPCClientError(Exception):
-    """Базовая ошибка библиотеки."""
+    """Base library error."""
 
 
 class MessageUndefinedError(GRPCClientError):
-    """Ошибка отсутствия ответного сообщения.
+    """Error for a missing response message.
 
-    Возникает при обращении к сообщению ответа, полученного с ошибкой.
+    Raised when accessing the message of a failed response.
     """
 
     def __init__(self, status_code: grpc.StatusCode, details: str) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         super().__init__(
             f"Ответ на gRPC-запрос не содержит сообщения: status_code = {status_code}, details = {details}"
         )
@@ -21,39 +21,39 @@ class MessageUndefinedError(GRPCClientError):
 
 
 class ResponseStatusError(GRPCClientError):
-    """Ошибка неуспешного статуса ответа.
+    """Error for an unsuccessful response status.
 
-    Возникает при вызове `raise_for_status()` у ответа с кодом, отличным от OK.
+    Raised by `raise_for_status()` for a response whose code is not OK.
     """
 
     def __init__(self, status_code: grpc.StatusCode, details: str) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         super().__init__(f"gRPC-запрос завершился с ошибкой: status_code = {status_code}, details = {details}")
         self.status_code = status_code
         self.details = details
 
 
 class StreamConsumedError(GRPCClientError):
-    """Ошибка повторного чтения потока.
+    """Error when reading a stream again.
 
-    Поток gRPC читается только один раз: полученные сообщения не буферизуются.
-    Чтобы обратиться к сообщениям повторно, сохраните их через `collect()`.
+    A gRPC stream can be read only once: received messages are not buffered.
+    To access messages again, save them using `collect()`.
     """
 
     def __init__(self) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         super().__init__("Поток уже прочитан, повторное чтение невозможно: сохраните сообщения через collect()")
 
 
 class StreamNotConsumedError(GRPCClientError):
-    """Ошибка обращения к итоговому статусу непрочитанного потока.
+    """Error when accessing the final status of an unread stream.
 
-    Сервер сообщает итоговый статус и trailing-метаданные только после завершения потока,
-    поэтому до окончания чтения они недоступны.
+    The server reports final status and trailing metadata only after stream completion,
+    so they remain unavailable until reading finishes.
     """
 
     def __init__(self, attribute: str) -> None:
-        """Создать экземпляр с переданными настройками."""
+        """Create an instance with the supplied settings."""
         super().__init__(
             f"Значение «{attribute}» доступно только после завершения потока: дочитайте поток или вызовите collect()"
         )

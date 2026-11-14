@@ -40,7 +40,7 @@ class _AllureContainer(TypedDict):
 
 @dataclass(frozen=True)
 class Run:
-    """Результат вложенного прогона pytest вместе с созданными им артефактами."""
+    """Nested pytest run result with its artifacts."""
 
     result: pytest.RunResult
     root: Path
@@ -60,7 +60,7 @@ def run_pytest(
     allure_dir: Path | None = None,
     in_subprocess: bool = False,
 ) -> Run:
-    """Прогнать вложенный pytest и собрать его артефакты."""
+    """Run nested pytest and collect its artifacts."""
     arguments = [
         "-p",
         "no:logging_context",
@@ -88,44 +88,44 @@ def run_pytest(
 
 
 class LogsAssertions(_PathAssertions):
-    """Утверждения о каталоге с файлами логов прогона."""
+    """Assertions about the run log file directory."""
 
     def is_empty(self) -> Self:
-        """Плагин не создал ни одного файла логов."""
+        """Check that the plugin created no log files."""
         files = self._filenames()
         if files:
             self.error(f"Expected no log files, but found <{files}>")
         return self
 
     def has_log_files(self, *expected: str) -> Self:
-        """В каталоге лежат ровно перечисленные файлы."""
+        """Check that the directory contains exactly the listed files."""
         actual = self._filenames()
         if actual != sorted(expected):
             self.error(f"Expected log files <{sorted(expected)}>, but found <{actual}>")
         return self
 
     def has_log(self, filename: str) -> Self:
-        """Файл логов с таким именем создан."""
+        """Check that a log file with this name was created."""
         if not self._path(filename).exists():
             self.error(f"Expected log file <{filename}>, but found only <{self._filenames()}>")
         return self
 
     def has_log_with_lines(self, filename: str, *expected: str) -> Self:
-        """Файл логов содержит ровно эти строки в этом порядке."""
+        """Check that the log file contains exactly these lines in this order."""
         actual = self._lines(filename)
         if actual != list(expected):
             self.error(f"Expected lines of <{filename}> to be <{list(expected)}>, but were <{actual}>")
         return self
 
     def has_log_containing(self, filename: str, fragment: str) -> Self:
-        """Файл логов содержит фрагмент."""
+        """Check that the log file contains a fragment."""
         content = self._content(filename)
         if fragment not in content:
             self.error(f"Expected <{filename}> to contain <{fragment}>, but was <{content}>")
         return self
 
     def has_log_without(self, filename: str, *fragments: str) -> Self:
-        """Файл логов не содержит ни одного из фрагментов — например логов чужих тестов."""
+        """Check that the log file contains none of these fragments, such as logs from other tests."""
         content = self._content(filename)
         leaked = [fragment for fragment in fragments if fragment in content]
         if leaked:
@@ -133,7 +133,7 @@ class LogsAssertions(_PathAssertions):
         return self
 
     def has_logs(self, **expected: str) -> Self:
-        """Каждый перечисленный файл (без расширения) содержит ровно указанный текст."""
+        """Each listed file (without extension) contains exactly the specified text."""
         mismatched = {
             name: (expected_content, self._content(f"{name}.log"))
             for name, expected_content in expected.items()
@@ -144,10 +144,10 @@ class LogsAssertions(_PathAssertions):
         return self
 
     def has_test_logs(self, **expected: str) -> Self:
-        """Как `has_logs`, но не зависит от суффикса воркера в имени файла.
+        """Like `has_logs`, but independent of worker suffixes in filenames.
 
-        Под xdist имя файла получает id воркера, а какой тест попадёт на какой
-        воркер — не определено.
+        Under xdist, filenames include the worker id, and which test runs on which
+        worker is undefined.
         """
         mismatched = {}
         for name, expected_content in expected.items():
@@ -166,14 +166,14 @@ class LogsAssertions(_PathAssertions):
         ]
 
     def has_log_count(self, expected: int) -> Self:
-        """В каталоге ровно столько файлов логов."""
+        """Check that the directory contains exactly this many log files."""
         actual = self._filenames()
         if len(actual) != expected:
             self.error(f"Expected <{expected}> log files, but found <{len(actual)}>: <{actual}>")
         return self
 
     def has_log_in_every_file_containing(self, fragment: str) -> Self:
-        """Фрагмент есть в каждом файле логов каталога."""
+        """Every log file in the directory contains the fragment."""
         names = self._filenames()
         if not names:
             self.error(f"Expected log files containing <{fragment}>, but the directory has none")
@@ -183,14 +183,14 @@ class LogsAssertions(_PathAssertions):
         return self
 
     def has_json_log(self, filename: str, *expected: dict[str, object]) -> Self:
-        """Файл логов — JSON Lines с ровно такими записями."""
+        """Check that the log file is JSON Lines with exactly these records."""
         actual = self._json_records(filename)
         if actual != list(expected):
             self.error(f"Expected JSON records of <{filename}> to be <{list(expected)}>, but were <{actual}>")
         return self
 
     def has_json_log_field(self, filename: str, field: str, expected: object) -> Self:
-        """Первая JSON-запись файла содержит поле с ожидаемым значением."""
+        """Check that the first JSON record in the file contains a field with the expected value."""
         records = self._json_records(filename)
         if not records:
             self.error(f"Expected <{filename}> to contain JSON records, but it was empty")
@@ -202,21 +202,21 @@ class LogsAssertions(_PathAssertions):
         return self
 
     def has_json_log_events(self, filename: str, *expected: str) -> Self:
-        """События JSON-записей файла в порядке их появления."""
+        """JSON record events from the file in arrival order."""
         actual = [record.get("event") for record in self._json_records(filename)]
         if actual != list(expected):
             self.error(f"Expected events of <{filename}> to be <{list(expected)}>, but were <{actual}>")
         return self
 
     def has_log_unreadable_by_others(self, filename: str) -> Self:
-        """Файл логов недоступен для чтения группе и остальным."""
+        """Check that the log file is unreadable by group and others."""
         mode = stat.S_IMODE(self._path(filename).stat().st_mode)
         if mode & (stat.S_IRGRP | stat.S_IROTH):
             self.error(f"Expected <{filename}> to be private, but mode was <{oct(mode)}>")
         return self
 
     def is_unreadable_by_others(self) -> Self:
-        """Сам каталог логов недоступен для чтения группе и остальным."""
+        """Check that the log directory itself is unreadable by group and others."""
         mode = stat.S_IMODE(self._dir().stat().st_mode)
         if mode & (stat.S_IRGRP | stat.S_IROTH):
             self.error(f"Expected <{self._dir()}> to be private, but mode was <{oct(mode)}>")
@@ -248,10 +248,10 @@ class LogsAssertions(_PathAssertions):
 
 
 class AllureAssertions(_PathAssertions):
-    """Утверждения о вложениях в каталоге allure-results."""
+    """Assertions about attachments in the allure-results directory."""
 
     def has_attachment(self, test_name: str, attachment: str, expected: str) -> Self:
-        """У теста есть вложение с таким именем и содержимым."""
+        """Check that the test has an attachment with this name and content."""
         attachments = self._attachments_of(test_name)
         if attachment not in attachments:
             self.error(
@@ -265,14 +265,14 @@ class AllureAssertions(_PathAssertions):
         return self
 
     def has_no_attachment(self, test_name: str, attachment: str) -> Self:
-        """У теста нет вложения с таким именем."""
+        """Check that the test has no attachment with this name."""
         attachments = self._attachments_of(test_name)
         if attachment in attachments:
             self.error(f"Expected test <{test_name}> not to have attachment <{attachment}>, but it had it")
         return self
 
     def has_attachment_for_every_test(self, attachment: str, expected: str) -> Self:
-        """У каждого теста прогона есть такое вложение с таким содержимым."""
+        """Every test in the run has this attachment with this content."""
         per_test = self._per_test()
         if not per_test:
             self.error(f"Expected tests with attachment <{attachment}>, but no test results were found")
@@ -315,7 +315,7 @@ class AllureAssertions(_PathAssertions):
         results: dict[str, _AllureResult],
         per_test: dict[str, dict[str, str]],
     ) -> None:
-        """Вложения, созданные в teardown фикстур, allure кладёт в контейнер фикстуры."""
+        """Allure places attachments created during fixture teardown in the fixture container."""
         for path in self._dir().glob("*-container.json"):
             container = cast("_AllureContainer", json.loads(path.read_text(encoding=_ENCODING)))
             for stage in container.get("afters", []):
@@ -330,41 +330,41 @@ class AllureAssertions(_PathAssertions):
 
 
 class RunAssertions(_RunAssertions):
-    """Утверждения о прогоне: его исход, файлы логов и allure-вложения.
+    """Assertions about the run outcome, log files, and Allure attachments.
 
-    Фасад над `LogsAssertions` и `AllureAssertions`, чтобы тест состоял из одного
-    утверждения: и об исходе прогона, и о том, что он записал.
+    Facade over `LogsAssertions` and `AllureAssertions` so tests can use one
+    assertion about both the run outcome and its recorded artifacts.
     """
 
     def passed(self, count: int) -> Self:
-        """Прогон завершился ровно таким числом успешных тестов."""
+        """Check that the run finished with exactly this many passed tests."""
         self._run().result.assert_outcomes(passed=count)
         return self
 
     def failed(self, count: int) -> Self:
-        """Прогон завершился ровно таким числом упавших тестов."""
+        """Check that the run finished with exactly this many failed tests."""
         self._run().result.assert_outcomes(failed=count)
         return self
 
     def errored(self, count: int) -> Self:
-        """Прогон завершился ровно таким числом ошибок."""
+        """Check that the run finished with exactly this many errors."""
         self._run().result.assert_outcomes(errors=count)
         return self
 
     def was_stopped(self) -> Self:
-        """Прогон не состоялся: pytest завершился с ненулевым кодом."""
+        """Check that the run did not complete: pytest exited with a nonzero code."""
         code = self._run().result.ret
         if code == 0:
             self.error("Expected pytest to stop with a non-zero exit code, but it succeeded")
         return self
 
     def reports_error(self, pattern: str) -> Self:
-        """В stderr прогона есть строка по шаблону."""
+        """Check that the run stderr contains a line matching the pattern."""
         self._run().result.stderr.fnmatch_lines([pattern])
         return self
 
     def is_empty(self) -> Self:
-        """Прогон не создал ни одного файла логов."""
+        """Check that the run created no log files."""
         self._logs().is_empty()
         return self
 
@@ -425,7 +425,7 @@ class RunAssertions(_RunAssertions):
         return self
 
     def wrote_no_logs_outside_logs_dir(self) -> Self:
-        """Прогон не создал ни одного файла логов за пределами каталога логов."""
+        """Check that the run created no log files outside the log directory."""
         run = self._run()
         logs_dir = run.logs_dir.resolve()
         stray = [
@@ -438,7 +438,7 @@ class RunAssertions(_RunAssertions):
         return self
 
     def in_launch(self, launch_id: str) -> RunAssertions:
-        """Дальше проверять логи внутри подкаталога запуска."""
+        """Continue checking logs in the run subdirectory."""
         run = self._run()
         return RunAssertions(Run(run.result, run.root, run.logs_dir / launch_id, run.allure_dir))
 
@@ -457,15 +457,15 @@ class RunAssertions(_RunAssertions):
 
 
 def assert_logs(logs_dir: Path) -> LogsAssertions:
-    """Начать проверку каталога с файлами логов."""
+    """Start checking the log file directory."""
     return LogsAssertions(logs_dir)
 
 
 def assert_allure(allure_dir: Path) -> AllureAssertions:
-    """Начать проверку каталога allure-results."""
+    """Start checking the allure-results directory."""
     return AllureAssertions(allure_dir)
 
 
 def assert_run(run: Run) -> RunAssertions:
-    """Начать проверку прогона pytest."""
+    """Start checking the pytest run."""
     return RunAssertions(run)

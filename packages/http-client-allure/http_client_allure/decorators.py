@@ -33,10 +33,10 @@ from .utils import (
 
 
 def step_send_decorator(settings: StepSettings) -> SyncSendDecorator:
-    """Декоратор синхронного send, оборачивающий отправку в Allure шаг.
+    """Decorate synchronous send to wrap sending in an Allure step.
 
-    Шаг открывается до отправки, поэтому в него попадает длительность запроса,
-    а при ошибке соединения или таймауте шаг создается и помечается упавшим.
+    Open the step before sending so it records the request duration,
+    and create a failed step for connection errors or timeouts.
     """
 
     def decorator(func: SyncSendMethod) -> SyncSendMethod:
@@ -53,8 +53,8 @@ def step_send_decorator(settings: StepSettings) -> SyncSendDecorator:
 
             with allure.step(_step_message(request, settings)):
                 try:
-                    # Чтение тела внутри шага: ленивый генератор может упасть,
-                    # и тогда без шага отчет остался бы вовсе пустым
+                    # Read the body inside the step: a lazy generator can fail,
+                    # and without a step the report would remain entirely empty
                     body = _request_body(request, settings, streaming=stream)
                     response = func(
                         request,
@@ -78,11 +78,11 @@ def step_send_decorator(settings: StepSettings) -> SyncSendDecorator:
 
 
 def async_step_send_decorator(settings: StepSettings) -> AsyncSendDecorator:
-    """Декоратор асинхронного send, оборачивающий отправку в Allure шаг.
+    """Decorate asynchronous send to wrap sending in an Allure step.
 
-    В отличие от синхронного, шаг не держится открытым на время await: Allure хранит
-    текущий шаг глобально, поэтому при одновременных запросах вложения расходились бы
-    по чужим шагам. Цена - в асинхронном отчете шаг не показывает длительность запроса.
+    Unlike the synchronous version, do not keep the step open across await: Allure stores
+    the current step globally, so concurrent requests would attach data
+    to the wrong steps. As a tradeoff, asynchronous report steps do not show request duration.
     """
 
     def decorator(func: AsyncSendMethod) -> AsyncSendMethod:
@@ -99,8 +99,8 @@ def async_step_send_decorator(settings: StepSettings) -> AsyncSendDecorator:
             step_message = _step_message(request, settings)
 
             try:
-                # Чтение тела внутри try: ленивый генератор может упасть,
-                # и тогда без шага отчет остался бы вовсе пустым
+                # Read the body inside try: a lazy generator can fail,
+                # and without a step the report would remain entirely empty
                 body = await _arequest_body(request, settings, streaming=stream)
                 response = await func(
                     request,
@@ -110,7 +110,7 @@ def async_step_send_decorator(settings: StepSettings) -> AsyncSendDecorator:
                     anonymous=anonymous,
                 )
             except BaseException:
-                # raise внутри шага, иначе Allure закроет его без ошибки и пометит успешным
+                # Raise inside the step; otherwise Allure closes it without an error and marks it as passed
                 with allure.step(step_message):
                     _attach_request(request, body, settings)
                     raise
@@ -129,10 +129,10 @@ def async_step_send_decorator(settings: StepSettings) -> AsyncSendDecorator:
 
 
 def step_stream_decorator(settings: StepSettings) -> SyncStreamRequestDecorator:
-    """Декоратор синхронного stream_request, оборачивающий поток в Allure шаг.
+    """Decorate synchronous stream_request to wrap the stream in an Allure step.
 
-    Тело потокового ответа не читается: во вложение попадает заглушка либо то,
-    что вызывающий код успел вычитать внутри шага.
+    Do not read the streaming response body: attach a placeholder or the data
+    the caller has already read inside the step.
     """
 
     def decorator(func: SyncStreamRequestMethod) -> SyncStreamRequestMethod:
@@ -167,10 +167,10 @@ def step_stream_decorator(settings: StepSettings) -> SyncStreamRequestDecorator:
 
 
 def async_step_stream_decorator(settings: StepSettings) -> AsyncStreamRequestDecorator:
-    """Декоратор асинхронного stream_request, оборачивающий поток в Allure шаг.
+    """Decorate asynchronous stream_request to wrap the stream in an Allure step.
 
-    Шаг создается после закрытия потока, чтобы не держать его открытым на время await
-    вызывающего кода - иначе при одновременных потоках вложения расходятся по чужим шагам.
+    Create the step after closing the stream so it does not stay open while awaiting
+    caller code; otherwise concurrent streams attach data to the wrong steps.
     """
 
     def decorator(func: AsyncStreamRequestMethod) -> AsyncStreamRequestMethod:
@@ -197,7 +197,7 @@ def async_step_stream_decorator(settings: StepSettings) -> AsyncStreamRequestDec
                     response = opened
                     yield opened
             except BaseException:
-                # raise внутри шага, иначе Allure закроет его без ошибки и пометит успешным
+                # Raise inside the step; otherwise Allure closes it without an error and marks it as passed
                 with allure.step(step_message):
                     _attach_stream(request, response, body, settings)
                     raise
@@ -211,7 +211,7 @@ def async_step_stream_decorator(settings: StepSettings) -> AsyncStreamRequestDec
 
 
 def _request_body(request: httpx.Request, settings: StepSettings, *, streaming: bool) -> bytes | None:
-    """Прочитать тело запроса до отправки, пока поток заведомо цел."""
+    """Read the request body before sending while the stream is known to be intact."""
     if not settings.attach_request:
         return None
 
@@ -222,7 +222,7 @@ def _request_body(request: httpx.Request, settings: StepSettings, *, streaming: 
 
 
 async def _arequest_body(request: httpx.Request, settings: StepSettings, *, streaming: bool) -> bytes | None:
-    """Асинхронный вариант _request_body."""
+    """Asynchronous version of _request_body."""
     if not settings.attach_request:
         return None
 
@@ -238,10 +238,10 @@ def _attach_stream(
     body: bytes | None,
     settings: StepSettings,
 ) -> None:
-    """Прикрепить данные потокового запроса и ответа к открытому шагу.
+    """Attach streaming request and response data to an open step.
 
-    Вызывается и на ошибочном пути: если вызывающий код упал внутри потока,
-    данные ответа нужны в отчете тем более.
+    Also call this on failures: if the caller failed inside the stream,
+    response data is especially useful in the report.
     """
     _attach_request(request, body, settings)
 
@@ -269,12 +269,12 @@ def _attach_response(response: httpx.Response, body: bytes | None, settings: Ste
 
 
 def _attach_safely(name: str, build: Callable[[], Attachment | None], settings: StepSettings) -> None:
-    """Прикрепить вложение так, чтобы ошибка отчета не меняла результат запроса.
+    """Attach data without allowing reporting errors to change the request result.
 
-    Вложение строится уже после отправки: запрос мог успешно уйти на сервер, и падение
-    здесь вызывающий код принял бы за сетевую ошибку и мог бы повторить операцию.
-    В сообщении остается только класс исключения - его текст способен утащить в отчет
-    куски тела или URL.
+    Build attachments after sending: the request may have reached the server successfully, and the caller
+    could mistake a failure here for a network error and retry the operation.
+    Include only the exception class in the message: its text may expose
+    body fragments or URLs in the report.
     """
     try:
         attachment = build()
@@ -290,7 +290,7 @@ def _attach_safely(name: str, build: Callable[[], Attachment | None], settings: 
 
 
 def _step_message(request: httpx.Request, settings: StepSettings) -> str:
-    """Собрать заголовок шага, не давая ошибке маскирования сорвать отправку."""
+    """Build a step title without letting masking errors prevent sending."""
     try:
         return build_step_message(request, settings)
     except Exception:  # noqa: BLE001

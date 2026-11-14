@@ -1,4 +1,4 @@
-"""Фабрики HTTP-клиентов, закрывающих пул соединений после теста."""
+"""HTTP client factories that close connection pools after the test."""
 
 from typing import Protocol
 
@@ -6,7 +6,7 @@ from http_client.client import AsyncHttpClient, ClientOption, HttpClient
 
 
 class SyncClientFactory(Protocol):
-    """Создать синхронный клиент, который будет закрыт после теста."""
+    """Create a synchronous client that will be closed after the test."""
 
     def __call__(
         self,
@@ -17,7 +17,7 @@ class SyncClientFactory(Protocol):
 
 
 class AsyncClientFactory(Protocol):
-    """Создать асинхронный клиент, который будет закрыт после теста."""
+    """Create an asynchronous client that will be closed after the test."""
 
     def __call__(
         self,

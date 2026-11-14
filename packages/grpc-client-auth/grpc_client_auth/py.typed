@@ -1,1 +1,1 @@
-это маркерный файл, который указывает, что пакет поддерживает проверку типов по стандарту PEP 561
+Marker file indicating that the package supports type checking under PEP 561.

@@ -1,4 +1,4 @@
-"""Поведение декораторов повторных попыток для асинхронных функций."""
+"""Retry decorator behavior for asynchronous functions."""
 
 from typing import Protocol, cast
 

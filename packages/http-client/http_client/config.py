@@ -20,7 +20,7 @@ DEFAULT_OCTET_STREAM_LOG_MAXLENGTH = 1024
 
 @dataclass(kw_only=True, slots=True)
 class HttpClientConfig:
-    """Настройки транспорта, собираемые опциями до создания HTTP-клиента."""
+    """Transport settings collected by options before creating the HTTP client."""
 
     base_url: URLTypes
     verify: ssl.SSLContext | str | bool = True
@@ -37,7 +37,7 @@ class HttpClientConfig:
 
 @dataclass(kw_only=True)
 class LoggingConfig:
-    """Настройки форматирования и ограничения длины HTTP-логов."""
+    """HTTP log formatting and length limit settings."""
 
     log_level: int = logging.INFO
     json_indent: int | None = None
@@ -51,9 +51,9 @@ LOGGING_CONFIG = LoggingConfig()
 
 
 def configure_logging(options: LoggingConfig | None = None) -> None:
-    """Настроить форматирование HTTP-логов с учётом переменных окружения.
+    """Configure HTTP log formatting using environment variables.
 
-    :param options: значения по умолчанию для настроек логирования
+    :param options: Default logging settings
     """
     settings = options or LoggingConfig()
     if log_level_env := os.getenv("HTTP_CLIENT_LOG_LEVEL", None):

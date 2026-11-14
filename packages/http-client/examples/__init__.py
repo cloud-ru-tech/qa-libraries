@@ -1,1 +1,1 @@
-"""Примеры использования библиотеки http_client."""
+"""Examples of using the http_client library."""

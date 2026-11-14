@@ -9,7 +9,7 @@ TRACEPARENT_PATTERN = r"00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}"
 
 
 def test_adds_generated_request_id(service_addr: str) -> None:
-    """Клиент добавляет к запросу сгенерированный идентификатор."""
+    """The client adds a generated identifier to requests."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -21,7 +21,7 @@ def test_adds_generated_request_id(service_addr: str) -> None:
 
 
 def test_keeps_user_defined_request_id(service_addr: str) -> None:
-    """Идентификатор, заданный вызывающим кодом, не подменяется."""
+    """A caller-provided identifier is preserved."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -33,7 +33,7 @@ def test_keeps_user_defined_request_id(service_addr: str) -> None:
 
 
 def test_adds_request_id_under_custom_key(service_addr: str) -> None:
-    """Имя ключа идентификатора настраивается."""
+    """The identifier key name is configurable."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -45,7 +45,7 @@ def test_adds_request_id_under_custom_key(service_addr: str) -> None:
 
 
 def test_sends_no_request_id_without_option(service_addr: str) -> None:
-    """Без соответствующей опции идентификатор к запросу не добавляется."""
+    """No identifier is added to requests unless the option is enabled."""
     with GRPCbinServiceClient.from_addr(service_addr, options.with_insecure_channel()) as client:
         response = client.get_headers()
 
@@ -53,7 +53,7 @@ def test_sends_no_request_id_without_option(service_addr: str) -> None:
 
 
 def test_adds_generated_traceparent(service_addr: str) -> None:
-    """Клиент добавляет к запросу traceparent в формате W3C."""
+    """The client adds traceparent in W3C format to requests."""
     with GRPCbinServiceClient.from_addr(
         service_addr,
         options.with_insecure_channel(),
@@ -65,7 +65,7 @@ def test_adds_generated_traceparent(service_addr: str) -> None:
 
 
 def test_keeps_user_defined_traceparent(service_addr: str) -> None:
-    """Traceparent, заданный вызывающим кодом, не подменяется."""
+    """Caller-provided traceparent is preserved."""
     incoming = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
 
     with GRPCbinServiceClient.from_addr(
@@ -79,15 +79,15 @@ def test_keeps_user_defined_traceparent(service_addr: str) -> None:
 
 
 def test_generates_traceparent_of_expected_format() -> None:
-    """Сгенерированный traceparent соответствует формату W3C Trace Context."""
+    """The generated traceparent follows the W3C Trace Context format."""
     assert_that(traceparent.generate()).matches(TRACEPARENT_PATTERN)
 
 
 def test_generates_unique_traceparent() -> None:
-    """Каждый вызов генератора возвращает новое значение."""
+    """Each generator call returns a new value."""
     assert_that(traceparent.generate()).is_not_equal_to(traceparent.generate())
 
 
 def test_generates_traceparent_with_requested_flags() -> None:
-    """Флаги трассировки задаются вызывающим кодом."""
+    """Trace flags are set by the caller."""
     assert_that(traceparent.generate(flags=traceparent.FLAGS_NOT_SAMPLED)).ends_with("-00")

@@ -35,7 +35,7 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 def generate_certificate(directory: Path) -> tuple[Path, Path]:
-    """Создать временный сертификат для локального TLS-сервера."""
+    """Create a temporary certificate for a local TLS server."""
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "localhost")])
     now = datetime.now(UTC)
@@ -62,7 +62,7 @@ def generate_certificate(directory: Path) -> tuple[Path, Path]:
 
 
 def serve_tls(certificate: Path, key: Path) -> ThreadingHTTPServer:
-    """Создать HTTPS-сервер с временным доверенным только тесту сертификатом."""
+    """Create an HTTPS server with a temporary certificate trusted only by the test."""
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     context.minimum_version = ssl.TLSVersion.TLSv1_2
     context.load_cert_chain(certificate, key)

@@ -10,11 +10,11 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True)
 class Package:
-    """Метаданные библиотеки workspace.
+    """Metadata for a workspace library.
 
-    :param path: каталог библиотеки
-    :param distribution: имя дистрибутива в PyPI
-    :param version: версия библиотеки
+    :param path: Library directory.
+    :param distribution: Distribution name on PyPI.
+    :param version: Library version.
     """
 
     path: Path
@@ -23,25 +23,25 @@ class Package:
 
     @property
     def module(self) -> str:
-        """Вернуть имя Python-модуля.
+        """Return the Python module name.
 
-        :returns: имя модуля без префикса дистрибутива
+        :returns: Module name without the distribution prefix.
         """
         return self.path.name.replace("-", "_")
 
     @property
     def wheel(self) -> str:
-        """Вернуть имя файла wheel.
+        """Return the wheel filename.
 
-        :returns: имя wheel чистого Python-пакета
+        :returns: Wheel filename for a pure Python package.
         """
         return f"{self._artifact_prefix}-py3-none-any.whl"
 
     @property
     def sdist(self) -> str:
-        """Вернуть имя архива sdist.
+        """Return the sdist archive filename.
 
-        :returns: имя архива с исходным кодом
+        :returns: Source archive filename.
         """
         return f"{self._artifact_prefix}.tar.gz"
 
@@ -51,12 +51,12 @@ class Package:
 
 
 def load_packages(root: Path) -> tuple[Package, ...]:
-    """Прочитать метаданные участников workspace.
+    """Read metadata for workspace members.
 
-    :param root: корень репозитория
-    :returns: библиотеки в порядке имён каталогов
-    :raises ValueError: метаданные не соответствуют соглашениям monorepo
-    :raises TypeError: имя или версия не являются строками
+    :param root: Repository root.
+    :returns: Libraries sorted by directory name.
+    :raises ValueError: Metadata does not follow the monorepo conventions.
+    :raises TypeError: The name or version is not a string.
     """
     packages = []
     for manifest in sorted((root / "packages").glob("*/pyproject.toml")):

@@ -1,49 +1,51 @@
-# Объекты ответов на запросы HTTP-клиента
+# HTTP client response objects
 
 [![PyPI](https://img.shields.io/pypi/v/cloudru-qa-http-client-responses)](https://pypi.org/project/cloudru-qa-http-client-responses/)
 [![Python](https://img.shields.io/pypi/pyversions/cloudru-qa-http-client-responses)](https://pypi.org/project/cloudru-qa-http-client-responses/)
 [![License](https://img.shields.io/pypi/l/cloudru-qa-http-client-responses)](https://github.com/cloud-ru-tech/qa-libraries/blob/master/LICENSE)
 
-Обёртки над `httpx.Response`, которые знают, во что разбирать тело ответа.
+English | [Русский](README.ru.md)
 
-Метод клиента возвращает не голый `Response`, из которого потом руками достают JSON, а объект с типом ожидаемых данных. Тип виден в сигнатуре метода, разбор вызывается одной строкой, а IDE и mypy подсказывают поля модели.
+Wrappers around `httpx.Response` that know how to parse the response body.
 
-- [Объекты ответов на запросы HTTP-клиента](#объекты-ответов-на-запросы-http-клиента)
-  - [Установка](#установка)
-  - [Скиллы для AI-агентов](#скиллы-для-ai-агентов)
-  - [Использование](#использование)
-    - [Атрибуты ответа](#атрибуты-ответа)
-    - [Ошибки разбора](#ошибки-разбора)
-    - [Асинхронные клиенты](#асинхронные-клиенты)
-  - [Разработка](#разработка)
+A client method returns an object typed for the expected data instead of a plain `Response` from which you extract JSON manually. The type is visible in the method signature, parsing takes one line, and your IDE and mypy know the model fields.
 
-## Установка
+- [HTTP client response objects](#http-client-response-objects)
+  - [Installation](#installation)
+  - [Skills for AI agents](#skills-for-ai-agents)
+  - [Usage](#usage)
+    - [Response attributes](#response-attributes)
+    - [Parsing errors](#parsing-errors)
+    - [Asynchronous clients](#asynchronous-clients)
+  - [Development](#development)
 
-Требуется Python 3.13 или новее.
+## Installation
+
+Requires Python 3.13 or later.
 
 ```shell
 pip install cloudru-qa-http-client-responses
 ```
 
-Библиотека импортируется как модуль `http_client_responses`.
+Import the library as the `http_client_responses` module.
 
-## Скиллы для AI-агентов
+## Skills for AI agents
 
-В пакет включён скилл [`http-client-responses-usage`](https://github.com/cloud-ru-tech/qa-libraries/blob/master/.agents/skills/http-client-responses-usage/SKILL.md)
-с примерами и правилами использования библиотеки для AI-агентов. Установите библиотеку
-в окружение своего проекта, затем из его корня выполните (нужен [`uv`](https://docs.astral.sh/uv/)):
+The package includes the [`http-client-responses-usage`](https://github.com/cloud-ru-tech/qa-libraries/blob/master/.agents/skills/http-client-responses-usage/SKILL.md) skill
+with examples and usage rules for AI agents. Install the library
+in your project environment, then run this from its root (requires [`uv`](https://docs.astral.sh/uv/)):
 
 ```shell
 uvx library-skills install --skill http-client-responses-usage --yes
 ```
 
-Для Claude Code добавьте `--claude`. Инструкции поставляются вместе с версией библиотеки.
+For Claude Code, add `--claude`. The instructions are shipped with the library version.
 
-## Использование
+## Usage
 
-- `JsonResponse[PydanticModel]` — тело ответа описано pydantic моделью. Вместо `PydanticModel` укажите свою модель.
-- `GenericResponse[ReturnType]` — тело разбирает переданная функция.
-- `ResponseWrapper` — без разбора тела, если нужны только статус, заголовки и содержимое.
+- `JsonResponse[PydanticModel]` — response body described by a pydantic model. Replace `PydanticModel` with your model.
+- `GenericResponse[ReturnType]` — body parsed by a supplied function.
+- `ResponseWrapper` — no body parsing, for when you need only status, headers, and content.
 
 ```python
 from http_client import HttpClient
@@ -71,10 +73,10 @@ class ExampleResponse(BaseModel):
 
 
 class ExampleClient(HttpClient):
-    """Тестовый HTTP-клиент."""
+    """Test HTTP client."""
 
     def get_users(self, request: ExampleRequest) -> JsonResponse[ExampleResponse]:
-        """Отправить простой get запрос на получение списка пользователей в JSON формате."""
+        """Send a simple GET request for a user list in JSON format."""
         response = self.get(
             url="/users",
             params=request.model_dump(exclude_none=True),
@@ -85,7 +87,7 @@ class ExampleClient(HttpClient):
         )
 
     def download_details(self, user_id: int) -> GenericResponse[dict[str, str]]:
-        """Отправить запрос, получающий строковые данные, которые будут преобразованы в dict."""
+        """Send a request for string data to convert into a dict."""
         response = self.get(f"/user/{user_id}/details")
 
         def parser(r: Response) -> dict[str, str]:
@@ -101,7 +103,7 @@ class ExampleClient(HttpClient):
         )
 ```
 
-Разбор тела вызывается явно: `model()` у `JsonResponse`, `parse()` у `GenericResponse`.
+Parse the body explicitly: `model()` for `JsonResponse`, `parse()` for `GenericResponse`.
 
 ```python
 response = client.get_users(ExampleRequest(limit=10))
@@ -110,20 +112,20 @@ assert response.status_code == 200
 assert response.model().total == 42
 ```
 
-`raise_for_status()` возвращает саму обёртку, поэтому проверку статуса удобно ставить в цепочку:
+`raise_for_status()` returns the wrapper itself, making status checks easy to chain:
 
 ```python
 users = client.get_users(ExampleRequest()).raise_for_status().model()
 ```
 
-### Атрибуты ответа
+### Response attributes
 
-| Атрибут | Тип | Комментарий |
+| Attribute | Type | Notes |
 |---|---|---|
 | `status_code` | `int` | |
 | `reason_phrase` | `str` | |
-| `headers` | `httpx.Headers` | `get_list()` отдаёт все значения повторяющегося заголовка |
-| `raw_headers` | `dict[str, str]` | по одному значению на заголовок |
+| `headers` | `httpx.Headers` | `get_list()` returns all values for a repeated header |
+| `raw_headers` | `dict[str, str]` | one value per header |
 | `cookies` | `httpx.Cookies` | |
 | `content` / `text` | `bytes` / `str` | |
 | `url` | `str` | |
@@ -131,27 +133,29 @@ users = client.get_users(ExampleRequest()).raise_for_status().model()
 | `elapsed` | `timedelta` | |
 | `is_success` / `is_error` | `bool` | |
 | `is_client_error` / `is_server_error` | `bool` | 4xx / 5xx |
-| `raise_for_status()` | `Self` | бросает `httpx.HTTPStatusError` на любой не-2xx статус |
-| `json()` | `Any` | разбор тела как JSON без валидации схемы |
+| `raise_for_status()` | `Self` | raises `httpx.HTTPStatusError` for any non-2xx status |
+| `json()` | `Any` | parse the body as JSON without schema validation |
 
-Для `Set-Cookie` и других заголовков, которые приходят по нескольку раз, берите `headers.get_list("set-cookie")`.
+For `Set-Cookie` and other repeated headers, use `headers.get_list("set-cookie")`.
 
-### Ошибки разбора
+### Parsing errors
 
-Если тело не удалось разобрать, вместо голого `pydantic.ValidationError` бросается `ResponseParseError` — по нему сразу видно, какой запрос упал и что ответил сервер:
+If the body cannot be parsed, `ResponseParseError` is raised instead of a plain `pydantic.ValidationError`, showing which request failed and what the server returned:
+
+Library-generated messages retain their original Russian text.
 
 ```
 ResponseParseError: не удалось разобрать тело ответа
   GET http://test.com/users -> 200
-  Body: {"users": [{"name": "John Doe"}], "total": "много"}
+  Body: {"users": [{"name": "John Doe"}], "total": "many"}
   Причина: 1 validation error for ExampleResponse
   total
     Input should be a valid integer, unable to parse string as an integer
 ```
 
-Исходное исключение доступно в `error.cause` и в `__cause__`.
+The original exception is available in `error.cause` and `__cause__`.
 
-### Асинхронные клиенты
+### Asynchronous clients
 
 ```python
 from http_client import AsyncHttpClient
@@ -163,22 +167,22 @@ class AsyncExampleClient(AsyncHttpClient):
         return JsonResponse(response=response, schema=ExampleResponse)
 ```
 
-## Разработка
+## Development
 
-Библиотека развивается в монорепозитории [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries)
-вместе с остальными библиотеками `cloudru-qa-*`. Нужны [`uv`](https://docs.astral.sh/uv/), GNU Make
-и [`checkmake`](https://github.com/checkmake/checkmake),
-команды запускаются из корня репозитория:
+The library is developed in the [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries) monorepo
+alongside the other `cloudru-qa-*` libraries. You need [`uv`](https://docs.astral.sh/uv/), GNU Make,
+and [`checkmake`](https://github.com/checkmake/checkmake).
+Run commands from the repository root:
 
 ```shell
-make sync                              # зависимости всех библиотек строго по uv.lock
-make test-http-client-responses        # тесты этой библиотеки
-make typecheck-http-client-responses   # mypy для этой библиотеки
-make check                             # форматирование, ruff, mypy и тесты всего набора
+make sync                              # install dependencies for all libraries from uv.lock
+make test-http-client-responses        # tests for this library
+make typecheck-http-client-responses   # mypy for this library
+make check                             # formatting, ruff, mypy, and tests for the entire workspace
 ```
 
-Тесты прогоняются на Python 3.13 и 3.14. Окружение для другой версии создаётся отдельно:
+Tests run on Python 3.13 and 3.14. Create a separate environment for another version:
 `make sync test-http-client-responses PYTHON_VERSION=3.14`.
 
-Релиз выпускается git-тегом `http-client-responses/v<версия>`. Версия в теге должна совпадать
-с версией в `packages/http-client-responses/pyproject.toml`.
+Publish a release with the git tag `http-client-responses/v<version>`. The tag version must match
+the version in `packages/http-client-responses/pyproject.toml`.

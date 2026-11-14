@@ -14,15 +14,15 @@ pytestmark = allure.feature("Порядок опций")
 
 
 def is_server_error(response: httpx.Response) -> bool:
-    """Признак ответа, который стоит повторить."""
+    """Identify a response that should be retried."""
     return response.is_server_error
 
 
 def build_retries(attempts: int) -> ClientOption:
-    """Собрать опцию повторов без пауз между попытками.
+    """Build a retry option without delays between attempts.
 
-    :param attempts: сколько раз запрос уйдет на сервер.
-    :returns: опция повторов для конструктора клиента.
+    :param attempts: Number of requests sent to the server.
+    :returns: Retry option for the client constructor.
     """
     return retry_options.with_retries_if(
         is_server_error, overrides=RetryOverrides(stop=stop_after_attempt(attempts), wait=wait_none())

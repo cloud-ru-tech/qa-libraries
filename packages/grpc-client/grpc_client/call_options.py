@@ -7,14 +7,14 @@ from .types import MetadataType
 
 
 class _UseClientDefault:
-    """Маркер параметра вызова, значение которого берется из настроек клиента.
+    """Marker for a call option whose value comes from client settings.
 
-    Нужен, чтобы отличить «параметр не задан» от явно переданного `None`:
-    `timeout=None` означает вызов без ограничения по времени.
+    Distinguish an unset option from an explicitly supplied `None`:
+    `timeout=None` means a call without a timeout.
     """
 
     def __repr__(self) -> str:
-        """Вернуть строковое представление метаданных."""
+        """Return the string representation of metadata."""
         return "USE_CLIENT_DEFAULT"
 
     def __bool__(self) -> bool:
@@ -26,33 +26,33 @@ USE_CLIENT_DEFAULT = _UseClientDefault()
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class CallOptions:
-    """Параметры одного gRPC вызова.
+    """Options for a single gRPC call.
 
-    Незаданные параметры берутся из настроек клиента.
+    Unspecified options come from client settings.
     """
 
-    # Ограничение времени вызова в секундах. `None` — вызов без ограничения.
+    # Call timeout in seconds. `None` means no timeout.
     timeout: float | _UseClientDefault | None = USE_CLIENT_DEFAULT
 
-    # Метаданные запроса, добавляемые к метаданным клиента.
+    # Request metadata added to client metadata.
     metadata: MetadataType | None = None
 
-    # Учетные данные конкретного вызова.
+    # Credentials for this call.
     credentials: grpc.CallCredentials | None = None
 
-    # Ждать готовности канала вместо немедленной ошибки UNAVAILABLE.
+    # Wait for the channel to become ready instead of immediately failing with UNAVAILABLE.
     wait_for_ready: bool | None = None
 
-    # Алгоритм сжатия сообщений вызова.
+    # Call message compression algorithm.
     compression: grpc.Compression | None = None
 
     def merge(self, other: "CallOptions") -> "CallOptions":
-        """Наложить параметры вызова поверх текущих.
+        """Overlay call options on the current options.
 
-        Метаданные объединяются, остальные заданные параметры `other` вытесняют текущие.
+        Metadata is merged; other explicitly set `other` options override current values.
 
-        :param other: параметры с более высоким приоритетом
-        :return: объединенные параметры
+        :param other: higher-priority options
+        :return: merged options
         """
         return CallOptions(
             timeout=self.timeout if isinstance(other.timeout, _UseClientDefault) else other.timeout,
@@ -63,9 +63,9 @@ class CallOptions:
         )
 
     def resolve_timeout(self, default: float | None) -> float | None:
-        """Вычислить итоговое ограничение времени вызова.
+        """Calculate the effective call timeout.
 
-        :param default: значение, заданное клиентом
-        :return: ограничение времени в секундах либо None, если ограничения нет
+        :param default: client-provided value
+        :return: timeout in seconds, or None if unlimited
         """
         return default if isinstance(self.timeout, _UseClientDefault) else self.timeout

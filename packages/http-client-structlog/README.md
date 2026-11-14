@@ -1,51 +1,53 @@
-# Структурированные логи для HTTP-клиента
+# Structured logs for the HTTP client
 
 [![PyPI](https://img.shields.io/pypi/v/cloudru-qa-http-client-structlog)](https://pypi.org/project/cloudru-qa-http-client-structlog/)
 [![Python](https://img.shields.io/pypi/pyversions/cloudru-qa-http-client-structlog)](https://pypi.org/project/cloudru-qa-http-client-structlog/)
 [![License](https://img.shields.io/pypi/l/cloudru-qa-http-client-structlog)](https://github.com/cloud-ru-tech/qa-libraries/blob/master/LICENSE)
 
-Опция `with_structlogger` для [HTTP-клиента](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/http-client),
-которая пишет все запросы и ответы через [structlog](https://www.structlog.org/en/stable/index.html).
+English | [Русский](README.ru.md)
 
-Штатный логгер http-client складывает запрос в одну текстовую строку. Здесь метод, URL,
-заголовки, тело и остальное уходят в лог отдельными полями — их видно в консоли при отладке
-и по ним можно искать и фильтровать в собранных логах.
+The `with_structlogger` option for the [HTTP client](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/http-client)
+logs all requests and responses through [structlog](https://www.structlog.org/en/stable/index.html).
 
-- [Установка](#установка)
-- [Скиллы для AI-агентов](#скиллы-для-ai-агентов)
-- [Использование](#использование)
-- [Асинхронный клиент](#асинхронный-клиент)
-- [Маскирование секретов](#маскирование-секретов)
-- [Параметры](#параметры)
-- [Разработка](#разработка)
+The standard http-client logger puts the request in one text string. This option logs the method, URL,
+headers, body, and other data as separate fields, visible in the console during debugging
+and available for searching and filtering in collected logs.
 
-## Установка
+- [Installation](#installation)
+- [Skills for AI agents](#skills-for-ai-agents)
+- [Usage](#usage)
+- [Asynchronous client](#asynchronous-client)
+- [Masking secrets](#masking-secrets)
+- [Parameters](#parameters)
+- [Development](#development)
 
-Требуется Python 3.13 или новее.
+## Installation
+
+Requires Python 3.13 or later.
 
 ```shell
 pip install cloudru-qa-http-client-structlog
 ```
 
-Библиотека импортируется как модуль `http_client_structlog`. Подходящая версия
+Import the library as `http_client_structlog`. A compatible version of
 [`cloudru-qa-http-client`](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/http-client)
-устанавливается вместе с ней.
+is installed with it.
 
-## Скиллы для AI-агентов
+## Skills for AI agents
 
-В пакет включён скилл [`http-client-structlog-usage`](https://github.com/cloud-ru-tech/qa-libraries/blob/master/.agents/skills/http-client-structlog-usage/SKILL.md)
-с примерами и правилами использования библиотеки для AI-агентов. Установите библиотеку
-в окружение своего проекта, затем из его корня выполните (нужен [`uv`](https://docs.astral.sh/uv/)):
+The package includes the [`http-client-structlog-usage`](https://github.com/cloud-ru-tech/qa-libraries/blob/master/.agents/skills/http-client-structlog-usage/SKILL.md) skill
+with examples and usage rules for AI agents. Install the library
+in your project environment, then run this from its root (requires [`uv`](https://docs.astral.sh/uv/)):
 
 ```shell
 uvx library-skills install --skill http-client-structlog-usage --yes
 ```
 
-Для Claude Code добавьте `--claude`. Инструкции поставляются вместе с версией библиотеки.
+For Claude Code, add `--claude`. The instructions are shipped with the library version.
 
-## Использование
+## Usage
 
-Передайте опцию в конструктор клиента — дальше логируется всё само:
+Pass the option to the client constructor; logging is then automatic:
 
 ```python
 import structlog
@@ -64,16 +66,16 @@ with OrdersClient("https://api.example.com", with_structlogger(structlog.get_log
     client.get_order("42")
 ```
 
-Запрос попадёт в лог событием `http request sent`, ответ — `http response received`.
-Общее поле `trace_id` связывает их между собой.
+The request is logged as an `http request sent` event, the response as `http response received`.
+A shared `trace_id` field links them.
 
-Вот так могут выглядеть структурированные логи для автотестов:
+Structured logs for automated tests can look like this:
 
 ![structlogs](https://raw.githubusercontent.com/cloud-ru-tech/qa-libraries/master/packages/http-client-structlog/assets/image.png)
 
-## Асинхронный клиент
+## Asynchronous client
 
-Опция та же, ничего дополнительно настраивать не нужно:
+Use the same option without extra configuration:
 
 ```python
 from http_client import AsyncHttpClient
@@ -89,15 +91,15 @@ async with AsyncOrdersClient("https://api.example.com", with_structlogger(logger
     await client.get_order("42")
 ```
 
-## Маскирование секретов
+## Masking secrets
 
-Поля с типовыми именами секретов — `authorization`, `cookie`, `token`, `password`, `api_key` и другие
-из `http_client.event_hooks.DEFAULT_SANITIZE_KEYS` — маскируются **по умолчанию и на любой глубине**,
-включая вложенные объекты и элементы массивов.
+Fields with common secret names — `authorization`, `cookie`, `token`, `password`, `api_key`, and others
+from `http_client.event_hooks.DEFAULT_SANITIZE_KEYS` — are masked **by default at every depth**,
+including nested objects and array items.
 
-Свои поля добавляйте через `sanitize_keys`. Это точные пути в формате
-[glom](https://glom.readthedocs.io/en/latest/), они применяются к заголовкам, query-параметрам
-и JSON-телу и дополняют список по умолчанию, а не заменяют его:
+Add your own fields with `sanitize_keys`. These are exact paths in
+[glom](https://glom.readthedocs.io/en/latest/) format, applied to headers, query parameters,
+and the JSON body. They extend the default list rather than replacing it:
 
 ```python
 with_structlogger(
@@ -106,39 +108,39 @@ with_structlogger(
 )
 ```
 
-Имена заголовков пишите строчными — `"authorization"`, а не `"Authorization"`.
+Write header names in lowercase: `"authorization"`, not `"Authorization"`.
 
-Отключить список по умолчанию можно только явно: `use_default_sanitize_keys=False`.
+Disable the default list explicitly with `use_default_sanitize_keys=False`.
 
-## Параметры
+## Parameters
 
-| Параметр | Тип | Назначение |
+| Parameter | Type | Purpose |
 |---|---|---|
-| `logger` | `structlog.stdlib.BoundLogger` | куда писать |
-| `sanitize_keys` | `Sequence[str] \| None` | glom-пути к полям, которые заменяются на `****` |
-| `json_indent` | `int \| None` | ширина отступа при сериализации JSON-свойств |
-| `log_level` | `int \| None` | уровень записи, по умолчанию `INFO` |
-| `use_default_sanitize_keys` | `bool` | маскировать ли типовые секреты на любой глубине, по умолчанию `True` |
+| `logger` | `structlog.stdlib.BoundLogger` | where to write |
+| `sanitize_keys` | `Sequence[str] \| None` | glom paths to fields replaced with `****` |
+| `json_indent` | `int \| None` | indentation width for JSON properties |
+| `log_level` | `int \| None` | record level; `INFO` by default |
+| `use_default_sanitize_keys` | `bool` | mask common secrets at every depth; `True` by default |
 
-Уровень и отступ можно задать сразу для всего проекта через `http_client.configure_logging(...)`
-или переменные окружения `HTTP_CLIENT_*`. То, что передали в `with_structlogger`, важнее общей настройки.
+Set the level and indentation for the whole project with `http_client.configure_logging(...)`
+or `HTTP_CLIENT_*` environment variables. Values passed to `with_structlogger` override shared settings.
 
-## Разработка
+## Development
 
-Библиотека развивается в монорепозитории [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries)
-вместе с остальными библиотеками `cloudru-qa-*`. Нужны [`uv`](https://docs.astral.sh/uv/), GNU Make
-и [`checkmake`](https://github.com/checkmake/checkmake),
-команды запускаются из корня репозитория:
+The library is developed in the [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries) monorepo
+alongside the other `cloudru-qa-*` libraries. You need [`uv`](https://docs.astral.sh/uv/), GNU Make,
+and [`checkmake`](https://github.com/checkmake/checkmake).
+Run commands from the repository root:
 
 ```shell
-make sync                              # зависимости всех библиотек строго по uv.lock
-make test-http-client-structlog        # тесты этой библиотеки
-make typecheck-http-client-structlog   # mypy для этой библиотеки
-make check                             # форматирование, ruff, mypy и тесты всего набора
+make sync                              # install dependencies for all libraries from uv.lock
+make test-http-client-structlog        # tests for this library
+make typecheck-http-client-structlog   # mypy for this library
+make check                             # formatting, ruff, mypy, and tests for the entire workspace
 ```
 
-Тесты прогоняются на Python 3.13 и 3.14. Окружение для другой версии создаётся отдельно:
+Tests run on Python 3.13 and 3.14. Create a separate environment for another version:
 `make sync test-http-client-structlog PYTHON_VERSION=3.14`.
 
-Релиз выпускается git-тегом `http-client-structlog/v<версия>`. Версия в теге должна совпадать
-с версией в `packages/http-client-structlog/pyproject.toml`.
+Publish a release with the git tag `http-client-structlog/v<version>`. The tag version must match
+the version in `packages/http-client-structlog/pyproject.toml`.

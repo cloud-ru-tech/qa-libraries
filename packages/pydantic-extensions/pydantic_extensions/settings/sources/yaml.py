@@ -14,12 +14,12 @@ if TYPE_CHECKING:
 
 
 class YamlBaseSettings(FileTypeBaseSettings):
-    """Базовый класс для настроек, загружаемых из yaml файлов.
+    """Base class for settings loaded from yaml files.
 
-    Необходимо передать путь до файла или последовательность путей в свойство ``yaml_file``
+    Supply a file path or sequence of paths in the ``yaml_file`` property
 
     >>> class MySettings(YamlBaseSettings):
-    >>>     ...  # настройки
+    >>>     ...  # settings
     >>>     model_config = SettingsConfigDict(yaml_file="config.yaml")
     """
 
@@ -50,10 +50,10 @@ class YamlBaseSettings(FileTypeBaseSettings):
 
 
 class StrictYamlConfigSettingsSource(UnknownKeysFilteringMixin, YamlConfigSettingsSource):
-    """Строгий YAML-источник с явной ошибкой для не-словаря.
+    """Strict YAML source with an explicit error for non-dictionaries.
 
     Raises:
-        TypeError: Если корень YAML не является ``dict``.
+        TypeError: If the YAML root is not a ``dict``.
 
     """
 
@@ -65,8 +65,8 @@ class StrictYamlConfigSettingsSource(UnknownKeysFilteringMixin, YamlConfigSettin
         return cast("dict[str, object]", data)
 
     def __call__(self) -> dict[str, object]:
-        """Вернуть значения настроек с применённым фильтром.
+        """Return settings values with the filter applied.
 
-        :return: значения файлового источника.
+        :return: file source values.
         """
         return self.apply_unknown_keys_filter(cast("dict[str, object]", super().__call__()))

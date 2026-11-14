@@ -11,8 +11,8 @@ from . import hooks
 from .handler import HandlerOptions, LoggingContextHandler
 from .naming import build_test_id, build_test_name, params_of
 
-# Имя самого модуля плагина занято entry point'ом, поэтому экземпляр
-# регистрируется под отдельным именем.
+# The plugin module name is occupied by the entry point, so the instance
+# is registered under a separate name.
 PLUGIN_NAME: Final = "logging_context_runtime"
 
 _LOGGER_NAME: Final = "logging_context"
@@ -56,24 +56,24 @@ class _ConfigureHook(Protocol):
 allure: _Allure | None
 try:
     import allure as _allure
-except ImportError:  # pragma: no cover - allure необязателен
+except ImportError:  # pragma: no cover - allure is optional
     allure = None
 else:
     allure = cast("_Allure", _allure)
 
 
 def pytest_addhooks(pluginmanager: pytest.PytestPluginManager) -> None:
-    """Зарегистрировать точки расширения.
+    """Register extension hooks.
 
-    :param pluginmanager: объект конфигурации pytest.
+    :param pluginmanager: pytest configuration object.
     """
     pluginmanager.add_hookspecs(hooks)
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
-    """Зарегистрировать настройки плагина.
+    """Register plugin settings.
 
-    :param parser: объект конфигурации pytest.
+    :param parser: pytest configuration object.
     """
     parser.addoption(
         LAUNCH_ID_OPTION,
@@ -145,9 +145,9 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Создать хендлер и подключить плагин.
+    """Create a handler and enable the plugin.
 
-    :param config: объект конфигурации pytest.
+    :param config: pytest configuration object.
     """
     output_dir = _resolve_output_dir(config)
     if output_dir is None:
@@ -157,8 +157,8 @@ def pytest_configure(config: pytest.Config) -> None:
     handler = LoggingContextHandler(
         output_dir,
         f"fixtures_{worker_id}.log",
-        # Под xdist воркеры делят каталог, поэтому имя файла должно быть
-        # различимым между процессами.
+        # xdist workers share a directory, so filenames must be
+        # distinguishable across processes.
         options=HandlerOptions(name_suffix="" if worker_id == _CONTROLLER_ID else worker_id),
     )
     handler.setLevel(_resolve_level(cast("str", config.getini("logging_context_level"))))
@@ -175,9 +175,9 @@ def pytest_configure(config: pytest.Config) -> None:
 
 
 def pytest_unconfigure(config: pytest.Config) -> None:
-    """Закрыть хендлер и отключить плагин.
+    """Close the handler and disable the plugin.
 
-    :param config: объект конфигурации pytest.
+    :param config: pytest configuration object.
     """
     plugin = cast("object", config.pluginmanager.get_plugin(PLUGIN_NAME))
     if isinstance(plugin, LoggingContextPlugin):
@@ -186,13 +186,13 @@ def pytest_unconfigure(config: pytest.Config) -> None:
 
 
 class LoggingContextPlugin:
-    """Переключает файл логов на каждый тест и прикрепляет их к allure."""
+    """Switch log files for each test and attach them to Allure."""
 
     def __init__(self, config: pytest.Config, handler: LoggingContextHandler) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param config: значение настройки ``config``.
-        :param handler: значение настройки ``handler``.
+        :param config: ``config`` setting value.
+        :param handler: ``handler`` setting value.
         """
         self._handler = handler
         self._attach_allure = bool(cast("bool", config.getini("logging_context_attach_allure")))
@@ -211,12 +211,12 @@ class LoggingContextPlugin:
 
     @property
     def handler(self) -> LoggingContextHandler:
-        """Хендлер, которым плагин пишет логи."""
+        """Handler used by the plugin to write logs."""
         return self._handler
 
     @_WRAPPER
     def pytest_runtest_protocol(self, item: pytest.Item) -> Generator[None, object, object]:
-        """Запоминает тест, чтобы его имя было доступно в хуках попытки."""
+        """Remember the test so its name is available in attempt hooks."""
         self._item = item
         try:
             return (yield)
@@ -224,30 +224,30 @@ class LoggingContextPlugin:
             self._item = None
 
     def pytest_runtest_logstart(self) -> None:
-        """Привязывает файл на каждую попытку теста.
+        """Bind a file for each test attempt.
 
-        Вызывается заново на каждый rerun, поэтому попытки не смешиваются
-        в одном файле. Покрывает setup и teardown всех фикстур попытки.
+        Called again on each rerun so attempts are not mixed
+        in a single file. Covers setup and teardown of all fixtures for the attempt.
         """
         if self._item is None:
             return
 
-        # Плагины вроде pytest-rerunfailures вызывают хук на каждую попытку.
-        # Отвязываем на всякий случай, чтобы повторный вызов не ронял прогон.
+        # Plugins such as pytest-rerunfailures invoke the hook for each attempt.
+        # Unbind defensively so repeated calls do not fail the run.
         self._handler.unbind()
         self._targets.attach_late_loggers()
         self._handler.bind(build_test_name(self._item))
 
     def pytest_runtest_logfinish(self) -> None:
-        """Возвращает логи в общий файл после попытки."""
+        """Route logs back to the shared file after an attempt."""
         self._handler.unbind()
 
-    # trylast делает обёртку самой внутренней: код после yield выполняется,
-    # когда все финализаторы теста уже отработали, но контекст allure ещё
-    # открыт — только в этот момент вложение попадёт в нужный тест.
+    # trylast makes this the innermost wrapper: code after yield runs
+    # after all test finalizers have finished but the Allure context is still
+    # open; only then will the attachment belong to the correct test.
     @_INNER_WRAPPER
     def pytest_runtest_teardown(self) -> Generator[None, object, object]:
-        """Прикрепляет логи к allure после того, как отработали все фикстуры."""
+        """Attach logs to Allure after all fixtures have finished."""
         try:
             return (yield)
         finally:
@@ -255,7 +255,7 @@ class LoggingContextPlugin:
 
     @_FIRST
     def pytest_runtest_setup(self, item: pytest.Item) -> None:
-        """Пишет в начало файла идентификатор теста и его параметры."""
+        """Write the test identifier and parameters at the start of the file."""
         if not self._log_test_header:
             return
 
@@ -263,8 +263,8 @@ class LoggingContextPlugin:
         params = params_of(item)
 
         if params:
-            # json.dumps намеренно не защищён try/except: несериализуемые
-            # параметры должны приводить к setup error, а не молча теряться.
+            # json.dumps intentionally has no try/except: nonserializable
+            # parameters must produce a setup error rather than be silently dropped.
             rendered = json.dumps(
                 params,
                 ensure_ascii=False,
@@ -278,7 +278,7 @@ class LoggingContextPlugin:
         self._emit_directly(message)
 
     def _attach_to_allure(self) -> None:
-        """Прикрепить файл логов текущего теста (и файл фикстур) к отчёту."""
+        """Attach the current test log file and fixture log file to the report."""
         if not self._attach_allure or allure is None:
             return
 
@@ -292,15 +292,15 @@ class LoggingContextPlugin:
             self._attach_file(self._handler.fixtures_file)
 
     def shutdown(self) -> None:
-        """Снять хендлер с логгеров, вернуть их уровни и закрыть файлы."""
+        """Detach the handler from loggers, restore their levels, and close files."""
         self._targets.detach()
         self._handler.close()
 
     def _emit_directly(self, message: str) -> None:
-        """Отправить служебную запись прямо в хендлер.
+        """Send an internal record directly to the handler.
 
-        Минуя дерево логгеров — иначе заголовок терялся бы при
-        `logging_context_loggers`, суженном до пользовательских логгеров.
+        Bypass the logger tree; otherwise the header would be lost under
+        `logging_context_loggers`, restricted to user loggers.
         """
         record = logging.LogRecord(
             name=_LOGGER_NAME,
@@ -330,14 +330,14 @@ class LoggingContextPlugin:
 
 
 def _resolve_output_dir(config: pytest.Config) -> Path | None:
-    """Каталог для логов или None, если плагин не активирован."""
+    """Log directory, or None if the plugin is disabled."""
     configured = str(cast("str", config.getini("logging_context_dir")))
     if not configured:
         return None
 
     output_dir = Path(configured)
     if not output_dir.is_absolute():
-        # Относительно rootdir, а не cwd: cwd может поменяться во время прогона.
+        # Relative to rootdir rather than cwd, which may change during the run.
         output_dir = config.rootpath / output_dir
 
     launch_id = _validate_path_component(*_launch_id(config))
@@ -345,7 +345,7 @@ def _resolve_output_dir(config: pytest.Config) -> Path | None:
 
 
 def _launch_id(config: pytest.Config) -> tuple[str, str]:
-    """Идентификатор запуска и источник, из которого он взят."""
+    """Run identifier and the source it came from."""
     from_option = cast("str | None", config.getoption(_LAUNCH_ID_DEST, default=""))
     if from_option:
         return str(from_option), LAUNCH_ID_OPTION
@@ -358,7 +358,7 @@ def _launch_id(config: pytest.Config) -> tuple[str, str]:
 
 
 def _worker_id(config: pytest.Config) -> str:
-    """Идентификатор воркера pytest-xdist или «master» при обычном запуске."""
+    """Pytest-xdist worker identifier, or master for a regular run."""
     workerinput = cast("dict[str, object] | None", getattr(config, "workerinput", None))
     if workerinput is None:
         return "master"
@@ -367,7 +367,7 @@ def _worker_id(config: pytest.Config) -> str:
 
 
 def _validate_path_component(value: str, source: str) -> str:
-    """Проверить, что значение — один безопасный компонент пути."""
+    """Check whether the value is a single safe path component."""
     if not value:
         return value
 
@@ -375,8 +375,8 @@ def _validate_path_component(value: str, source: str) -> str:
         value in {".", ".."}
         or any(char in value for char in ("/", "\\", "\0"))
         or PurePath(value).is_absolute()
-        # «D:run» не абсолютный и без разделителей, но на Windows уводит на
-        # другой диск: output_dir / "D:run" даёт "D:run".
+        # D:run is neither absolute nor contains separators, but on Windows it switches to
+        # another drive: output_dir / "D:run" yields "D:run".
         or bool(PureWindowsPath(value).drive)
     )
     if is_unsafe:
@@ -390,7 +390,7 @@ def _validate_path_component(value: str, source: str) -> str:
 
 
 def _resolve_level(value: str) -> int:
-    """Уровень логирования из имени («DEBUG») или числа («10»)."""
+    """Resolve a logging level from a name (DEBUG) or a number (10)."""
     if value.isdigit():
         return int(value)
 
@@ -403,20 +403,20 @@ def _resolve_level(value: str) -> int:
 
 
 class _LoggerTargets:
-    """Логгеры, на которых висит хендлер, с их исходными уровнями."""
+    """Loggers with the handler attached, with their original levels."""
 
     def __init__(self, handler: LoggingContextHandler, logger_names: Sequence[str]) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param handler: значение настройки ``handler``.
-        :param logger_names: значение настройки ``logger_names``.
+        :param handler: ``handler`` setting value.
+        :param logger_names: ``logger_names`` setting value.
         """
         self._handler = handler
         self._names = list(logger_names)
         self._original_levels: dict[logging.Logger, int] = {}
 
     def attach(self) -> None:
-        """Повесить хендлер на указанные логгеры либо на root."""
+        """Attach the handler to the specified loggers or root."""
         if self._names:
             self._attach_all(_without_descendants([logging.getLogger(name) for name in self._names]))
             return
@@ -425,10 +425,10 @@ class _LoggerTargets:
         self._attach_all([root, *_non_propagating_loggers(root)])
 
     def attach_late_loggers(self) -> None:
-        """Догнать логгеры с `propagate=False`, созданные после старта прогона.
+        """Catch loggers with `propagate=False` created after the run started.
 
-        Такие логгеры не доходят до root, а на момент `pytest_configure` их
-        ещё не существовало: тестовые модули импортируются позже.
+        These loggers do not reach root, and at `pytest_configure` time they
+        did not exist yet: test modules are imported later.
         """
         if self._names:
             return
@@ -436,7 +436,7 @@ class _LoggerTargets:
         self._attach_all(_non_propagating_loggers(logging.getLogger()))
 
     def detach(self) -> None:
-        """Снять хендлер и вернуть логгерам исходные уровни."""
+        """Detach the handler and restore original logger levels."""
         for logger, level in self._original_levels.items():
             logger.removeHandler(self._handler)
             logger.setLevel(level)
@@ -455,10 +455,10 @@ class _LoggerTargets:
 
 
 def _without_descendants(loggers: Sequence[logging.Logger]) -> list[logging.Logger]:
-    """Убрать логгеры, чьи записи и так дойдут до выбранного предка.
+    """Remove loggers whose records already reach a selected ancestor.
 
-    Иначе хендлер, повешенный и на `app`, и на `app.http`, обработает одну
-    запись дважды и продублирует строку в файле.
+    Otherwise a handler attached to both `app` and `app.http` would process one
+    record twice and duplicate the line in the file.
     """
     selected = {logger.name for logger in loggers}
     return [logger for logger in loggers if not _has_selected_ancestor(logger, selected)]

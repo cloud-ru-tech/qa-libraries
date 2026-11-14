@@ -17,12 +17,12 @@ class _Arguments(argparse.Namespace):
 
 
 def validate_catalog(root: Path, packages: Sequence[Package]) -> int:
-    """Проверить, что каждый корневой скилл включён ровно в один пакет.
+    """Check that each root skill is bundled with exactly one package.
 
-    :param root: корень репозитория
-    :param packages: библиотеки workspace
-    :returns: число распространяемых скиллов
-    :raises ValueError: скилл потерян, продублирован или взят вне корневого каталога
+    :param root: Repository root.
+    :param packages: Workspace libraries.
+    :returns: Number of bundled skills.
+    :raises ValueError: A skill is missing, duplicated, or outside the root catalog.
     """
     catalog = {path.parent.resolve() for path in (root / ".agents" / "skills").glob("*/SKILL.md")}
     sources = [path.resolve() for package in packages for path in _skill_directories(package)]
@@ -33,13 +33,13 @@ def validate_catalog(root: Path, packages: Sequence[Package]) -> int:
 
 
 def validate_skills(package: Package, artifact: Path) -> int:
-    """Сверить файлы скиллов в дистрибутиве с корневыми исходниками.
+    """Compare skill files in a distribution against the root sources.
 
-    :param package: библиотека workspace
-    :param artifact: wheel или sdist
-    :returns: число проверенных файлов скиллов и справочных материалов
-    :raises FileNotFoundError: ссылка на исходный скилл повреждена
-    :raises ValueError: файлы потеряны, изменены, добавлены или оставлены ссылками
+    :param package: Workspace library.
+    :param artifact: Wheel or sdist.
+    :returns: Number of checked skill and reference files.
+    :raises FileNotFoundError: A source skill link is broken.
+    :raises ValueError: Files are missing, changed, added, or left as symbolic links.
     """
     expected = _source_contents(package)
     prefix = f"{package.module}/" if artifact.suffix == ".whl" else ""
@@ -55,7 +55,7 @@ def validate_skills(package: Package, artifact: Path) -> int:
 
 
 def main() -> None:
-    """Проверить состав скиллов всех wheel и sdist в каталоге сборки."""
+    """Validate skill contents in all wheels and sdists in the build directory."""
     parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument("directory", type=Path)
     args = parser.parse_args(namespace=_Arguments())

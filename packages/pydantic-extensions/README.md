@@ -1,57 +1,59 @@
-# Расширения Pydantic
+# Pydantic extensions
 
 [![PyPI](https://img.shields.io/pypi/v/cloudru-qa-pydantic-extensions)](https://pypi.org/project/cloudru-qa-pydantic-extensions/)
 [![Python](https://img.shields.io/pypi/pyversions/cloudru-qa-pydantic-extensions)](https://pypi.org/project/cloudru-qa-pydantic-extensions/)
 [![License](https://img.shields.io/pypi/l/cloudru-qa-pydantic-extensions)](https://github.com/cloud-ru-tech/qa-libraries/blob/master/LICENSE)
 
-Расширения для библиотеки [`pydantic`](https://docs.pydantic.dev/latest/).
+English | [Русский](README.ru.md)
 
-- [Расширения Pydantic](#расширения-pydantic)
-  - [Установка](#установка)
-  - [Скиллы для AI-агентов](#скиллы-для-ai-агентов)
-  - [Использование](#использование)
-    - [Модуль `fields`](#модуль-fields)
-      - [Сериализация и десериализация](#сериализация-и-десериализация)
-    - [Модуль `settings`](#модуль-settings)
-      - [Управление проверкой ключей в файле](#управление-проверкой-ключей-в-файле)
-      - [YAML настройки](#yaml-настройки)
-      - [JSON настройки](#json-настройки)
-      - [TOML настройки](#toml-настройки)
-      - [Поддержка кодировки](#поддержка-кодировки)
-      - [Загрузка из нескольких файлов](#загрузка-из-нескольких-файлов)
-  - [Разработка](#разработка)
+Extensions for [`pydantic`](https://docs.pydantic.dev/latest/).
 
-## Установка
+- [Pydantic extensions](#pydantic-extensions)
+  - [Installation](#installation)
+  - [Skills for AI agents](#skills-for-ai-agents)
+  - [Usage](#usage)
+    - [The `fields` module](#the-fields-module)
+      - [Serialization and deserialization](#serialization-and-deserialization)
+    - [The `settings` module](#the-settings-module)
+      - [File key validation](#file-key-validation)
+      - [YAML settings](#yaml-settings)
+      - [JSON settings](#json-settings)
+      - [TOML settings](#toml-settings)
+      - [Encoding support](#encoding-support)
+      - [Loading multiple files](#loading-multiple-files)
+  - [Development](#development)
 
-Требуется Python 3.13 или новее.
+## Installation
+
+Requires Python 3.13 or later.
 
 ```shell
 pip install cloudru-qa-pydantic-extensions
 ```
 
-Библиотека импортируется как модуль `pydantic_extensions`.
+Import the library as the module `pydantic_extensions`.
 
-## Скиллы для AI-агентов
+## Skills for AI agents
 
-У этой библиотеки собственного скилла пока нет. Если в проекте установлены другие
-библиотеки набора со [скиллами для AI-агентов](https://github.com/cloud-ru-tech/qa-libraries#скиллы-для-ai-агентов),
-выбрать и подключить их можно из корня проекта (нужен [`uv`](https://docs.astral.sh/uv/)):
+This library does not have its own skill yet. If your project uses other
+libraries from this suite with [skills for AI agents](https://github.com/cloud-ru-tech/qa-libraries#skills-for-ai-agents),
+select and enable them from your project root (requires [`uv`](https://docs.astral.sh/uv/)):
 
 ```shell
 uvx library-skills
 ```
 
-Для Claude Code добавьте `--claude`.
+For Claude Code, add `--claude`.
 
-## Использование
+## Usage
 
-### Модуль `fields`
+### The `fields` module
 
-Данный модуль содержит расширения для полей pydantic моделей.
+This module extends fields in pydantic models.
 
-#### Сериализация и десериализация
+#### Serialization and deserialization
 
-Классы `CamelCaseBaseModel` и `PascalCaseBaseModel` позволяют при конвертации pydantic модели в json и обратно модифицировать названия в формате [`cammelCase`](https://ru.wikipedia.org/wiki/%D0%92%D0%B5%D1%80%D0%B1%D0%BB%D1%8E%D0%B6%D0%B8%D0%B9_%D1%80%D0%B5%D0%B3%D0%B8%D1%81%D1%82%D1%80) и `PascalCase` соответственно.
+`CamelCaseBaseModel` and `PascalCaseBaseModel` convert field names to [`camelCase`](https://en.wikipedia.org/wiki/Camel_case) and `PascalCase`, respectively, when converting pydantic models to and from JSON.
 
 
 ```python
@@ -64,39 +66,39 @@ class User(CamelCaseBaseModel):
     is_active: bool
 
 
-# Сериализация
+# Serialization
 user = User(username="John", last_name="Smith", is_active=True)
 assert user.model_dump_json() == '{"username":"John","lastName":"Smith","isActive":true}'
 
-# Десериализация
+# Deserialization
 json_content = {"username": "Aleksey", "lastName": "Petrov", "isActive": false}
 user2 = User.model_validate(json_content)
 assert user2.last_name == "Petrov"
 ```
 
-### Модуль `settings`
+### The `settings` module
 
-Данный модуль содержит расширения для настроек [`pydantic-settings`](https://docs.pydantic.dev/latest/concepts/pydantic_settings/). 
+This module extends [`pydantic-settings`](https://docs.pydantic.dev/latest/concepts/pydantic_settings/).
 
-#### Особенности
+#### Features
 
-Для `JsonBaseSettings`, `TomlBaseSettings` и `YamlBaseSettings` действуют общие правила:
+`JsonBaseSettings`, `TomlBaseSettings`, and `YamlBaseSettings` share these rules:
 
-- Кастомный порядок источников: `env -> dotenv -> secrets -> file -> init`.
-- Поддержка одного файла или списка файлов.
-- Проверка, что все указанные файлы существуют (`FileNotFoundError`).
-- Проверка отсутствия неизвестных ключей в файле (`ValueError`).
-- Проверка наличия всех обязательных ключей модели — в файле либо в другом источнике (env / dotenv / secrets / init) (`ValueError`).
-- Для JSON/YAML: корень файла должен быть `dict` (`TypeError`).
+- Custom source order: `env -> dotenv -> secrets -> file -> init`.
+- Support for a single file or a list of files.
+- All specified files must exist (`FileNotFoundError`).
+- Unknown file keys are rejected (`ValueError`).
+- All required model keys must be present in the file or another source (env / dotenv / secrets / init) (`ValueError`).
+- JSON/YAML files must have a `dict` root (`TypeError`).
 
-#### Управление проверкой ключей в файле
+#### File key validation
 
-Для `JsonBaseSettings`, `TomlBaseSettings` и `YamlBaseSettings` доступны 2 флага в `SettingsConfigDict`:
+`JsonBaseSettings`, `TomlBaseSettings`, and `YamlBaseSettings` support two `SettingsConfigDict` flags:
 
-- `validate_unknown_keys` (по умолчанию `True`) - проверять отсутствие лишних ключей в файле.
-- `validate_required_keys` (по умолчанию `True`) - проверять наличие обязательных ключей модели на этапе чтения source. Ключ считается отсутствующим, только если его нет ни в файле, ни в одном из не-файловых источников (env / dotenv / secrets / init) — поэтому часть обязательных полей можно задавать через переменные окружения, не дублируя их в файле.
+- `validate_unknown_keys` (default `True`): reject unknown file keys.
+- `validate_required_keys` (default `True`): check required model keys when reading the source. A key is missing only if it is absent from both the file and all other sources (env / dotenv / secrets / init). Required fields can therefore be set through environment variables without duplicating them in the file.
 
-Строгий режим (по умолчанию):
+Strict mode (default):
 
 ```python
 from pydantic import Field
@@ -115,7 +117,7 @@ class MySettings(JsonBaseSettings):
     )
 ```
 
-Игнорировать неизвестные ключи:
+Ignore unknown keys:
 
 ```python
 from pydantic import Field
@@ -132,9 +134,9 @@ class MySettings(TomlBaseSettings):
     )
 ```
 
-При `validate_unknown_keys=False` лишние ключи автоматически отфильтровываются из файлового source, поэтому дополнительно задавать `extra="ignore"` не требуется.
+With `validate_unknown_keys=False`, extra keys are filtered out of the file source automatically, so `extra="ignore"` is not needed.
 
-Отключить раннюю проверку обязательных ключей:
+Disable early validation of required keys:
 
 ```python
 from pydantic_settings import SettingsConfigDict
@@ -151,9 +153,9 @@ class MySettings(YamlBaseSettings):
     )
 ```
 
-В этом режиме библиотека не проверяет обязательные ключи на этапе чтения файла, но итоговая pydantic-валидация модели по-прежнему выполняется.
+In this mode, the library does not check required keys when reading the file. Final pydantic model validation still runs.
 
-Если у поля задано значение по умолчанию, то отсутствие ключа в файле не приведет к ошибке, и будет использован `default`:
+If a field has a default value, a missing file key does not cause an error; the `default` is used:
 
 ```python
 from pydantic import Field
@@ -172,10 +174,10 @@ class MySettings(YamlBaseSettings):
 
 
 settings = MySettings()
-# если в config.yaml нет app_name, то settings.app_name == "my-app"
+# If config.yaml has no app_name, settings.app_name == "my-app"
 ```
 
-Если `default` не задан, pydantic выбросит `ValidationError`:
+If no `default` is set, pydantic raises `ValidationError`:
 
 ```python
 from pydantic_settings import SettingsConfigDict
@@ -191,12 +193,12 @@ class MySettings(YamlBaseSettings):
     )
 
 
-MySettings()  # ValidationError, если app_name отсутствует в config.yaml
+MySettings()  # ValidationError if app_name is missing from config.yaml
 ```
 
-#### YAML настройки
+#### YAML settings
 
-Для загрузки настроек из YAML файла(ов) реализован класс `YamlBaseSettings`:
+Use `YamlBaseSettings` to load settings from one or more YAML files:
 
 ```python
 from pydantic import Field
@@ -212,14 +214,14 @@ class MySettings(YamlBaseSettings):
     model_config = SettingsConfigDict(yaml_file="config.yaml")
 ```
 
-Для работы с YAML файлами требуется установить дополнительную зависимость:
+Install the extra dependency for YAML support:
 ```shell
 pip install "cloudru-qa-pydantic-extensions[yaml]"
 ```
 
-#### JSON настройки
+#### JSON settings
 
-Для загрузки настроек из JSON файла(ов) реализован класс `JsonBaseSettings`:
+Use `JsonBaseSettings` to load settings from one or more JSON files:
 
 ```python
 from pydantic import Field
@@ -235,9 +237,9 @@ class MySettings(JsonBaseSettings):
     model_config = SettingsConfigDict(json_file="config.json")
 ```
 
-#### TOML настройки
+#### TOML settings
 
-Для загрузки настроек из TOML файла(ов) реализован класс `TomlBaseSettings`:
+Use `TomlBaseSettings` to load settings from one or more TOML files:
 
 ```python
 from pydantic import Field
@@ -253,22 +255,22 @@ class MySettings(TomlBaseSettings):
     model_config = SettingsConfigDict(toml_file="config.toml")
 ```
 
-Для работы с TOML файлами требуется установить дополнительную зависимость:
+Install the extra dependency for TOML support:
 ```shell
 pip install "cloudru-qa-pydantic-extensions[toml]"
 ``` 
 
-#### Поддержка кодировки
+#### Encoding support
 
-Для yaml и json настроек есть поддержка кодировки файла через параметр `*_file_encoding`:
+For YAML and JSON settings, set the file encoding with `*_file_encoding`:
 
 ```python
 model_config = SettingsConfigDict(yaml_file="config.yaml", yaml_file_encoding="windows-1251")
 ```
 
-#### Загрузка из нескольких файлов
+#### Loading multiple files
 
-Для всех классов реализована поддержка загрузки настроек сразу из нескольких файлов. Это бывает полезно, когда у вас есть несколько файлов для каждого окружения и один файл с общими для всех окружений настройками. На примере YAML настроек:
+All settings classes support loading multiple files. This is useful when each environment has its own file alongside a shared settings file. For example, with YAML:
 
 ```python
 import os
@@ -293,9 +295,9 @@ class MySettings(YamlBaseSettings):
     )
 ```
 
-Если какая-либо переменная будет продублирована в обоих файлах, то ее значение будет взято из последнего файла. В данном случае из `config.{ENV}.yaml`.
+If a variable occurs in both files, its value comes from the last file, `config.{ENV}.yaml` in this example.
 
-Также yaml, toml и json файлы с конфигурацией можно сочетать с `.env` файлами:
+YAML, TOML, and JSON configuration files can also be combined with `.env` files:
 
 ```python
 from pydantic import Field
@@ -308,35 +310,35 @@ class MySettings(YamlBaseSettings):
     debug: bool = Field(default=False)
     port: int = Field(default=0)
 
-    # Конфигурация считывается одновременно из env и yaml файлов.
-    # Приоритет источников: env -> dotenv -> secrets -> file -> init.
+    # Read configuration from both env and YAML files.
+    # Source priority: env -> dotenv -> secrets -> file -> init.
     model_config = SettingsConfigDict(
         env_file=".env",
         yaml_file=f"config.yaml",
     )
 ```
 
-## Разработка
+## Development
 
-Библиотека развивается в монорепозитории [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries)
-вместе с остальными библиотеками `cloudru-qa-*`. Нужны [`uv`](https://docs.astral.sh/uv/), GNU Make
-и [`checkmake`](https://github.com/checkmake/checkmake),
-команды запускаются из корня репозитория:
+This library is developed in the [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries) monorepo
+alongside the other `cloudru-qa-*` libraries. You need [`uv`](https://docs.astral.sh/uv/), GNU Make
+and [`checkmake`](https://github.com/checkmake/checkmake);
+run the commands from the repository root:
 
 ```shell
-make sync                            # зависимости и extras всех библиотек строго по uv.lock
-make test-pydantic-extensions        # тесты этой библиотеки
-make typecheck-pydantic-extensions   # mypy для этой библиотеки
-make check                           # форматирование, ruff, mypy и тесты всего набора
+make sync                            # dependencies and extras for all libraries from uv.lock
+make test-pydantic-extensions        # tests for this library
+make typecheck-pydantic-extensions   # mypy for this library
+make check                           # formatting, Ruff, mypy, and tests for the whole suite
 ```
 
-⚠️ **Важно**, чтобы библиотека оставалась легковесной и универсальной. Новые зависимости стоит
-добавлять, только если есть уверенность, что они необходимы всем пользователям библиотеки.
-Тяжёлые зависимости лучше оформлять как optional (подробнее
-[в документации uv](https://docs.astral.sh/uv/concepts/projects/dependencies/#optional-dependencies)).
+⚠️ Keep the library lightweight and general purpose. Add dependencies only
+when they are needed by all library users.
+Make heavy dependencies optional (see
+[the uv documentation](https://docs.astral.sh/uv/concepts/projects/dependencies/#optional-dependencies)).
 
-Тесты прогоняются на Python 3.13 и 3.14. Окружение для другой версии создаётся отдельно:
+Tests run on Python 3.13 and 3.14. Each version uses a separate environment:
 `make sync test-pydantic-extensions PYTHON_VERSION=3.14`.
 
-Релиз выпускается git-тегом `pydantic-extensions/v<версия>`. Версия в теге должна совпадать
-с версией в `packages/pydantic-extensions/pyproject.toml`.
+Create a release with the Git tag `pydantic-extensions/v<version>`. The tag version must match
+the version in `packages/pydantic-extensions/pyproject.toml`.

@@ -26,10 +26,10 @@ class BuildAsyncClient(Protocol):
 
 
 class RetryingAuth(httpx.Auth):
-    """Повторяет запрос со свежим токеном, получив 401."""
+    """Retry the request with a fresh token after a 401."""
 
     def __init__(self) -> None:
-        """Создать экземпляр с указанными настройками."""
+        """Create an instance with the supplied settings."""
         self.retried = False
 
     def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response]:

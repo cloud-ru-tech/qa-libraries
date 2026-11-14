@@ -1,12 +1,12 @@
 import secrets
 
-# Версия формата traceparent, единственная описанная в W3C Trace Context.
+# Traceparent format version, the only version defined by W3C Trace Context.
 TRACEPARENT_VERSION = "00"
 
-# Флаг «трасса записывается».
+# Flag indicating that the trace is recorded.
 FLAGS_SAMPLED = "01"
 
-# Флаг «решение о записи трассы не принято».
+# Flag indicating that the trace recording decision has not been made.
 FLAGS_NOT_SAMPLED = "00"
 
 _TRACE_ID_BYTES = 16
@@ -14,21 +14,21 @@ _SPAN_ID_BYTES = 8
 
 
 def generate(flags: str = FLAGS_SAMPLED) -> str:
-    """Сгенерировать значение заголовка traceparent.
+    """Generate a traceparent header value.
 
-    :param flags: флаги трассировки, по умолчанию «трасса записывается»
-    :return: traceparent в формате W3C Trace Context
+    :param flags: trace flags, defaults to recording the trace
+    :return: traceparent in W3C Trace Context format
     """
     return f"{TRACEPARENT_VERSION}-{_random_id(_TRACE_ID_BYTES)}-{_random_id(_SPAN_ID_BYTES)}-{flags}"
 
 
 def _random_id(size: int) -> str:
-    """Сгенерировать идентификатор трассировки заданной длины.
+    """Generate a trace identifier of the specified length.
 
-    Спецификация W3C запрещает идентификаторы из одних нулей, поэтому такое значение перегенерируется.
+    W3C forbids all-zero identifiers, so regenerate such values.
 
-    :param size: длина идентификатора в байтах
-    :return: идентификатор в виде hex-строки нижнего регистра
+    :param size: identifier length in bytes
+    :return: identifier as a lowercase hex string
     """
     while True:
         value = secrets.token_hex(size)

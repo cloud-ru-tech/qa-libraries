@@ -1,4 +1,4 @@
-"""Базовые классы настроек по типу файла конфигурации (json / yaml / toml)."""
+"""Base settings classes by configuration file type (json / yaml / toml)."""
 
 from .base_source_type import FileTypeBaseSettings
 from .json import JsonBaseSettings

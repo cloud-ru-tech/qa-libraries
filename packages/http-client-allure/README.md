@@ -1,53 +1,55 @@
-# Опции для интеграции HTTP-клиента с Allure
+# Options for integrating the HTTP client with Allure
 
 [![PyPI](https://img.shields.io/pypi/v/cloudru-qa-http-client-allure)](https://pypi.org/project/cloudru-qa-http-client-allure/)
 [![Python](https://img.shields.io/pypi/pyversions/cloudru-qa-http-client-allure)](https://pypi.org/project/cloudru-qa-http-client-allure/)
 [![License](https://img.shields.io/pypi/l/cloudru-qa-http-client-allure)](https://github.com/cloud-ru-tech/qa-libraries/blob/master/LICENSE)
 
-Библиотека добавляет [HTTP-клиенту](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/http-client) опции, которые оформляют каждый запрос как отдельный шаг Allure и прикрепляют к нему данные запроса и ответа.
+English | [Русский](README.ru.md)
 
-Нужна, чтобы в отчете об автотестах было видно, какие запросы ушли, с какими телами и что ответил сервис — без ручных вызовов `allure.step` и `allure.attach` в коде тестов.
+The library adds options to the [HTTP client](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/http-client) that wrap each request in a separate Allure step and attach request and response data.
 
-- [Опции для интеграции HTTP-клиента с Allure](#опции-для-интеграции-http-клиента-с-allure)
-  - [Установка](#установка)
-  - [Скиллы для AI-агентов](#скиллы-для-ai-агентов)
-  - [Быстрый старт](#быстрый-старт)
-  - [Опции](#опции)
+Use it to see which requests were sent, their bodies, and service responses in automated test reports, without manual `allure.step` and `allure.attach` calls in tests.
+
+- [Options for integrating the HTTP client with Allure](#options-for-integrating-the-http-client-with-allure)
+  - [Installation](#installation)
+  - [Skills for AI agents](#skills-for-ai-agents)
+  - [Quick start](#quick-start)
+  - [Options](#options)
     - [`wrap_requests_in_steps`](#wrap_requests_in_steps)
     - [`wrap_requests_and_responses_in_steps`](#wrap_requests_and_responses_in_steps)
-  - [Параметры](#параметры)
-  - [Заголовки ответа](#заголовки-ответа)
-  - [Маскирование секретов](#маскирование-секретов)
-  - [Запрос в формате curl](#запрос-в-формате-curl)
-  - [Асинхронный клиент](#асинхронный-клиент)
-  - [Потоковые запросы](#потоковые-запросы)
-  - [Разработка](#разработка)
+  - [Parameters](#parameters)
+  - [Response headers](#response-headers)
+  - [Masking secrets](#masking-secrets)
+  - [Requests as curl commands](#requests-as-curl-commands)
+  - [Asynchronous client](#asynchronous-client)
+  - [Streaming requests](#streaming-requests)
+  - [Development](#development)
 
-## Установка
+## Installation
 
-Требуется Python 3.13 или новее.
+Requires Python 3.13 or later.
 
 ```shell
 pip install cloudru-qa-http-client-allure
 ```
 
-Библиотека импортируется как модуль `http_client_allure`.
+Import the library as the `http_client_allure` module.
 
-## Скиллы для AI-агентов
+## Skills for AI agents
 
-В пакет включён скилл [`http-client-allure-usage`](https://github.com/cloud-ru-tech/qa-libraries/blob/master/.agents/skills/http-client-allure-usage/SKILL.md)
-с примерами и правилами использования библиотеки для AI-агентов. Установите библиотеку
-в окружение своего проекта, затем из его корня выполните (нужен [`uv`](https://docs.astral.sh/uv/)):
+The package includes the [`http-client-allure-usage`](https://github.com/cloud-ru-tech/qa-libraries/blob/master/.agents/skills/http-client-allure-usage/SKILL.md) skill
+with examples and usage rules for AI agents. Install the library
+in your project environment, then run this from its root (requires [`uv`](https://docs.astral.sh/uv/)):
 
 ```shell
 uvx library-skills install --skill http-client-allure-usage --yes
 ```
 
-Для Claude Code добавьте `--claude`. Инструкции поставляются вместе с версией библиотеки.
+For Claude Code, add `--claude`. The instructions are shipped with the library version.
 
-## Быстрый старт
+## Quick start
 
-Передайте опцию в конструктор клиента — дальше ничего делать не нужно, все запросы попадут в отчет сами:
+Pass the option to the client constructor: all requests then appear in the report automatically:
 
 ```python
 from http_client import HttpClient
@@ -61,11 +63,11 @@ client = HttpClient(
 client.get("/sample")
 ```
 
-## Опции
+## Options
 
 ### `wrap_requests_in_steps`
 
-Оборачивает каждый запрос в шаг Allure и прикрепляет к нему данные запроса.
+Wraps each request in an Allure step and attaches the request data.
 
 ![simpla_request](https://raw.githubusercontent.com/cloud-ru-tech/qa-libraries/master/packages/http-client-allure/assets/simple_request.png)
 
@@ -76,11 +78,11 @@ from http_client_allure import wrap_requests_in_steps
 client = HttpClient("https://example.com", wrap_requests_in_steps())
 ```
 
-В шаге видна длительность запроса. Если сервис не ответил — оборвалось соединение или вышел таймаут — шаг все равно появится в отчете и будет помечен упавшим.
+The step shows the request duration. If the service does not respond because of a lost connection or timeout, the step still appears in the report and is marked as failed.
 
 ### `wrap_requests_and_responses_in_steps`
 
-То же самое, но к шагу дополнительно прикрепляются данные ответа.
+The same, but also attaches response data to the step.
 
 ![json_response](https://raw.githubusercontent.com/cloud-ru-tech/qa-libraries/master/packages/http-client-allure/assets/json_response.png)
 
@@ -91,59 +93,59 @@ from http_client_allure import wrap_requests_and_responses_in_steps
 client = HttpClient("https://example.com", wrap_requests_and_responses_in_steps())
 ```
 
-## Параметры
+## Parameters
 
-Обе опции принимают одинаковый набор параметров.
+Both options accept the same parameters.
 
-| Параметр | По умолчанию | Что делает |
+| Parameter | Default | Behavior |
 |---|---|---|
-| `show_host` | `False` | показывать хост запроса в заголовке шага |
-| `show_query_params` | `False` | показывать query параметры в заголовке шага |
-| `attach_request` | `True` | прикреплять данные запроса к шагу |
-| `attach_response` | `True` | прикреплять тело ответа к шагу (только у `wrap_requests_and_responses_in_steps`) |
-| `attach_response_headers` | `True` | прикреплять заголовки ответа к шагу (только у `wrap_requests_and_responses_in_steps`) |
-| `serialize_request_to_curl` | `False` | прикреплять запрос в виде команды curl вместо JSON |
-| `sanitize_keys` | `None` | ключи в формате [glom](https://glom.readthedocs.io/en/latest/), значения которых нужно скрыть |
-| `use_default_sanitize_keys` | `True` | дополнять `sanitize_keys` списком секретов из `http_client` |
-| `json_dumps_kwargs` | `None` | параметры [`json.dumps`](https://docs.python.org/3/library/json.html#json.dump) для отображения JSON |
-| `max_attach_length` | `None` | максимальная длина вложения в символах, длинные вложения обрезаются |
+| `show_host` | `False` | show the request host in the step title |
+| `show_query_params` | `False` | show query parameters in the step title |
+| `attach_request` | `True` | attach request data to the step |
+| `attach_response` | `True` | attach the response body (only with `wrap_requests_and_responses_in_steps`) |
+| `attach_response_headers` | `True` | attach response headers (only with `wrap_requests_and_responses_in_steps`) |
+| `serialize_request_to_curl` | `False` | attach the request as a curl command instead of JSON |
+| `sanitize_keys` | `None` | keys in [glom](https://glom.readthedocs.io/en/latest/) format whose values should be hidden |
+| `use_default_sanitize_keys` | `True` | extend `sanitize_keys` with the secret list from `http_client` |
+| `json_dumps_kwargs` | `None` | [`json.dumps`](https://docs.python.org/3/library/json.html#json.dump) parameters for JSON display |
+| `max_attach_length` | `None` | maximum attachment length in characters; longer attachments are truncated |
 
-## Заголовки ответа
+## Response headers
 
-Заголовки и тело ответа прикрепляются к шагу отдельными вложениями:
+Response headers and body are attached to the step separately:
 
-- `Response headers: status = 200 [OK]` — заголовки ответа с замаскированными секретами,
-- `Response content` — тело ответа.
+- `Response headers: status = 200 [OK]` — response headers with secrets masked,
+- `Response content` — response body.
 
-Отдельное вложение с заголовками видно и тогда, когда тела нет вовсе — например у `204 No Content` — и у потокового ответа, тело которого в отчет не выгружается.
+The separate header attachment is visible even without a body, such as for `204 No Content`, and for streaming responses whose bodies are not included in the report.
 
-Вложения независимы, поэтому можно оставить только заголовки:
+Attachments are independent, so you can keep only the headers:
 
 ```python
 wrap_requests_and_responses_in_steps(attach_response=False)
 ```
 
-Статус ответа отображается только в имени вложения с заголовками: если выключить их через `attach_response_headers=False`, в отчете его не останется — заголовок шага строится до отправки запроса, статуса там взяться неоткуда.
+The response status appears only in the header attachment's name. Disabling it with `attach_response_headers=False` removes the status from the report: the step title is built before sending the request, so the status is not yet known.
 
-## Маскирование секретов
+## Masking secrets
 
-Секреты в заголовках, query параметрах и телах скрываются автоматически: `authorization`, `cookie`, `x-api-key`, `token`, `password` и другие общеизвестные ключи.
+Secrets in headers, query parameters, and bodies are hidden automatically: `authorization`, `cookie`, `x-api-key`, `token`, `password`, and other common keys.
 
-Добавить свои ключи:
+Add your own keys:
 
 ```python
 wrap_requests_in_steps(sanitize_keys=["data.password", "items.*.token"])
 ```
 
-Оставить только свои ключи, без набора по умолчанию:
+Keep only your own keys without the defaults:
 
 ```python
 wrap_requests_in_steps(sanitize_keys=["data.password"], use_default_sanitize_keys=False)
 ```
 
-## Запрос в формате curl
+## Requests as curl commands
 
-Чтобы запрос из отчета можно было скопировать и повторить в терминале:
+To copy a request from the report and rerun it in a terminal:
 
 ```python
 wrap_requests_in_steps(serialize_request_to_curl=True)
@@ -151,9 +153,9 @@ wrap_requests_in_steps(serialize_request_to_curl=True)
 
 ![curl_request](https://raw.githubusercontent.com/cloud-ru-tech/qa-libraries/master/packages/http-client-allure/assets/curl_request.png)
 
-## Асинхронный клиент
+## Asynchronous client
 
-Обе опции работают и с `AsyncHttpClient`, подключаются так же:
+Both options also work with `AsyncHttpClient` and are configured the same way:
 
 ```python
 from http_client import AsyncHttpClient
@@ -163,32 +165,32 @@ async with AsyncHttpClient("https://example.com", wrap_requests_and_responses_in
     await client.get("/sample")
 ```
 
-Одновременные запросы через `asyncio.gather` тоже поддерживаются: каждый получает свой шаг со своими данными. Длительность запроса в асинхронном шаге не отображается — в отличие от синхронного клиента.
+Concurrent requests through `asyncio.gather` are supported: each gets its own step and data. Unlike synchronous steps, asynchronous steps do not show request duration.
 
-## Потоковые запросы
+## Streaming requests
 
-`client.stream(...)`, `client.stream_request(...)` и `client.send(request, stream=True)` тоже попадают в отчет.
+`client.stream(...)`, `client.stream_request(...)`, and `client.send(request, stream=True)` also appear in the report.
 
-Тело потока в отчет не выгружается — вместо него будет заглушка `<streamed content>`. Если внутри шага вы сами прочитали тело, в отчет попадет оно.
+The stream body is not included in the report; it uses the `<streamed content>` placeholder. If you read the body yourself inside the step, the report includes it.
 
-## Разработка
+## Development
 
-Библиотека развивается в монорепозитории [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries)
-вместе с остальными библиотеками `cloudru-qa-*`. Нужны [`uv`](https://docs.astral.sh/uv/), GNU Make
-и [`checkmake`](https://github.com/checkmake/checkmake),
-команды запускаются из корня репозитория:
+The library is developed in the [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries) monorepo
+alongside the other `cloudru-qa-*` libraries. You need [`uv`](https://docs.astral.sh/uv/), GNU Make,
+and [`checkmake`](https://github.com/checkmake/checkmake).
+Run commands from the repository root:
 
 ```shell
-make sync                            # зависимости всех библиотек строго по uv.lock
-make test-http-client-allure         # тесты этой библиотеки
-make typecheck-http-client-allure    # mypy для этой библиотеки
-make check                           # форматирование, ruff, mypy и тесты всего набора
+make sync                            # install dependencies for all libraries from uv.lock
+make test-http-client-allure         # tests for this library
+make typecheck-http-client-allure    # mypy for this library
+make check                           # formatting, ruff, mypy, and tests for the entire workspace
 ```
 
-Тесты прогоняются на Python 3.13 и 3.14. Окружение для другой версии создаётся отдельно:
+Tests run on Python 3.13 and 3.14. Create a separate environment for another version:
 `make sync test-http-client-allure PYTHON_VERSION=3.14`.
 
-Демо-проект с настоящими запросами и собранным Allure-отчётом лежит в каталоге `examples/`.
+A demo project with real requests and a generated Allure report is in `examples/`.
 
-Релиз выпускается git-тегом `http-client-allure/v<версия>`. Версия в теге должна совпадать
-с версией в `packages/http-client-allure/pyproject.toml`.
+Publish a release with the git tag `http-client-allure/v<version>`. The tag version must match
+the version in `packages/http-client-allure/pyproject.toml`.

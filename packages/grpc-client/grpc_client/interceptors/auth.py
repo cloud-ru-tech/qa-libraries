@@ -29,17 +29,17 @@ DEFAULT_AUTH_SCHEME = "Bearer"
 
 
 class AuthInterceptor(MetadataInterceptor):
-    """Интерцептор, подставляющий токен доступа в метаданные запроса.
+    """Interceptor that adds an access token to request metadata.
 
-    Токен запрашивается у переданной реализации `ClientAuth`. Если сервис отвечает `UNAUTHENTICATED`,
-    интерцептор просит выпустить новый токен взамен отвергнутого и отправляет унарный запрос повторно.
+    Request a token from the supplied `ClientAuth` implementation. If the service returns `UNAUTHENTICATED`,
+    the interceptor requests a new token to replace the rejected one and retries the unary request.
 
-    Повтор выполняется только для унарных запросов: поток запросов после первой отправки уже исчерпан,
-    а для ответного потока итоговый статус известен лишь после вычитывания, поэтому незаметно
-    повторить такие вызовы нельзя.
+    Only unary requests are retried: a request stream is exhausted after its first send,
+    and response stream final status is known only after reading, so
+    such calls cannot be retried transparently.
 
-    Если вызывающий код передал собственный заголовок авторизации, интерцептор не вмешивается:
-    ни токен не запрашивается, ни повтор не выполняется.
+    If the caller supplies a custom authorization header, the interceptor does not interfere:
+    no token is requested and no retry is performed.
     """
 
     def __init__(
@@ -50,12 +50,12 @@ class AuthInterceptor(MetadataInterceptor):
         *,
         retry_on_unauthenticated: bool = True,
     ) -> None:
-        """Инициализатор.
+        """Initialize the object.
 
-        :param auth: источник токена доступа
-        :param key: имя ключа метаданных, по умолчанию `authorization`
-        :param scheme: схема авторизации, по умолчанию `Bearer`
-        :param retry_on_unauthenticated: повторять ли унарный запрос с новым токеном после UNAUTHENTICATED
+        :param auth: access token provider
+        :param key: metadata key name, defaults to `authorization`
+        :param scheme: authorization scheme, defaults to `Bearer`
+        :param retry_on_unauthenticated: whether to retry a unary request with a new token after UNAUTHENTICATED
         """
         self._auth = auth
         self._key = key
@@ -63,7 +63,7 @@ class AuthInterceptor(MetadataInterceptor):
         self._retry_on_unauthenticated = retry_on_unauthenticated
 
     def metadata_to_add(self, call_details: grpc.ClientCallDetails) -> MetadataItems:
-        """Собрать заголовок авторизации, если вызывающий код не задал свой."""
+        """Build an authorization header unless the caller supplied one."""
         if self._has_own_auth(call_details):
             return ()
         return self._auth_metadata(self._auth.token())
@@ -78,8 +78,8 @@ class AuthInterceptor(MetadataInterceptor):
         if self._has_own_auth(client_call_details):
             return cast("grpc.CallFuture[object]", continuation(client_call_details, request))
 
-        # Токен запоминается до отправки: только так реализация авторизации сможет отличить
-        # действительно протухший токен от уже обновленного соседним запросом.
+        # Remember the token before sending: authentication can then distinguish
+        # a genuinely expired token from one already refreshed by another request.
         token = self._auth.token()
         outcome = continuation(with_metadata(client_call_details, self._auth_metadata(token)), request)
 
@@ -105,18 +105,18 @@ class AuthInterceptor(MetadataInterceptor):
 
 
 class AsyncAuthInterceptor(AsyncMetadataInterceptor):
-    """Асинхронный интерцептор, подставляющий токен доступа в метаданные запроса.
+    """Asynchronous interceptor that adds an access token to request metadata.
 
-    Токен запрашивается у переданной реализации `AsyncClientAuth`. Если сервис отвечает
-    `UNAUTHENTICATED`, интерцептор просит выпустить новый токен взамен отвергнутого и отправляет
-    унарный запрос повторно.
+    Request a token from the supplied `AsyncClientAuth` implementation. If the service returns
+    `UNAUTHENTICATED`, the interceptor requests a new token to replace the rejected one and sends
+    the unary request again.
 
-    Повтор выполняется только для унарных запросов: поток запросов после первой отправки уже исчерпан,
-    а для ответного потока итоговый статус известен лишь после вычитывания, поэтому незаметно
-    повторить такие вызовы нельзя.
+    Only unary requests are retried: a request stream is exhausted after its first send,
+    and response stream final status is known only after reading, so
+    such calls cannot be retried transparently.
 
-    Если вызывающий код передал собственный заголовок авторизации, интерцептор не вмешивается:
-    ни токен не запрашивается, ни повтор не выполняется.
+    If the caller supplies a custom authorization header, the interceptor does not interfere:
+    no token is requested and no retry is performed.
     """
 
     def __init__(
@@ -127,12 +127,12 @@ class AsyncAuthInterceptor(AsyncMetadataInterceptor):
         *,
         retry_on_unauthenticated: bool = True,
     ) -> None:
-        """Инициализатор.
+        """Initialize the object.
 
-        :param auth: источник токена доступа
-        :param key: имя ключа метаданных, по умолчанию `authorization`
-        :param scheme: схема авторизации, по умолчанию `Bearer`
-        :param retry_on_unauthenticated: повторять ли унарный запрос с новым токеном после UNAUTHENTICATED
+        :param auth: access token provider
+        :param key: metadata key name, defaults to `authorization`
+        :param scheme: authorization scheme, defaults to `Bearer`
+        :param retry_on_unauthenticated: whether to retry a unary request with a new token after UNAUTHENTICATED
         """
         self._auth = auth
         self._key = key
@@ -140,7 +140,7 @@ class AsyncAuthInterceptor(AsyncMetadataInterceptor):
         self._retry_on_unauthenticated = retry_on_unauthenticated
 
     async def metadata_to_add(self, call_details: grpc.aio.ClientCallDetails) -> MetadataItems:
-        """Собрать заголовок авторизации, если вызывающий код не задал свой."""
+        """Build an authorization header unless the caller supplied one."""
         if self._has_own_auth(call_details):
             return ()
         return self._auth_metadata(await self._auth.token())

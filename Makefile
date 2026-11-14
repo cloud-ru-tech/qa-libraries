@@ -1,14 +1,14 @@
 UV ?= uv
 CHECKMAKE ?= checkmake
-# Дополнительные флаги uv sync, например --inexact для окружения, где нельзя удалять пакеты.
+# Extra uv sync flags, such as --inexact when installed packages must be kept.
 SYNC_ARGS ?=
 PYTEST_ARGS ?=
-# Дополнительные флаги pip-audit, например формат отчёта для CI.
+# Extra pip-audit flags, such as the report format for CI.
 AUDIT_ARGS ?=
-# Окружение уже синхронизировано целью sync: проверки не должны менять его на ходу.
+# The sync target prepares the environment; checks must not change it as they run.
 RUN := PYTHONWARNINGS=error $(UV) run --no-sync
 
-# Даже вложенный pytest не должен отправлять уведомления из .env разработчика.
+# Prevent even nested pytest runs from sending notifications using the developer's .env.
 export PYTEST_NOTIFIER_DESTINATIONS := 1
 export PYTEST_DISABLE_PLUGIN_AUTOLOAD := 1
 PYTEST_PLUGINS := -p pytest_asyncio.plugin -p pytest_httpx -p pytest_mock -p pytest_timeout \
@@ -28,7 +28,7 @@ GRPC_TYPECHECK_TARGETS := $(addprefix typecheck-,$(GRPC_API_PACKAGES))
 
 AUDIT_REQUIREMENTS := build/audit-requirements.txt
 
-# Отдельное окружение на версию Python: make test PYTHON_VERSION=3.14.
+# Keep a separate environment per Python version: make test PYTHON_VERSION=3.14.
 ifdef PYTHON_VERSION
 export UV_PYTHON := $(PYTHON_VERSION)
 export UV_PROJECT_ENVIRONMENT := $(CURDIR)/.venvs/$(PYTHON_VERSION)
@@ -36,45 +36,45 @@ endif
 
 .DEFAULT_GOAL := help
 
-# checkmake не читает перенос строки в .PHONY, поэтому цели объявлены у своих правил.
+# checkmake cannot parse line continuations in .PHONY, so declare targets next to their rules.
 .PHONY: help
-help: ## Показать доступные цели
+help: ## Show available targets
 	@grep -hE '^[a-z%-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-18s %s\n", $$1, $$2}'
-	@echo "  test-<пакет>       Тесты одного пакета: $(PACKAGES)"
-	@echo "  typecheck-<пакет>  mypy для одного пакета"
+	@echo "  test-<package>       Test one package: $(PACKAGES)"
+	@echo "  typecheck-<package>  Run mypy for one package"
 
 .PHONY: sync
-sync: ## Установить зависимости всех пакетов строго по uv.lock
+sync: ## Install dependencies for all packages from uv.lock
 	$(UV) sync --locked --all-packages --all-extras --all-groups $(SYNC_ARGS)
 
 .PHONY: lock
-lock: ## Пересобрать uv.lock
+lock: ## Regenerate uv.lock
 	$(UV) lock
 
 .PHONY: lock-check
-lock-check: ## Проверить, что uv.lock соответствует pyproject.toml
+lock-check: ## Check that uv.lock matches pyproject.toml
 	$(UV) lock --check
 
 .PHONY: format
-format: ## Отформатировать код
+format: ## Format code
 	$(RUN) ruff format .
 
 .PHONY: format-check
-format-check: ## Проверить форматирование без изменений
+format-check: ## Check formatting without changing files
 	$(RUN) ruff format --check .
 
 .PHONY: lint
-lint: ## Запустить ruff check
+lint: ## Run ruff check
 	$(RUN) ruff check .
 
 .PHONY: lint-fix
-lint-fix: ## Применить безопасные исправления ruff
+lint-fix: ## Apply safe Ruff fixes
 	$(RUN) ruff check --fix .
 
 .PHONY: typecheck
-typecheck: $(TYPECHECK_TARGETS) typecheck-scripts ## Запустить mypy для всех пакетов и скриптов
+typecheck: $(TYPECHECK_TARGETS) typecheck-scripts ## Run mypy for all packages and scripts
 
-# Пакеты проверяются по отдельности: у каждого свой модуль tests.
+# Check packages separately because each has its own tests module.
 .PHONY: $(TYPECHECK_TARGETS)
 $(TYPECHECK_TARGETS): typecheck-%:
 	$(RUN) mypy packages/$*
@@ -83,18 +83,18 @@ $(TYPECHECK_TARGETS): typecheck-%:
 typecheck-scripts:
 	$(RUN) mypy scripts
 
-# Тесты gRPC-клиентов импортируют сгенерированный API.
+# gRPC client tests import the generated API.
 .PHONY: $(GRPC_TYPECHECK_TARGETS)
 $(GRPC_TYPECHECK_TARGETS): typecheck-%: gen-test-api-%
 
-# Без конфига mypy проекта: warn_unused_configs ругается на overrides чужих модулей.
-# Стабы описывают только используемую часть API, поэтому отсутствующие имена не ошибка.
+# Avoid the project mypy config: warn_unused_configs flags overrides for unrelated modules.
+# Stubs cover only the API we use, so missing names are allowed.
 .PHONY: stubtest
-stubtest: ## Сверить стабы из typings/ с установленными библиотеками
+stubtest: ## Check typings/ stubs against installed libraries
 	MYPYPATH=typings $(RUN) stubtest --ignore-missing-stub $(STUB_MODULES)
 
 .PHONY: gen-test-api
-gen-test-api: $(GEN_API_TARGETS) ## Сгенерировать тестовый gRPC API
+gen-test-api: $(GEN_API_TARGETS) ## Generate the test gRPC API
 
 .PHONY: $(GEN_API_TARGETS)
 $(GEN_API_TARGETS): gen-test-api-%:
@@ -102,9 +102,9 @@ $(GEN_API_TARGETS): gen-test-api-%:
 	cd packages/$* && $(RUN) bash gen-test-api.sh api
 
 .PHONY: test
-test: $(TEST_TARGETS) test-scripts test-allure-examples ## Запустить тесты всех пакетов, каждый отдельным процессом
+test: $(TEST_TARGETS) test-scripts test-allure-examples ## Test all packages, each in a separate process
 
-# Отдельный процесс на пакет: одноимённые модули tests и настройки pytest не должны пересекаться.
+# Separate processes prevent collisions between tests modules and pytest settings.
 .PHONY: $(TEST_TARGETS)
 $(TEST_TARGETS): test-%:
 	cd packages/$* && $(RUN) pytest $(PYTEST_PLUGINS) $(PYTEST_ARGS)
@@ -113,40 +113,40 @@ $(TEST_TARGETS): test-%:
 $(GRPC_TEST_TARGETS): test-%: gen-test-api-%
 
 .PHONY: test-scripts
-test-scripts: ## Запустить тесты скриптов репозитория
+test-scripts: ## Test repository scripts
 	$(RUN) pytest scripts $(PYTEST_PLUGINS) $(PYTEST_ARGS)
 
 .PHONY: test-allure-examples
-test-allure-examples: ## Проверить интеграционные примеры Allure с локальным httpbin
+test-allure-examples: ## Test Allure integration examples with local httpbin
 	cd packages/http-client-allure/examples && $(RUN) --project $(CURDIR) pytest $(PYTEST_PLUGINS) \
 		--strict-markers --strict-config -W error $(PYTEST_ARGS)
 
 .PHONY: build
-build: ## Собрать wheel и sdist всех пакетов в dist/
+build: ## Build wheels and sdists for all packages in dist/
 	rm -rf dist
 	$(UV) build --all-packages --no-sources --out-dir dist
 	$(UV) run --no-project python -m scripts.skills dist
 
 .PHONY: check-wheels
-check-wheels: ## Установить каждую библиотеку из dist/ в пустое окружение и импортировать её
+check-wheels: ## Install each library from dist/ in an empty environment and import it
 	$(RUN) python -m scripts.wheels dist --uv $(UV)
 
 .PHONY: audit
-audit: ## Проверить внешние зависимости из uv.lock на известные уязвимости
+audit: ## Check external dependencies from uv.lock for known vulnerabilities
 	mkdir -p $(dir $(AUDIT_REQUIREMENTS))
 	$(UV) export --locked --all-packages --all-extras --all-groups --no-emit-workspace -o $(AUDIT_REQUIREMENTS) > /dev/null
 	$(RUN) python -m pip_audit --strict --require-hashes --disable-pip -r $(AUDIT_REQUIREMENTS) $(AUDIT_ARGS)
 
 .PHONY: lint-make
-lint-make: ## Проверить Makefile линтером checkmake
+lint-make: ## Lint Makefile with checkmake
 	$(CHECKMAKE) --config checkmake.ini Makefile
 
 .PHONY: check
-check: format-check lint lint-make typecheck stubtest test ## Полный набор проверок
+check: format-check lint lint-make typecheck stubtest test ## Run all checks
 
 .PHONY: all
-all: check ## То же, что check
+all: check ## Same as check
 
 .PHONY: clean
-clean: ## Удалить артефакты сборки и сгенерированный API
+clean: ## Remove build artifacts and generated API
 	rm -rf dist build packages/*/api

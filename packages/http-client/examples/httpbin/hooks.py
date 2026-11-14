@@ -1,7 +1,7 @@
-"""Хуки запросов и ответов плюс собственная опция клиента.
+"""Request and response hooks plus a custom client option.
 
-Хуки здесь синхронные и используются обоими клиентами: AsyncHttpClient
-оборачивает синхронные хуки в корутины сам, в своём __init__.
+These hooks are synchronous and used by both clients: AsyncHttpClient
+wraps synchronous hooks in coroutines in its __init__.
 """
 
 from __future__ import annotations
@@ -22,19 +22,19 @@ STARTED_AT_EXTENSION = "demo_started_at"
 
 
 def stamp_started_at(request: httpx.Request) -> None:
-    """Запомнить момент отправки в extensions запроса.
+    """Store the send timestamp in the request extensions.
 
-    extensions — единственное место, которое доживёт до хука ответа:
-    оттуда его читает log_elapsed через response.request.
+    extensions is the only place that survives until the response hook:
+    log_elapsed reads it there through response.request.
     """
     cast("dict[str, object]", request.extensions)[STARTED_AT_EXTENSION] = perf_counter()
 
 
 def log_elapsed(logger: Logger) -> ResponseHook:
-    """Собрать хук ответа, который пишет длительность запроса.
+    """Build a response hook that logs request duration.
 
-    :param logger: логгер для записи длительности
-    :returns: хук ответа, работающий в паре с stamp_started_at
+    :param logger: Logger for duration records
+    :returns: Response hook paired with stamp_started_at
     """
 
     def log_elapsed_hook(response: httpx.Response) -> None:
@@ -55,13 +55,13 @@ def log_elapsed(logger: Logger) -> ResponseHook:
 
 
 def warn_on_server_error(logger: Logger) -> ResponseHook:
-    """Собрать хук ответа, который помечает 5xx предупреждением.
+    """Build a response hook that warns on 5xx statuses.
 
-    Тело ответа хук не читает: у потокового ответа оно ещё не загружено,
-    а чтение в хуке сломало бы стриминг.
+    The hook does not read the response body: streaming responses have not loaded it yet,
+    and reading it in the hook would break streaming.
 
-    :param logger: логгер для предупреждений
-    :returns: хук ответа
+    :param logger: Logger for warnings
+    :returns: Response hook
     """
 
     def warn_on_server_error_hook(response: httpx.Response) -> None:
@@ -77,14 +77,14 @@ def warn_on_server_error(logger: Logger) -> ResponseHook:
 
 
 def with_api_key(api_key: str) -> ClientOption:
-    """Собрать опцию, добавляющую заголовок X-Api-Key в каждый запрос.
+    """Build an option that adds the X-Api-Key header to every request.
 
-    Хук встаёт в начало списка, поэтому заголовок попадёт в лог независимо от того,
-    в каком порядке опцию передали конструктору: with_logger добавляет свой хук в конец.
-    Опция, которой не нужна позиция в списке, должна собираться из with_request_hook.
+    Prepend the hook so the header appears in logs regardless of
+    the order of constructor options: with_logger appends its hook.
+    Build options that do not need a specific list position using with_request_hook.
 
-    :param api_key: значение заголовка
-    :returns: опция клиента
+    :param api_key: Header value
+    :returns: Client option
     """
 
     def add_api_key(request: httpx.Request) -> None:

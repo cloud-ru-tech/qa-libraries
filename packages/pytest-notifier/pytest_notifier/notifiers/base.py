@@ -5,19 +5,19 @@ from pytest_notifier.settings import Settings
 
 
 class NotifierBase(ABC):
-    """Базовый класс для всех нотификаторов."""
+    """Base class for all notifiers."""
 
     def __init__(self, settings: Settings) -> None:
-        """Сохранить настройки уведомлений.
+        """Save notification settings.
 
-        :param settings: настройки каналов.
+        :param settings: channel settings.
         """
         self.settings = settings
 
     @abstractmethod
     def send(self, results: TestResults) -> None:
-        """Отправить уведомление о результатах тестов."""
+        """Send a notification about test results."""
 
     @abstractmethod
     def is_enabled(self) -> bool:
-        """Проверить, включён ли нотификатор и настроен ли корректно."""
+        """Check whether the notifier is enabled and configured correctly."""

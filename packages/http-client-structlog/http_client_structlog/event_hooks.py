@@ -16,7 +16,7 @@ def request_logger_hook(
     json_indent: int | None = None,
     log_level: int | None = None,
 ) -> RequestHook:
-    """Собрать хук структурированного логирования HTTP-запроса."""
+    """Build a structured HTTP request logging hook."""
 
     def log_request_hook(request: httpx.Request) -> None:
         request_params = parse_request(
@@ -35,7 +35,7 @@ def response_logger_hook(
     json_indent: int | None = None,
     log_level: int | None = None,
 ) -> ResponseHook:
-    """Собрать хук структурированного логирования HTTP-ответа."""
+    """Build a structured HTTP response logging hook."""
 
     def log_response_hook(response: httpx.Response) -> None:
         response_params = parse_response(
@@ -54,10 +54,10 @@ def async_response_logger_hook(
     json_indent: int | None = None,
     log_level: int | None = None,
 ) -> ResponseHook:
-    """Собрать хук логирования ответа для асинхронного клиента.
+    """Build a response logging hook for an asynchronous client.
 
-    Нужна отдельная реализация: на момент срабатывания хука тело асинхронного
-    ответа ещё не прочитано, а его поток доступен только через await.
+    A separate implementation is needed: when the hook runs, the asynchronous
+    response body has not been read and its stream is only accessible through await.
     """
 
     async def log_response_hook(response: httpx.Response) -> None:

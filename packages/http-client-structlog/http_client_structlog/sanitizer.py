@@ -7,11 +7,11 @@ MASKED_VALUE = "****"
 
 
 class Sanitizer:
-    """Правила скрытия конфиденциальных данных в логе.
+    """Rules for masking sensitive data in logs.
 
-    Точные пути и типовые имена ищутся по-разному. Путь `user.password` указывает на одно
-    конкретное поле, а `password` из списка типовых секретов должен срабатывать на любой
-    глубине: секрет одинаково опасен и в корне тела, и внутри вложенного объекта.
+    Exact paths and common names need different lookups. The path `user.password` selects one
+    specific field, while `password` from the common secrets list must match at any
+    depth: secrets are equally sensitive at the body root and in nested objects.
     """
 
     def __init__(
@@ -19,20 +19,20 @@ class Sanitizer:
         glom_paths: Sequence[str] = (),
         secret_names: Iterable[str] = (),
     ) -> None:
-        """Создать экземпляр с указанными настройками."""
+        """Create an instance with the supplied settings."""
         self._glom_paths = tuple(glom_paths)
         self._secret_names = frozenset(name.lower() for name in secret_names)
 
     def apply(self, value: object) -> object:
-        """Вернуть копию значения со скрытыми конфиденциальными данными."""
+        """Return a copy of the value with sensitive data masked."""
         return self._mask_by_name(self._mask_by_path(value))
 
     def _mask_by_path(self, value: object) -> object:
         if not self._glom_paths:
             return value
 
-        # Ветки одинаковые, но sanitize объявлен через TypeVar с двумя допустимыми
-        # типами, поэтому объединение dict | list ему передать нельзя.
+        # The branches match, but sanitize uses a TypeVar with two allowed types,
+        # so it cannot accept the dict | list union.
         if isinstance(value, dict):
             return sanitize(cast("dict[str, object]", value), self._glom_paths)
         if isinstance(value, list):

@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 def test_toml_settings(tmp_path: Path) -> None:
-    """Тест загрузки настроек из toml файла."""
+    """Test loading settings from a toml file."""
     toml_content: str = """
     name = "test_app"
     debug = true
@@ -38,7 +38,7 @@ def test_toml_settings(tmp_path: Path) -> None:
 
 
 def test_toml_settings_submodels(tmp_path: Path) -> None:
-    """Тест загрузки настроек из toml файла с вложенными моделями."""
+    """Test loading settings from a toml file with nested models."""
     toml_content: str = """
     name = "test_app"
     debug = true
@@ -72,7 +72,7 @@ def test_toml_settings_submodels(tmp_path: Path) -> None:
 
 
 def test_toml_settings_multiple_files(tmp_path: Path) -> None:
-    """Тест загрузки настроек из нескольких toml файлов."""
+    """Test loading settings from multiple toml files."""
     toml_content_main: str = """
     name = "test_app"
     debug = true
@@ -110,7 +110,7 @@ def test_toml_settings_multiple_files(tmp_path: Path) -> None:
 
 
 def test_toml_settings_raises_error_when_file_not_specified() -> None:
-    """Тест проверяет, что при отсутствии объявления toml_file возникает ошибка."""
+    """Test that a missing toml_file declaration raises an error."""
 
     class TestSettings(TomlBaseSettings):
         app_name: str = Field(default="")
@@ -121,7 +121,7 @@ def test_toml_settings_raises_error_when_file_not_specified() -> None:
 
 
 def test_toml_settings_raises_error_when_file_not_found() -> None:
-    """Тест проверяет, что при отсутствии файла возникает ошибка."""
+    """Test that a missing file raises an error."""
 
     class TestSettings(TomlBaseSettings):
         app_name: str = Field(default="")
@@ -132,7 +132,7 @@ def test_toml_settings_raises_error_when_file_not_found() -> None:
 
 
 def test_toml_settings_validation_error_on_invalid_type(tmp_path: Path) -> None:
-    """Тест проверяет валидацию типов данных."""
+    """Test data type validation."""
     toml_content: str = """
     port = "not_a_number"
     """
@@ -148,7 +148,7 @@ def test_toml_settings_validation_error_on_invalid_type(tmp_path: Path) -> None:
 
 
 def test_toml_settings_with_env(tmp_path: Path) -> None:
-    """Тест загрузки настроек из toml файла с переопределением через переменные окружения."""
+    """Test loading settings from a toml file with environment variable overrides."""
     toml_content: str = """
     name = "test_app"
     debug = true
@@ -191,7 +191,7 @@ def test_toml_settings_with_env(tmp_path: Path) -> None:
 
 
 def test_toml_settings_raises_error_on_unknown_keys(tmp_path: Path) -> None:
-    """Тест проверяет, что лишние ключи в toml вызывают ошибку."""
+    """Test that extra toml keys raise an error."""
     toml_content: str = """
     name = "test_app"
     unknown_key = "value"
@@ -208,7 +208,7 @@ def test_toml_settings_raises_error_on_unknown_keys(tmp_path: Path) -> None:
 
 
 def test_toml_settings_raises_error_on_missing_required_keys(tmp_path: Path) -> None:
-    """Тест проверяет, что отсутствие обязательного ключа в toml вызывает ошибку."""
+    """Test that a missing required toml key raises an error."""
     toml_content: str = """
     debug = true
     """
@@ -225,7 +225,7 @@ def test_toml_settings_raises_error_on_missing_required_keys(tmp_path: Path) -> 
 
 
 def test_toml_settings_raises_error_on_multiple_missing_required_keys(tmp_path: Path) -> None:
-    """Тест проверяет, что перечисляются все отсутствующие обязательные ключи."""
+    """Test that all missing required keys are listed."""
     toml_content: str = """
     debug = true
     """
@@ -243,7 +243,7 @@ def test_toml_settings_raises_error_on_multiple_missing_required_keys(tmp_path: 
 
 
 def test_toml_settings_skips_unknown_keys_validation_when_disabled(tmp_path: Path) -> None:
-    """Тест проверяет отключение валидации неизвестных ключей."""
+    """Test disabling unknown key validation."""
     toml_content: str = """
     name = "test_app"
     unknown_key = "value"
@@ -264,7 +264,7 @@ def test_toml_settings_skips_unknown_keys_validation_when_disabled(tmp_path: Pat
 
 
 def test_toml_settings_skips_required_keys_validation_when_disabled(tmp_path: Path) -> None:
-    """Тест проверяет отключение валидации обязательных ключей."""
+    """Test disabling required key validation."""
     toml_content: str = """
     debug = true
     """
@@ -288,7 +288,7 @@ def test_toml_settings_skips_required_keys_validation_when_disabled(tmp_path: Pa
 def test_toml_settings_raises_validation_error_for_required_without_default_when_check_disabled(
     tmp_path: Path,
 ) -> None:
-    """Тест проверяет, что pydantic валидирует required поле без default."""
+    """Test that pydantic validates a required field without a default."""
     toml_content: str = """
     debug = true
     """

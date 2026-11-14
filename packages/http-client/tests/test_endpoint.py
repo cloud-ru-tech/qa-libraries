@@ -4,8 +4,8 @@ from http_client.client import HttpClient
 
 from .support.clients import SyncClientFactory
 
-# Тексты отказов — часть контракта endpoint(): по ним тест отличает,
-# какая именно проверка сработала.
+# Error messages are part of the endpoint() contract: the test uses them to identify
+# which check failed.
 RELATIVE_PATH_ONLY = "только относительный путь"
 NO_PARENT_TRAVERSAL = "выход вверх по пути"
 
@@ -19,7 +19,7 @@ class ClientWithoutTrailingSlash(HttpClient):
 
 
 def test_suffix_with_trailing_slash_is_prepended(new_client: SyncClientFactory) -> None:
-    """Суффикс со слешем на конце подставляется целиком."""
+    """A suffix with a trailing slash is applied in full."""
     client = new_client("https://example.com", cls=ClientWithTrailingSlash)
 
     url = client.endpoint("orders/123")
@@ -28,10 +28,10 @@ def test_suffix_with_trailing_slash_is_prepended(new_client: SyncClientFactory) 
 
 
 def test_suffix_without_trailing_slash_keeps_last_segment(new_client: SyncClientFactory) -> None:
-    """Суффикс без слеша на конце не теряет последний сегмент.
+    """A suffix without a trailing slash retains its last segment.
 
-    Регрессия: urljoin принимал "v1" за имя файла и отбрасывал его,
-    из-за чего получалось /u-api/orders/orders/123.
+    Regression: urljoin treated "v1" as a filename and discarded it,
+    producing /u-api/orders/orders/123.
     """
     client = new_client("https://example.com", cls=ClientWithoutTrailingSlash)
 
@@ -41,7 +41,7 @@ def test_suffix_without_trailing_slash_keeps_last_segment(new_client: SyncClient
 
 
 def test_leading_slash_in_path_is_stripped(new_client: SyncClientFactory) -> None:
-    """Ведущий слеш в пути не влияет на результат."""
+    """A leading slash in the path does not affect the result."""
     client = new_client("https://example.com", cls=ClientWithTrailingSlash)
 
     url = client.endpoint("/orders/123")
@@ -50,7 +50,7 @@ def test_leading_slash_in_path_is_stripped(new_client: SyncClientFactory) -> Non
 
 
 def test_empty_path_returns_suffix(new_client: SyncClientFactory) -> None:
-    """Пустой путь даёт сам суффикс."""
+    """An empty path returns the suffix itself."""
     client = new_client("https://example.com", cls=ClientWithTrailingSlash)
 
     url = client.endpoint("")
@@ -59,7 +59,7 @@ def test_empty_path_returns_suffix(new_client: SyncClientFactory) -> None:
 
 
 def test_empty_suffix_returns_path_unchanged(new_client: SyncClientFactory) -> None:
-    """Без суффикса возвращается сам путь."""
+    """Return the path itself when there is no suffix."""
     client = new_client("https://example.com")
 
     url = client.endpoint("/orders/123")
@@ -68,7 +68,7 @@ def test_empty_suffix_returns_path_unchanged(new_client: SyncClientFactory) -> N
 
 
 def test_absolute_url_is_rejected(new_client: SyncClientFactory) -> None:
-    """Абсолютный URL не может подменить базовый адрес клиента."""
+    """An absolute URL cannot replace the client base address."""
     client = new_client("https://example.com", cls=ClientWithTrailingSlash)
 
     with pytest.raises(ValueError, match=RELATIVE_PATH_ONLY):
@@ -76,7 +76,7 @@ def test_absolute_url_is_rejected(new_client: SyncClientFactory) -> None:
 
 
 def test_protocol_relative_url_is_rejected(new_client: SyncClientFactory) -> None:
-    """Путь вида //host тоже уводит запрос на чужой адрес и запрещён."""
+    """A //host path also redirects the request to another address and is forbidden."""
     client = new_client("https://example.com", cls=ClientWithTrailingSlash)
 
     with pytest.raises(ValueError, match=RELATIVE_PATH_ONLY):
@@ -84,7 +84,7 @@ def test_protocol_relative_url_is_rejected(new_client: SyncClientFactory) -> Non
 
 
 def test_parent_traversal_is_rejected(new_client: SyncClientFactory) -> None:
-    """Путь не может выйти вверх за пределы суффикса."""
+    """The path cannot traverse above the suffix."""
     client = new_client("https://example.com", cls=ClientWithTrailingSlash)
 
     with pytest.raises(ValueError, match=NO_PARENT_TRAVERSAL):
@@ -92,7 +92,7 @@ def test_parent_traversal_is_rejected(new_client: SyncClientFactory) -> None:
 
 
 def test_parent_traversal_in_the_middle_is_rejected(new_client: SyncClientFactory) -> None:
-    """Выход вверх запрещён и в середине пути, а не только в начале."""
+    """Parent traversal is forbidden within the path as well as at its start."""
     client = new_client("https://example.com", cls=ClientWithTrailingSlash)
 
     with pytest.raises(ValueError, match=NO_PARENT_TRAVERSAL):
@@ -100,7 +100,7 @@ def test_parent_traversal_in_the_middle_is_rejected(new_client: SyncClientFactor
 
 
 def test_percent_encoded_traversal_is_rejected(new_client: SyncClientFactory) -> None:
-    """Выход вверх, записанный в percent-encoding, тоже должен отвергаться."""
+    """Reject percent-encoded parent traversal as well."""
     client = new_client("https://example.com", cls=ClientWithTrailingSlash)
 
     with pytest.raises(ValueError, match=NO_PARENT_TRAVERSAL):

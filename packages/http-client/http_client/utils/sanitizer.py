@@ -9,13 +9,13 @@ def sanitize[T](
     value_to_sanitize: T,
     sensitive_keys: Sequence[str],
 ) -> T:
-    """Создать новый словарь со скрытыми конфиденциальными данными.
+    """Create a new dictionary with sensitive data masked.
 
-    :param value_to_sanitize: словарь или список, который необходимо обработать.
-    :param sensitive_keys: имена скрываемых полей на любой глубине или точные пути glom.
-    :returns: новый словарь или список со скрытыми конфиденциальными данными.
+    :param value_to_sanitize: Dictionary or list to process.
+    :param sensitive_keys: Names of fields to mask at any depth, or exact glom paths.
+    :returns: New dictionary or list with sensitive data masked.
 
-    #### Примеры:
+    #### Examples:
     >>> result = sanitize({"d": {"password": "123123"}, "v": 123123}, ["d.password"])
     >>> assert result == {'d': {'password': '****'}, "v": 123123}
 

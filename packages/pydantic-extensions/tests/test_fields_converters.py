@@ -15,7 +15,7 @@ class UserPascalCase(PascalCaseBaseModel):
 
 
 def test_serialize_to_camel_case() -> None:
-    """Проверка сериализации полей в camelCase при использовании CamelCaseBaseModel."""
+    """Test camelCase field serialization with CamelCaseBaseModel."""
     user = UserCamelCase(username="John", last_name="Doe", is_active=True)
 
     user_json = user.model_dump_json()
@@ -24,7 +24,7 @@ def test_serialize_to_camel_case() -> None:
 
 
 def test_deserialize_from_camel_case() -> None:
-    """Проверка десериализации полей из camelCase при использовании CamelCaseBaseModel."""
+    """Test camelCase field deserialization with CamelCaseBaseModel."""
     user_json = '{"username":"John","lastName":"Doe","isActive":true}'
 
     user = UserCamelCase.model_validate_json(user_json)
@@ -35,7 +35,7 @@ def test_deserialize_from_camel_case() -> None:
 
 
 def test_serialize_to_pascal_case() -> None:
-    """Проверка сериализации полей в PascalCase при использовании PascalCaseBaseModel."""
+    """Test PascalCase field serialization with PascalCaseBaseModel."""
     user = UserPascalCase(username="John", last_name="Doe", is_active=True)
 
     user_json = user.model_dump_json()
@@ -44,7 +44,7 @@ def test_serialize_to_pascal_case() -> None:
 
 
 def test_deserialize_from_pascal_case() -> None:
-    """Проверка десериализации полей из PascalCase при использовании PascalCaseBaseModel."""
+    """Test PascalCase field deserialization with PascalCaseBaseModel."""
     user_json = '{"Username":"John","LastName":"Doe","IsActive":true}'
 
     user = UserPascalCase.model_validate_json(user_json)

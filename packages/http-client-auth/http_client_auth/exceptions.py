@@ -4,28 +4,28 @@ import httpx
 
 
 class IamError(Exception):
-    """Базовая ошибка взаимодействия с сервисом IAM."""
+    """Base error for IAM interactions."""
 
 
 class IamAuthError(IamError):
-    """Ошибка авторизации в IAM."""
+    """IAM authentication error."""
 
     def __init__(self, response: httpx.Response) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param response: значение настройки ``response``.
+        :param response: Value of ``response``.
         """
         super().__init__(f"Ошибка авторизации в IAM: code = {response.status_code}, body = {response.text}")
 
 
 class IamInvalidJsonResponseError(IamError):
-    """Ошибка валидации JSON ответа от IAM."""
+    """IAM JSON response validation error."""
 
     def __init__(self, response: httpx.Response) -> None:
-        # Тело в сообщение не попадает: это успешный ответ IAM, в нем лежит действующий токен доступа.
-        """Инициализировать объект.
+        # Exclude the body from the message: a successful IAM response contains a valid access token.
+        """Initialize the object.
 
-        :param response: значение настройки ``response``.
+        :param response: Value of ``response``.
         """
         content_type = cast("str", response.headers.get("content-type", "не указан"))
         super().__init__(

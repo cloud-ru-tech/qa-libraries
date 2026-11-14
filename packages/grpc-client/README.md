@@ -1,85 +1,87 @@
-# Базовый gRPC-клиент
+# Base gRPC client
 
 [![PyPI](https://img.shields.io/pypi/v/cloudru-qa-grpc-client)](https://pypi.org/project/cloudru-qa-grpc-client/)
 [![Python](https://img.shields.io/pypi/pyversions/cloudru-qa-grpc-client)](https://pypi.org/project/cloudru-qa-grpc-client/)
 [![License](https://img.shields.io/pypi/l/cloudru-qa-grpc-client)](https://github.com/cloud-ru-tech/qa-libraries/blob/master/LICENSE)
 
-Базовый клиент для отправки запросов в gRPC сервисы из автотестов.
+English | [Русский](README.ru.md)
 
-- [Базовый gRPC-клиент](#базовый-grpc-клиент)
-  - [Установка](#установка)
-  - [Скиллы для AI-агентов](#скиллы-для-ai-агентов)
-  - [Использование](#использование)
-    - [1. Автогенерация из proto](#1-автогенерация-из-proto)
-    - [2. Написание собственного клиента](#2-написание-собственного-клиента)
-    - [3. Создание клиента и опции](#3-создание-клиента-и-опции)
-    - [4. Вызов методов](#4-вызов-методов)
-    - [5. Работа с ответом](#5-работа-с-ответом)
-    - [6. Потоки](#6-потоки)
-    - [7. Параметры вызова](#7-параметры-вызова)
-    - [8. Метаданные](#8-метаданные)
-    - [9. Ошибки и расширенный статус](#9-ошибки-и-расширенный-статус)
-    - [10. Авторизация](#10-авторизация)
-    - [11. Логирование](#11-логирование)
-    - [12. Асинхронный клиент](#12-асинхронный-клиент)
-    - [13. Свои интерцепторы](#13-свои-интерцепторы)
-  - [Разработка](#разработка)
+Base client for sending requests to gRPC services from automated tests.
 
-## Установка
+- [Base gRPC client](#base-grpc-client)
+  - [Installation](#installation)
+  - [Skills for AI agents](#skills-for-ai-agents)
+  - [Usage](#usage)
+    - [1. Generate code from proto](#1-generate-code-from-proto)
+    - [2. Write your own client](#2-write-your-own-client)
+    - [3. Create a client and set options](#3-create-a-client-and-set-options)
+    - [4. Call methods](#4-call-methods)
+    - [5. Work with responses](#5-work-with-responses)
+    - [6. Streams](#6-streams)
+    - [7. Call options](#7-call-options)
+    - [8. Metadata](#8-metadata)
+    - [9. Errors and rich status](#9-errors-and-rich-status)
+    - [10. Authorization](#10-authorization)
+    - [11. Logging](#11-logging)
+    - [12. Asynchronous client](#12-asynchronous-client)
+    - [13. Custom interceptors](#13-custom-interceptors)
+  - [Development](#development)
 
-Требуется Python 3.13 или новее.
+## Installation
+
+Requires Python 3.13 or later.
 
 ```shell
 pip install cloudru-qa-grpc-client
 ```
 
-Библиотека импортируется как модуль `grpc_client`.
+Import the library as the `grpc_client` module.
 
-Если нужна ещё и генерация кода из proto-файлов, поставьте библиотеку с дополнением `codegen`:
+If you also need code generation from proto files, install the library with the `codegen` extra:
 
 ```shell
 pip install "cloudru-qa-grpc-client[codegen]"
 ```
 
-## Скиллы для AI-агентов
+## Skills for AI agents
 
-В пакет включён скилл [`grpc-client-usage`](https://github.com/cloud-ru-tech/qa-libraries/blob/master/.agents/skills/grpc-client-usage/SKILL.md)
-с примерами и правилами использования библиотеки для AI-агентов. Установите библиотеку
-в окружение своего проекта, затем из его корня выполните (нужен [`uv`](https://docs.astral.sh/uv/)):
+The package includes the [`grpc-client-usage`](https://github.com/cloud-ru-tech/qa-libraries/blob/master/.agents/skills/grpc-client-usage/SKILL.md) skill
+with examples and usage rules for AI agents. Install the library
+in your project environment, then run this from its root (requires [`uv`](https://docs.astral.sh/uv/)):
 
 ```shell
 uvx library-skills install --skill grpc-client-usage --yes
 ```
 
-Для Claude Code добавьте `--claude`. Инструкции поставляются вместе с версией библиотеки.
+For Claude Code, add `--claude`. The instructions are shipped with the library version.
 
-## Использование
+## Usage
 
-### 1. Автогенерация из proto
+### 1. Generate code from proto
 
-Первым делом необходимо получить доступ к proto файлам с описанием контракта сервиса, для которого нужно разработать gRPC-клиент. Для этого необходимо обратиться к разработчикам сервиса. Примеры таких файлов можно посмотреть в папке [proto](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/grpc-client/proto/) в данном репозитории.
+First, get access to the proto files describing the service contract for your gRPC client. Ask the service developers for them. See the [proto](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/grpc-client/proto/) directory in this repository for examples.
 
-Получив к ним доступ, нужно сгенерировать на их основе `pb2.py` файлы. Возможно, они уже были сгенерированы разработчиками и вынесены в какую-либо библиотеку или репозиторий — стоит уточнить.
+Once you have access, generate `pb2.py` files from them. Ask whether the developers have already generated these files and published them in a library or repository.
 
-Если код контрактов нужно генерировать самостоятельно, копируем proto файлы к себе в проект (возможно, стоит рассмотреть вариант с [git submodules](https://git-scm.com/book/ru/v2/%D0%98%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B-Git-%D0%9F%D0%BE%D0%B4%D0%BC%D0%BE%D0%B4%D1%83%D0%BB%D0%B8)). Далее пользуемся утилитой [`protoc`](https://grpc.io/docs/languages/python/quickstart/) из пакета `grpcio-tools`, который ставится вместе с дополнением `cloudru-qa-grpc-client[codegen]`.
+If you need to generate the contract code yourself, copy the proto files into your project (consider [git submodules](https://git-scm.com/book/ru/v2/%D0%98%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B-Git-%D0%9F%D0%BE%D0%B4%D0%BC%D0%BE%D0%B4%D1%83%D0%BB%D0%B8)). Then use [`protoc`](https://grpc.io/docs/languages/python/quickstart/) from `grpcio-tools`, installed with the `cloudru-qa-grpc-client[codegen]` extra.
 
-ℹ️ Простой пример генерации `pb2.py` файлов можно посмотреть в скрипте [gen-test-api.sh](https://github.com/cloud-ru-tech/qa-libraries/blob/master/packages/grpc-client/gen-test-api.sh), где генерируются файлы для тестов.
+ℹ️ See [gen-test-api.sh](https://github.com/cloud-ru-tech/qa-libraries/blob/master/packages/grpc-client/gen-test-api.sh) for a simple example that generates `pb2.py` files for tests.
 
-### 2. Написание собственного клиента
+### 2. Write your own client
 
-Библиотека реализует базовые методы отправки gRPC-запросов. Чтобы использовать их, создайте свой класс клиента и унаследуйте его от `GRPCClient`, указав в параметре класс Stub-а сервиса:
+The library provides base methods for sending gRPC requests. To use them, create your own client class that inherits from `GRPCClient`, with the service Stub class as its type parameter:
 
 ```python
 from typing import Type
 
 from grpc_client import CallOptions, GRPCClient, GRPCResponse, MetadataType
 
-# Импортируем сгенерированные на предыдущем этапе pb2.py модули
+# Import the pb2.py modules generated in the previous step
 from api import example_pb2, example_pb2_grpc
 
 
 class MyCustomClient(GRPCClient[example_pb2_grpc.ExampleStub]):
-    """gRPC-клиент сервиса «Example»."""
+    """gRPC client for the Example service."""
 
     @property
     def stub_class(self) -> Type[example_pb2_grpc.ExampleStub]:
@@ -91,12 +93,12 @@ class MyCustomClient(GRPCClient[example_pb2_grpc.ExampleStub]):
         metadata: MetadataType | None = None,
         options: CallOptions | None = None,
     ) -> GRPCResponse[example_pb2.ResponseMessage]:
-        """Отправить тестовый gRPC-запрос в сервис.
+        """Send a test gRPC request to the service.
 
-        :param data: данные запроса
-        :param metadata: метаданные запроса (аналог заголовков для HTTP)
-        :param options: параметры вызова
-        :return: объект ответа, содержащий данные ответа на запрос
+        :param data: request data
+        :param metadata: request metadata (similar to HTTP headers)
+        :param options: call options
+        :return: response object containing the response data
         """
         return self.send_unary_unary_request(
             msg=data,
@@ -106,15 +108,15 @@ class MyCustomClient(GRPCClient[example_pb2_grpc.ExampleStub]):
         )
 ```
 
-Разберём подробно:
+In detail:
 
-1. Наследуемся от `GRPCClient` и указываем в квадратных скобках класс Stub-а — тогда `self.stub` будет типизирован.
-2. В __обязательном__ свойстве `stub_class` возвращаем тот же Stub класс. Он импортируется из сгенерированных `pb2_grpc.py` модулей и называется «{имя сервиса}Stub». После этого все методы сервиса доступны в свойстве `self.stub`.
-3. Для вызова конкретных запросов используем один из четырёх методов отправки базового класса (разберём далее), передавая туда данные запроса и метод из `self.stub`.
+1. Inherit from `GRPCClient` and specify the Stub class in square brackets to type `self.stub`.
+2. Return the same Stub class from the __required__ `stub_class` property. Import it from the generated `pb2_grpc.py` modules; it is named "{service name}Stub". All service methods are then available through `self.stub`.
+3. Call a specific request with one of the base class's four sending methods (described below), passing the request data and a method from `self.stub`.
 
-### 3. Создание клиента и опции
+### 3. Create a client and set options
 
-Клиент создаётся фабричным методом `from_addr`, которому передаются адрес сервиса и опции:
+Create a client with the `from_addr` factory method, passing the service address and options:
 
 ```python
 import logging
@@ -133,14 +135,14 @@ response = client.send_example_request(...)
 client.close()
 ```
 
-⚠️ Канал, созданный клиентом, нужно закрывать. Самый простой способ — использовать клиент как контекстный менеджер:
+⚠️ Close the channel created by the client. The simplest way is to use the client as a context manager:
 
 ```python
 with MyCustomClient.from_addr("localhost:9000", options.with_insecure_channel()) as client:
     response = client.send_example_request(...)
 ```
 
-В pytest для этого удобна фикстура:
+A fixture works well for this in pytest:
 
 ```python
 @pytest.fixture
@@ -149,84 +151,84 @@ def example_client() -> Iterator[MyCustomClient]:
         yield client
 ```
 
-Если канал уже создан и его жизненным циклом управляет вызывающий код, используйте `from_channel` — такой канал клиент не закрывает:
+If a channel already exists and the caller manages its lifetime, use `from_channel`: the client does not close that channel:
 
 ```python
 with grpc.insecure_channel("localhost:9000") as channel:
     client = MyCustomClient.from_channel(channel)
 ```
 
-Доступные опции:
+Available options:
 
-| Опция | Назначение |
+| Option | Purpose |
 | --- | --- |
-| `with_timeout(timeout)` | Ограничение времени вызова по умолчанию, `None` — без ограничения |
-| `with_insecure_channel()` | Незашифрованный канал (по умолчанию канал шифруется) |
-| `with_ssl_credentials(credentials)` | Свои учётные данные TLS |
-| `with_root_certificates(pem_bytes)` | Корневой сертификат для проверки сервера |
-| `with_channel_options(options)` | Низкоуровневые настройки канала grpcio, в том числе `grpc.service_config` |
-| `with_compression(compression)` | Сжатие сообщений |
-| `with_default_metadata(metadata)` | Метаданные, добавляемые к каждому запросу |
-| `with_auth(auth)` | Подстановка токена доступа, см. [Авторизация](#10-авторизация) |
-| `with_logger(logger, ...)` | Логирование запросов и ответов |
-| `with_autogenerated_request_id(key)` | Автоматический `x-request-id` |
-| `with_autogenerated_traceparent(key)` | Автоматический `traceparent` по W3C Trace Context |
-| `with_interceptor(*interceptors)` | Свои интерцепторы grpcio |
+| `with_timeout(timeout)` | Default call timeout; `None` means no limit |
+| `with_insecure_channel()` | Unencrypted channel (channels are encrypted by default) |
+| `with_ssl_credentials(credentials)` | Custom TLS credentials |
+| `with_root_certificates(pem_bytes)` | Root certificate for verifying the server |
+| `with_channel_options(options)` | Low-level grpcio channel settings, including `grpc.service_config` |
+| `with_compression(compression)` | Message compression |
+| `with_default_metadata(metadata)` | Metadata added to every request |
+| `with_auth(auth)` | Add an access token; see [Authorization](#10-authorization) |
+| `with_logger(logger, ...)` | Log requests and responses |
+| `with_autogenerated_request_id(key)` | Automatic `x-request-id` |
+| `with_autogenerated_traceparent(key)` | Automatic `traceparent` following W3C Trace Context |
+| `with_interceptor(*interceptors)` | Custom grpcio interceptors |
 
-Порядок опций важен: интерцепторы применяются в порядке добавления. Логирование стоит подключать после авторизации, чтобы в лог попал итоговый запрос.
+Option order matters: interceptors run in the order they are added. Add logging after authorization so the log captures the final request.
 
-### 4. Вызов методов
+### 4. Call methods
 
-В gRPC есть четыре вида методов:
+gRPC has four method types:
 
-1. Унарный запрос (**Unary**) — обычный блокирующий запрос: клиент отправляет одно сообщение серверу и получает одно в ответ.
-2. Поток со стороны клиента (**Client streaming**) — клиент отправляет последовательность сообщений, а после её завершения ждёт единственный ответ.
-3. Поток со стороны сервера (**Server streaming**) — клиент отправляет запрос и читает последовательность ответных сообщений.
-4. Двунаправленный поток (**Bidirectional streaming**) — и клиент, и сервер отправляют последовательности сообщений независимо друг от друга.
+1. **Unary** — a regular blocking request: the client sends one message and receives one response.
+2. **Client streaming** — the client sends a sequence of messages, then waits for a single response.
+3. **Server streaming** — the client sends a request and reads a sequence of response messages.
+4. **Bidirectional streaming** — both the client and server send sequences of messages independently.
 
-Подробнее можно прочитать [в документации grpc.io](https://grpc.io/docs/what-is-grpc/core-concepts/).
+See the [grpc.io documentation](https://grpc.io/docs/what-is-grpc/core-concepts/) for details.
 
-В базовом классе реализованы все четыре:
+The base class implements all four:
 
-| Метод | Тип вызова | Возвращает |
+| Method | Call type | Returns |
 | --- | --- | --- |
-| `send_unary_unary_request` | унарный | `GRPCResponse[T]` |
-| `send_stream_unary_request` | поток от клиента | `GRPCResponse[T]` |
-| `send_unary_stream_request` | поток от сервера | `GRPCStreamResponse[T]` |
-| `send_stream_stream_request` | двунаправленный поток | `GRPCStreamResponse[T]` |
+| `send_unary_unary_request` | unary | `GRPCResponse[T]` |
+| `send_stream_unary_request` | client streaming | `GRPCResponse[T]` |
+| `send_unary_stream_request` | server streaming | `GRPCStreamResponse[T]` |
+| `send_stream_stream_request` | bidirectional streaming | `GRPCStreamResponse[T]` |
 
-ℹ️ В python потоки запросов передаются [итератором](https://docs.python.org/3/library/stdtypes.html#iterator-types) `Iterator[Message]`. Простой итератор из списка делается функцией `iter`.
+ℹ️ In Python, request streams use an [iterator](https://docs.python.org/3/library/stdtypes.html#iterator-types), `Iterator[Message]`. Use `iter` to create a simple iterator from a list.
 
-### 5. Работа с ответом
+### 5. Work with responses
 
-Унарные методы возвращают `GRPCResponse`:
+Unary methods return `GRPCResponse`:
 
 ```python
 response = client.send_example_request(data)
 
-response.status_code  # grpc.StatusCode — код статуса ответа
-response.details  # str — пояснение к статусу, обычно заполняется при ошибке
-response.ok  # bool — успешен ли запрос
-response.message()  # ответное сообщение, бросает MessageUndefinedError, если его нет
-response.initial_metadata  # метаданные до тела ответа, ближайший аналог заголовков HTTP
-response.trailing_metadata  # метаданные после тела ответа
-response.error  # исходный grpc.RpcError, если запрос неуспешен
-response.error_status  # расширенный статус google.rpc.Status, если сервис его прислал
-response.raise_for_status()  # бросить ResponseStatusError, если статус не OK
+response.status_code  # grpc.StatusCode — response status code
+response.details  # str — status explanation, usually set for errors
+response.ok  # bool — whether the request succeeded
+response.message()  # response message; raises MessageUndefinedError if absent
+response.initial_metadata  # metadata before the response body, similar to HTTP headers
+response.trailing_metadata  # metadata after the response body
+response.error  # original grpc.RpcError if the request failed
+response.error_status  # rich google.rpc.Status if provided by the service
+response.raise_for_status()  # raise ResponseStatusError if status is not OK
 ```
 
-Ошибки gRPC не выбрасываются наружу: любой неуспешный вызов превращается в `GRPCResponse` с соответствующим кодом. Это удобно в автотестах, где неуспешный ответ — такой же ожидаемый результат:
+The client does not raise gRPC errors: each failed call becomes a `GRPCResponse` with the appropriate code. This is useful in automated tests, where a failed response can also be an expected result:
 
 ```python
 response = client.send_example_request(data)
 
 assert response.status_code == grpc.StatusCode.NOT_FOUND
-assert response.details == "заказ не найден"
+assert response.details == "order not found"
 ```
 
-Если же ошибку нужно превратить в исключение, используйте `raise_for_status()`.
+To turn an error into an exception, use `raise_for_status()`.
 
-Для преобразования ответного сообщения есть метод `with_parser`. Это полезно, когда ответ нужно разобрать в pydantic-модель или достать из него одно свойство:
+Use `with_parser` to transform the response message, for example into a pydantic model or a single property:
 
 ```python
 from pydantic import BaseModel
@@ -252,11 +254,11 @@ class MyCustomClient(GRPCClient[example_pb2_grpc.ExampleStub]):
         data: example_pb2.RequestMessage,
         metadata: MetadataType | None = None,
     ) -> GRPCResponseWithParser[example_pb2.ResponseMessage, ResponseModel]:
-        """Отправить тестовый gRPC-запрос в сервис.
+        """Send a test gRPC request to the service.
 
-        :param data: данные запроса
-        :param metadata: метаданные запроса (аналог заголовков HTTP)
-        :return: объект ответа с методом разбора ответного сообщения
+        :param data: request data
+        :param metadata: request metadata (similar to HTTP headers)
+        :return: response object with a response message parser
         """
         response = self.send_unary_unary_request(
             msg=data,
@@ -274,13 +276,13 @@ class MyCustomClient(GRPCClient[example_pb2_grpc.ExampleStub]):
         return response.with_parser(parser)
 ```
 
-Разобранное сообщение возвращает метод `parse()`.
+Call `parse()` to get the parsed message.
 
-### 6. Потоки
+### 6. Streams
 
-Методы `send_unary_stream_request` и `send_stream_stream_request` возвращают `GRPCStreamResponse` — сообщения читаются лениво, по мере поступления, и не буферизуются.
+`send_unary_stream_request` and `send_stream_stream_request` return `GRPCStreamResponse`. Messages are read lazily as they arrive, without buffering.
 
-Если нужны все сообщения сразу, вызовите `collect()`: он дочитает поток и вернёт привычный `GRPCResponse` со списком сообщений и итоговым статусом.
+If you need all messages at once, call `collect()`: it consumes the remaining stream and returns a regular `GRPCResponse` with a message list and the final status.
 
 ```python
 response = client.send_server_stream(data).collect()
@@ -290,7 +292,7 @@ for message in response.message():
     ...
 ```
 
-Ленивое чтение полезно для длинных и бесконечных потоков:
+Lazy reading is useful for long or endless streams:
 
 ```python
 with client.send_server_stream(data) as stream:
@@ -299,29 +301,29 @@ with client.send_server_stream(data) as stream:
             break
 ```
 
-⚠️ Поток удерживает вызов открытым, поэтому его нужно либо дочитать до конца, либо закрыть. Контекстный менеджер отменяет незавершённый вызов на выходе. Можно отменить и явно — методом `cancel()`.
+⚠️ A stream keeps the call open, so consume it fully or close it. The context manager cancels an unfinished call on exit. You can also cancel it explicitly with `cancel()`.
 
-Итоговый статус и trailing-метаданные сервер сообщает только после завершения потока, поэтому до окончания чтения они недоступны — обращение к ним бросит `StreamNotConsumedError`:
+The server provides the final status and trailing metadata only when the stream ends. Accessing them before reading finishes raises `StreamNotConsumedError`:
 
 ```python
 stream = client.send_server_stream(data)
 messages = list(stream)
 
-stream.status_code  # доступен только теперь
+stream.status_code  # available only now
 stream.trailing_metadata
 ```
 
-Чтобы ограничить количество сообщений, передайте `limit` — вызов будет отменён по достижении предела:
+Pass `limit` to restrict the number of messages: the call is canceled when the limit is reached:
 
 ```python
 response = client.send_server_stream(data).collect(limit=100)
 ```
 
-ℹ️ Поток читается один раз: повторное чтение бросит `StreamConsumedError`. Если сообщения нужны повторно, сохраните их через `collect()`.
+ℹ️ A stream can be read once: reading it again raises `StreamConsumedError`. If you need the messages again, save them with `collect()`.
 
-### 7. Параметры вызова
+### 7. Call options
 
-Настройки клиента распространяются на все запросы, а параметры одного вызова задаются через `CallOptions`:
+Client settings apply to all requests. Use `CallOptions` to configure one call:
 
 ```python
 from grpc_client import CallOptions
@@ -329,65 +331,65 @@ from grpc_client import CallOptions
 response = client.send_example_request(
     data,
     options=CallOptions(
-        timeout=120,  # своё ограничение времени для долгого метода
+        timeout=120,  # custom timeout for a long-running method
         metadata={"x-attempt": "2"},
-        wait_for_ready=True,  # подождать готовности канала вместо ошибки UNAVAILABLE
+        wait_for_ready=True,  # wait for the channel instead of failing with UNAVAILABLE
         compression=grpc.Compression.Gzip,
     ),
 )
 ```
 
-`timeout=None` означает вызов без ограничения времени, а незаданный `timeout` берётся из настроек клиента — это разные вещи.
+`timeout=None` means no time limit. An omitted `timeout` uses the client settings: these are different behaviors.
 
-### 8. Метаданные
+### 8. Metadata
 
-Метаданные можно передавать словарём либо последовательностью пар — второй вариант нужен, когда у ключа несколько значений:
+Pass metadata as a dictionary or a sequence of pairs; use pairs when a key has multiple values:
 
 ```python
 client.send_example_request(data, metadata={"x-order-id": "A-1024"})
 client.send_example_request(data, metadata=[("x-feature", "search"), ("x-feature", "ranking")])
 ```
 
-Метаданные ответа возвращаются объектом `Metadata`. Он ведёт себя как словарь, но сохраняет порядок и повторяющиеся ключи, а имена ключей сравнивает без учёта регистра:
+Response metadata is returned as a `Metadata` object. It acts like a dictionary but preserves order and duplicate keys, and compares key names without case sensitivity:
 
 ```python
-response.trailing_metadata["x-request-id"]  # первое значение ключа
-response.trailing_metadata.get_all("x-feature")  # все значения ключа
-response.trailing_metadata.pairs()  # все пары, включая повторяющиеся ключи
+response.trailing_metadata["x-request-id"]  # first value for the key
+response.trailing_metadata.get_all("x-feature")  # all values for the key
+response.trailing_metadata.pairs()  # all pairs, including duplicate keys
 ```
 
-ℹ️ Двоичные значения допустимы только для ключей с суффиксом `-bin` — это требование gRPC.
+ℹ️ Binary values are allowed only for keys ending in `-bin`, as required by gRPC.
 
-### 9. Ошибки и расширенный статус
+### 9. Errors and rich status
 
-Сервисы часто передают подробности ошибки в `google.rpc.Status`. Библиотека разбирает их и отдаёт через `error_status`:
+Services often send error details in `google.rpc.Status`. The library parses them and exposes them through `error_status`:
 
 ```python
 response = client.send_example_request(data)
 
 if response.error_status:
-    print(response.error_status.code)  # числовой код google.rpc.Code
-    print(response.error_status.message)  # текст ошибки
-    print(response.error_status.details)  # типизированные подробности
+    print(response.error_status.code)  # numeric google.rpc.Code
+    print(response.error_status.message)  # error text
+    print(response.error_status.details)  # typed details
 
-    # подробности можно искать по типу сообщения
+    # look up details by message type
     bad_request = response.error_status.of_type(error_details_pb2.BadRequest)
 ```
 
-Неизвестные библиотеке типы подробностей остаются в виде `google.protobuf.Any`.
+Detail types unknown to the library remain as `google.protobuf.Any`.
 
-Исключения библиотеки наследуются от `GRPCClientError`:
+Library exceptions inherit from `GRPCClientError`:
 
-| Исключение | Когда возникает |
+| Exception | Raised when |
 | --- | --- |
-| `MessageUndefinedError` | обращение к `message()` ответа, в котором сообщения нет |
-| `ResponseStatusError` | `raise_for_status()` при статусе, отличном от OK |
-| `StreamConsumedError` | повторное чтение уже прочитанного потока |
-| `StreamNotConsumedError` | обращение к итоговому статусу недочитанного потока |
+| `MessageUndefinedError` | calling `message()` on a response without a message |
+| `ResponseStatusError` | calling `raise_for_status()` with a non-OK status |
+| `StreamConsumedError` | reading an already consumed stream again |
+| `StreamNotConsumedError` | accessing the final status before consuming the stream |
 
-### 10. Авторизация
+### 10. Authorization
 
-Библиотека не знает, откуда берётся токен, — она описывает контракт `ClientAuth`:
+The library does not determine where tokens come from; it defines the `ClientAuth` contract:
 
 ```python
 class ClientAuth(Protocol):
@@ -395,10 +397,10 @@ class ClientAuth(Protocol):
     def refresh(self, rejected_token: str) -> str: ...
 ```
 
-Отвергнутый токен передаётся в `refresh()`, чтобы реализация могла отличить «токен действительно протух»
-от «его уже обновил соседний запрос, пока этот ждал блокировку», и не ходила во внешний сервис лишний раз.
+The rejected token is passed to `refresh()`, allowing the implementation to distinguish an expired token
+from one already refreshed by another request while this request waited for a lock, avoiding unnecessary external calls.
 
-Реализация отвечает за выдачу токена: поход во внешний сервис, кеширование и срок жизни. Подстановку заголовка и повтор запроса берёт на себя клиент:
+The implementation issues tokens, calls the external service, caches tokens, and manages their lifetime. The client adds the header and retries requests:
 
 ```python
 client = MyCustomClient.from_addr(
@@ -407,17 +409,17 @@ client = MyCustomClient.from_addr(
 )
 ```
 
-Что делает клиент:
+The client:
 
-- добавляет к каждому запросу заголовок `authorization: Bearer <токен>`;
-- если запрос пришёл с ответом `UNAUTHENTICATED`, запрашивает новый токен через `refresh(отвергнутый_токен)` и повторяет унарный запрос;
-- не вмешивается, если вызывающий код передал собственный заголовок `authorization`.
+- adds the `authorization: Bearer <token>` header to every request;
+- requests a new token with `refresh(rejected_token)` after an `UNAUTHENTICATED` response and retries the unary request;
+- leaves authorization unchanged if the caller supplies an `authorization` header.
 
-⚠️ Повтор выполняется только для унарных запросов: поток запросов после первой отправки уже исчерпан, а у потока ответов итоговый статус известен лишь после вычитывания. Повтор можно отключить: `options.with_auth(my_auth, retry_on_unauthenticated=False)`.
+⚠️ Only unary requests are retried: a request stream is exhausted after the first send, and a response stream's final status is known only after consumption. Disable retries with `options.with_auth(my_auth, retry_on_unauthenticated=False)`.
 
-ℹ️ Готовая авторизация в IAM реализована в библиотеке [`cloudru-qa-grpc-client-auth`](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/grpc-client-auth).
+ℹ️ Ready-to-use IAM authorization is provided by [`cloudru-qa-grpc-client-auth`](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/grpc-client-auth).
 
-### 11. Логирование
+### 11. Logging
 
 ```python
 import logging
@@ -432,22 +434,22 @@ client = MyCustomClient.from_addr(
 )
 ```
 
-Логируются все четыре типа вызовов. Для потоков в лог попадает итоговый статус и количество сообщений — сами сообщения не логируются, потому что их вычитывание ради лога изменило бы поведение вызова.
+All four call types are logged. For streams, the log includes the final status and message count, but not the messages: consuming them for logging would change call behavior.
 
-ℹ️ В асинхронном клиенте считаются сообщения, полученные через `async for` и `collect()` — других способов чтения потока клиент не предоставляет.
+ℹ️ The asynchronous client counts messages received through `async for` and `collect()`; it provides no other stream reading methods.
 
-Секреты маскируются:
+Secrets are masked:
 
-- в метаданных — по имени ключа, без учёта регистра;
-- в теле сообщения — двумя способами, в зависимости от того, как задан ключ:
-  - имя без разделителей (`password`) маскирует поле с таким именем на любом уровне вложенности, включая элементы списков;
-  - путь с точкой, звёздочкой или скобками (`user.password`, `items.*.token`) применяется как [glom-путь](https://glom.readthedocs.io/en/latest/).
+- in metadata, by case-insensitive key name;
+- in message bodies, in two ways depending on the key format:
+  - a name without separators (`password`) masks that field at any nesting level, including list items;
+  - a path with a dot, star, or brackets (`user.password`, `items.*.token`) is applied as a [glom path](https://glom.readthedocs.io/en/latest/).
 
-Имена полей сравниваются с точностью до стиля записи, поэтому `access_token` скрывает и `accessToken` (protobuf сериализует поля в camelCase), но не затрагивает поле с другими границами слов вроде `sec_ret`.
+Field names match across naming styles, so `access_token` also hides `accessToken` (protobuf serializes fields in camelCase), but does not affect fields with different word boundaries such as `sec_ret`.
 
-Типовые ключи (`authorization`, `cookie`, `password`, `token` и другие) маскируются всегда — и в метаданных, и во вложенных полях тела. Отключить это можно параметром `use_default_sanitize_keys=False`.
+Common keys (`authorization`, `cookie`, `password`, `token`, and others) are always masked in metadata and nested body fields. Disable this with `use_default_sanitize_keys=False`.
 
-Общие для всех клиентов настройки логирования задаются через `configure_logging`, значения можно переопределить переменными окружения:
+Set shared logging settings through `configure_logging`; environment variables can override them:
 
 ```python
 from grpc_client import configure_logging
@@ -459,17 +461,17 @@ configure_logging(
 )
 ```
 
-| Переменная окружения | Что задаёт |
+| Environment variable | Controls |
 | --- | --- |
-| `GRPC_CLIENT_LOG_LEVEL` | уровень логирования успешных запросов |
-| `GRPC_CLIENT_ERR_LOG_LEVEL` | уровень логирования запросов с ошибкой |
-| `GRPC_CLIENT_JSON_INDENT` | отступ при форматировании JSON |
-| `GRPC_CLIENT_USE_LINE_BREAKS` | разносить ли свойства лога по строкам |
-| `GRPC_CLIENT_PAYLOAD_LOG_MAXLENGTH` | максимальная длина тела сообщения в логе |
+| `GRPC_CLIENT_LOG_LEVEL` | log level for successful requests |
+| `GRPC_CLIENT_ERR_LOG_LEVEL` | log level for failed requests |
+| `GRPC_CLIENT_JSON_INDENT` | JSON formatting indentation |
+| `GRPC_CLIENT_USE_LINE_BREAKS` | whether log properties appear on separate lines |
+| `GRPC_CLIENT_PAYLOAD_LOG_MAXLENGTH` | maximum message body length in logs |
 
-#### Свой формат лога
+#### Custom log format
 
-`with_logger` пишет каждый вызов одной строкой. Если лог нужен в другом виде — например отдельными полями в структурированном логгере — вместо логгера клиенту передаётся приёмник записей:
+`with_logger` writes each call as a single string. For another format, such as separate fields in a structured logger, pass a log sink instead of a logger:
 
 ```python
 from grpc_client import LogSink, RequestRecord, ResponseRecord, options
@@ -487,21 +489,21 @@ class MySink(LogSink):
 client = MyCustomClient.from_addr("example.com:443", options.with_log_sink(MySink()))
 ```
 
-`LogSink` — это `Protocol`, поэтому наследование необязательно, но с ним mypy проверит сигнатуры.
+`LogSink` is a `Protocol`, so inheritance is optional, but inheriting lets mypy check method signatures.
 
-Клиент собирает записи и выбирает уровень: успешный вызов пишется уровнем `log_level`, вызов с ошибкой — `err_log_level`. Приёмник решает только, куда и в каком виде запись попадёт, поэтому маскирование и оформление он настраивает сам — например через `LogFormat.from_config(...)` (импортируется из `grpc_client`), которая подставляет значения `configure_logging`.
+The client builds records and selects the level: `log_level` for successful calls, `err_log_level` for failures. The sink only decides where and how to write records, so it configures its own masking and formatting, for example with `LogFormat.from_config(...)` (imported from `grpc_client`), which uses `configure_logging` values.
 
-Исход вызова читается по полям записи: `record.succeeded` отличает успех от ошибки, `record.is_stream` — завершившийся поток от унарного ответа. Разбирать сочетание `status_code`, `message` и `messages_count` вручную не нужно.
+Read the call outcome from the record fields: `record.succeeded` distinguishes success from failure, and `record.is_stream` distinguishes a completed stream from a unary response. No need to interpret combinations of `status_code`, `message`, and `messages_count` yourself.
 
-`is_enabled_for` клиент спрашивает перед каждой записью, поэтому он должен быть дешёвым.
+The client calls `is_enabled_for` before each record, so it must be cheap.
 
-Приёмник должен выдерживать вызовы из разных потоков и не работать долго. Если он бросит исключение, клиент его погасит: вызов не сорвётся, но запись потеряется.
+The sink must support calls from multiple threads and return quickly. If it raises an exception, the client suppresses it: the call succeeds, but the log record is lost.
 
-Готовая реализация для structlog — в библиотеке [`cloudru-qa-grpc-client-structlog`](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/grpc-client-structlog).
+A ready-to-use structlog implementation is in [`cloudru-qa-grpc-client-structlog`](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/grpc-client-structlog).
 
-### 12. Асинхронный клиент
+### 12. Asynchronous client
 
-`AsyncGRPCClient` повторяет интерфейс синхронного клиента поверх `grpc.aio`:
+`AsyncGRPCClient` provides the synchronous client's interface on top of `grpc.aio`:
 
 ```python
 from grpc_client import AsyncGRPCClient, AsyncGRPCStreamResponse, GRPCResponse, options
@@ -525,24 +527,24 @@ async with MyAsyncClient.from_addr("localhost:9000", options.with_insecure_chann
     response = await client.send_example_request(data)
 ```
 
-Отличия от синхронного клиента:
+Differences from the synchronous client:
 
-- методы отправки нужно ожидать через `await`;
-- потоки возвращают `AsyncGRPCStreamResponse`, который читается через `async for`, а статус и метаданные отдаёт корутинами: `await stream.status_code()`;
-- закрытие — `await client.close()` либо `async with`;
-- интерцепторы `grpc.aio` задаются только при создании канала, поэтому `from_channel()` с опциями,
-  которые добавляют интерцепторы (`with_auth`, `with_logger`, `with_autogenerated_*`, `with_interceptor`),
-  завершится ошибкой: такой канал нужно создавать самому через `grpc.aio.insecure_channel(..., interceptors=[...])`
-  либо строить клиент через `from_addr()`;
-- авторизация требует асинхронной реализации контракта `AsyncClientAuth`, где `token()` и `refresh()` объявлены корутинами.
+- sending methods must be awaited;
+- streams return `AsyncGRPCStreamResponse`, read with `async for`, with status and metadata exposed as coroutines: `await stream.status_code()`;
+- close with `await client.close()` or `async with`;
+- `grpc.aio` interceptors can only be set when creating a channel, so `from_channel()` with options
+  that add interceptors (`with_auth`, `with_logger`, `with_autogenerated_*`, `with_interceptor`)
+  raises an error: create the channel yourself with `grpc.aio.insecure_channel(..., interceptors=[...])`
+  or create the client with `from_addr()`;
+- authorization requires an asynchronous `AsyncClientAuth` implementation with coroutine `token()` and `refresh()` methods.
 
-Опции у обоих клиентов общие: `options.with_logger(...)` подключит нужный вариант интерцептора сам.
+Both clients share the same options: `options.with_logger(...)` selects the appropriate interceptor automatically.
 
-### 13. Свои интерцепторы
+### 13. Custom interceptors
 
-**Interceptor** — это перехватчик gRPC-запросов. Их можно использовать, чтобы добавить данные в запрос, собрать метрики, что-то закешировать.
+An **interceptor** intercepts gRPC requests. Use it to add request data, collect metrics, or cache values.
 
-Интерцепторы пишутся на обычном API grpcio. Если задача сводится к добавлению метаданных, удобнее унаследоваться от `MetadataInterceptor` — он покрывает все четыре типа вызовов:
+Write interceptors using the regular grpcio API. To add metadata, inherit from `MetadataInterceptor`, which covers all four call types:
 
 ```python
 from grpc_client.interceptors import MetadataInterceptor
@@ -550,7 +552,7 @@ from grpc_client.types import MetadataItems
 
 
 class TenantInterceptor(MetadataInterceptor):
-    """Добавляет к каждому запросу идентификатор тенанта."""
+    """Add a tenant identifier to each request."""
 
     def __init__(self, tenant: str):
         self._tenant = tenant
@@ -565,36 +567,36 @@ client = MyCustomClient.from_addr(
 )
 ```
 
-Для асинхронного клиента есть `AsyncMetadataInterceptor` с тем же контрактом, где `metadata_to_add` объявлен корутиной.
+The asynchronous client has `AsyncMetadataInterceptor` with the same contract, but `metadata_to_add` is a coroutine.
 
-⚠️ Определять успех вызова проверкой `isinstance(outcome, grpc.RpcError)` нельзя: объекты потоковых вызовов grpcio реализуют одновременно `grpc.Call` и `grpc.RpcError` даже когда вызов идёт нормально. Ориентируйтесь на код статуса — для этого есть готовая функция `grpc_client.interceptors.base.outcome_code`.
+⚠️ Do not determine call success with `isinstance(outcome, grpc.RpcError)`: grpcio streaming call objects implement both `grpc.Call` and `grpc.RpcError` even for successful calls. Use the status code instead; the `grpc_client.interceptors.base.outcome_code` helper provides it.
 
-ℹ️ Больше примеров можно найти в [тестах библиотеки](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/grpc-client/tests/).
+ℹ️ Find more examples in the [library tests](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/grpc-client/tests/).
 
-## Разработка
+## Development
 
-Библиотека развивается в монорепозитории [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries)
-вместе с остальными библиотеками `cloudru-qa-*`. Нужны [`uv`](https://docs.astral.sh/uv/), GNU Make
-и [`checkmake`](https://github.com/checkmake/checkmake),
-команды запускаются из корня репозитория:
+The library is developed in the [qa-libraries](https://github.com/cloud-ru-tech/qa-libraries) monorepo
+alongside the other `cloudru-qa-*` libraries. You need [`uv`](https://docs.astral.sh/uv/), GNU Make,
+and [`checkmake`](https://github.com/checkmake/checkmake).
+Run commands from the repository root:
 
 ```shell
-make sync                     # зависимости всех библиотек строго по uv.lock
-make test-grpc-client         # тесты этой библиотеки
-make typecheck-grpc-client    # mypy для этой библиотеки
-make check                    # форматирование, ruff, mypy и тесты всего набора
+make sync                     # install dependencies for all libraries from uv.lock
+make test-grpc-client         # tests for this library
+make typecheck-grpc-client    # mypy for this library
+make check                    # formatting, ruff, mypy, and tests for the entire workspace
 ```
 
-⚠️ **Важно**, чтобы библиотека оставалась легковесной и универсальной. Новые зависимости стоит
-добавлять, только если есть уверенность, что они необходимы всем пользователям библиотеки.
+⚠️ **Keep** the library lightweight and general-purpose. Discuss new dependencies
+only when you are sure all library users need them.
 
-Тестам нужен запущенный Docker: контейнер с сервисом [grpcbin](https://grpcb.in/) поднимается
-и останавливается автоматически через [lovely-pytest-docker](https://github.com/lovelysystems/lovely-pytest-docker).
-`make test-grpc-client` перед запуском заново генерирует тестовые `pb2.py` из `proto/`;
-отдельно генерацию запускает `make gen-test-api`.
+Tests require Docker running: the [grpcbin](https://grpcb.in/) service container is started
+and stopped automatically through [lovely-pytest-docker](https://github.com/lovelysystems/lovely-pytest-docker).
+`make test-grpc-client` regenerates test `pb2.py` files from `proto/` before running;
+run `make gen-test-api` for generation alone.
 
-Тесты прогоняются на Python 3.13 и 3.14. Окружение для другой версии создаётся отдельно:
+Tests run on Python 3.13 and 3.14. Create a separate environment for another version:
 `make sync test-grpc-client PYTHON_VERSION=3.14`.
 
-Релиз выпускается git-тегом `grpc-client/v<версия>`. Версия в теге должна совпадать с версией
-в `packages/grpc-client/pyproject.toml`, иначе публикация остановится.
+Publish a release with the git tag `grpc-client/v<version>`. The tag version must match the version
+in `packages/grpc-client/pyproject.toml`, otherwise publication stops.

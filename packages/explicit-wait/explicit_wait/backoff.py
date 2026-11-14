@@ -10,30 +10,30 @@ FULL_TUPLE_LENGTH = 3
 
 SleepSecondsType = float | tuple[float, float | None] | tuple[float, float | None, float]
 
-# SystemRandom вместо RandomSource: jitter не связан с безопасностью, но так не нужно
-# подавлять предупреждение линтера о небезопасном генераторе.
+# Use SystemRandom instead of RandomSource: jitter is unrelated to security, but this avoids
+# suppressing the linter warning about an insecure generator.
 _shared_rng = secrets.SystemRandom()
 
 
 class RandomSource(Protocol):
-    """Источник случайной доли для jitter."""
+    """Source of a random fraction for jitter."""
 
     def random(self) -> float:
-        """Получить число в интервале от нуля включительно до единицы.
+        """Get a number from zero inclusive to one exclusive.
 
-        :return: случайная доля.
+        :return: random fraction.
         """
         ...
 
 
 @dataclass(frozen=True, slots=True)
 class Backoff:
-    """Стратегия роста паузы между попытками ожидания.
+    """Strategy for increasing the pause between wait attempts.
 
-    Пауза начинается с ``initial_seconds`` и умножается на ``multiplier`` после каждой
-    попытки, не превышая ``maximum_seconds``. При ``jitter`` больше нуля из каждой паузы
-    случайно вычитается до ``jitter``-й доли, чтобы параллельные тесты не били
-    в один и тот же сервис синхронными волнами запросов.
+    The pause starts at ``initial_seconds`` and is multiplied by ``multiplier`` after each
+    attempt, up to ``maximum_seconds``. With positive ``jitter``, a random fraction of up to
+    ``jitter`` is subtracted from each pause, preventing parallel tests from hitting
+    the same service with synchronized waves of requests.
     """
 
     initial_seconds: float
@@ -42,9 +42,9 @@ class Backoff:
     jitter: float = 0.0
 
     def __post_init__(self) -> None:
-        """Проверить корректность параметров стратегии.
+        """Validate the strategy parameters.
 
-        :raises ValueError: если значения выходят за допустимые границы.
+        :raises ValueError: if values are outside the allowed bounds.
         """
         self._validate_initial_seconds()
         self._validate_maximum_seconds()
@@ -53,13 +53,13 @@ class Backoff:
 
     @classmethod
     def parse(cls, sleep_seconds: "SleepSecondsType | Backoff") -> "Backoff":
-        """Привести значение параметра ``sleep_seconds`` к стратегии роста паузы.
+        """Convert a ``sleep_seconds`` value into a backoff strategy.
 
-        :param sleep_seconds: число (постоянная пауза), кортеж
-            ``(начальная, максимальная[, множитель])`` или готовый ``Backoff``.
-        :return: стратегия роста паузы.
-        :raises TypeError: если передан неподдерживаемый тип.
-        :raises ValueError: если кортеж имеет неверную длину или значения некорректны.
+        :param sleep_seconds: number (constant pause), tuple
+            ``(initial, maximum[, multiplier])``, or an existing ``Backoff``.
+        :return: backoff strategy.
+        :raises TypeError: if an unsupported type is passed.
+        :raises ValueError: if the tuple length or values are invalid.
         """
         if isinstance(sleep_seconds, Backoff):
             return sleep_seconds
@@ -75,10 +75,10 @@ class Backoff:
         )
 
     def delays(self, rng: RandomSource | None = None) -> Iterator[float]:
-        """Получить бесконечную последовательность пауз между попытками.
+        """Get an infinite sequence of pauses between attempts.
 
-        :param rng: источник случайности для ``jitter``; по умолчанию общий на процесс.
-        :return: итератор пауз в секундах.
+        :param rng: randomness source for ``jitter``; shared across the process by default.
+        :return: iterator of pauses in seconds.
         """
         source = _shared_rng if rng is None else rng
         delay = self.initial_seconds

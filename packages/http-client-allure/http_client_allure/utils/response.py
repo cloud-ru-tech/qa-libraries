@@ -12,13 +12,13 @@ from .body import JSON_CONTENT_TYPE, STREAMED_CONTENT, UNPARSED, decode, parse_j
 
 
 def parse_response_headers_for_attach(response: httpx.Response, settings: StepSettings) -> Attachment:
-    """Собрать вложение с заголовками ответа.
+    """Build an attachment with response headers.
 
-    Повторяющиеся заголовки httpx склеивает через запятую - так же, как во вложении запроса.
+    httpx joins repeated headers with commas, matching the request attachment.
 
-    :param response: HTTP-ответ
-    :param settings: настройки шага
-    :return: вложение для прикрепления к шагу
+    :param response: HTTP response
+    :param settings: Step settings
+    :return: Attachment for the step
     """
     return Attachment(
         name=f"Response headers: status = {response.status_code} [{response.reason_phrase}]",
@@ -35,12 +35,12 @@ def parse_response_for_attach(
     body: bytes | None,
     settings: StepSettings,
 ) -> Attachment | None:
-    """Собрать вложение с телом ответа.
+    """Build an attachment with the response body.
 
-    :param response: HTTP-ответ
-    :param body: тело ответа, None означает непрочитанный поток
-    :param settings: настройки шага
-    :return: вложение либо None, если тело ответа пустое
+    :param response: HTTP response
+    :param body: Response body; None indicates an unread stream
+    :param settings: Step settings
+    :return: Attachment, or None if the response body is empty
     """
     name = "Response content"
 
@@ -53,7 +53,7 @@ def parse_response_for_attach(
     text = decode(body)
 
     if cast("str", response.headers.get("content-type", "")).startswith(JSON_CONTENT_TYPE):
-        # Признак разбора нужен отдельно от типа значения: валидный JSON тоже бывает строкой
+        # Track parsing separately from the value type: valid JSON can also be a string
         parsed = parse_json_body(text, settings.sanitize_keys)
         if parsed is not UNPARSED:
             return Attachment(

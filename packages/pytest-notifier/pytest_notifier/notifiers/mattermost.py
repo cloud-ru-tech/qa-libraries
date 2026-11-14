@@ -7,34 +7,34 @@ from .base import NotifierBase
 
 
 class MattermostNotifier(NotifierBase):
-    """Нотификатор для отправки результатов в Mattermost через Slack-совместимый webhook."""
+    """Notifier that sends results to Mattermost through a Slack-compatible webhook."""
 
     def __init__(self, settings: Settings) -> None:
-        """Сохранить настройки уведомлений.
+        """Save notification settings.
 
-        :param settings: настройки каналов.
+        :param settings: channel settings.
         """
         super().__init__(settings)
         self.mm = settings.mattermost
 
     def is_enabled(self) -> bool:
-        """Проверить доступность настроенного канала.
+        """Check the configured channel availability.
 
-        :return: достаточно ли настроек для отправки.
+        :return: whether the settings are sufficient for sending.
         """
         return self.mm.webhook_url is not None
 
     def send(self, results: TestResults) -> None:
-        """Отправить результаты в Mattermost."""
+        """Send results to Mattermost."""
         all_failures = results.failures + results.errors
         for failure in all_failures:
             payload = self._build_failure_payload(failure)
             self._post_to_webhook(payload)
 
     def _build_failure_payload(self, failure: TestFailureInfo) -> dict[str, object]:
-        """Создает payload для конкретного упавшего теста."""
+        """Create a payload for a specific failed test."""
         payload = self._build_base_payload()
-        payload["text"] = ""  # Все содержимое будет в attachments
+        payload["text"] = ""  # All content will be in attachments.
 
         pretext = f"Test failed: **{failure.name}**"
         if self.mm.additional_message:
@@ -64,7 +64,7 @@ class MattermostNotifier(NotifierBase):
         return payload
 
     def _build_base_payload(self) -> dict[str, object]:
-        """Создает базовый payload с общими настройками (username, channel, icon)."""
+        """Create a base payload with shared settings (username, channel, icon)."""
         payload: dict[str, object] = {}
 
         if self.mm.username:

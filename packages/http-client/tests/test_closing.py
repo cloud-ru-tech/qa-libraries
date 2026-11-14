@@ -4,7 +4,7 @@ from http_client.client import AsyncHttpClient, HttpClient
 
 
 def test_close_closes_transport() -> None:
-    """close() закрывает пул соединений."""
+    """close() closes the connection pool."""
     client = HttpClient("https://vault.example.com")
 
     client.close()
@@ -13,13 +13,13 @@ def test_close_closes_transport() -> None:
 
 
 def test_client_stays_open_inside_context() -> None:
-    """Внутри контекстного менеджера пул соединений открыт."""
+    """The connection pool is open inside the context manager."""
     with HttpClient("https://cdn.example.com") as client:
         assert_that(client.client.is_closed).is_false()
 
 
 def test_context_manager_closes_transport() -> None:
-    """Выход из контекстного менеджера закрывает пул соединений."""
+    """Leaving the context manager closes the connection pool."""
     with HttpClient("https://logs.example.com") as client:
         pass
 
@@ -27,7 +27,7 @@ def test_context_manager_closes_transport() -> None:
 
 
 def test_reopening_closed_client_is_rejected() -> None:
-    """Повторный вход в закрытый клиент запрещён, как в httpx."""
+    """Reentering a closed client is forbidden, as in httpx."""
     client = HttpClient("https://metrics.example.com")
     with client:
         pass
@@ -37,7 +37,7 @@ def test_reopening_closed_client_is_rejected() -> None:
 
 
 async def test_aclose_closes_transport() -> None:
-    """aclose() закрывает пул соединений асинхронного клиента."""
+    """aclose() closes the asynchronous client connection pool."""
     client = AsyncHttpClient("https://queue.example.com")
 
     await client.aclose()
@@ -46,13 +46,13 @@ async def test_aclose_closes_transport() -> None:
 
 
 async def test_async_client_stays_open_inside_context() -> None:
-    """Внутри асинхронного контекстного менеджера пул соединений открыт."""
+    """The connection pool is open inside the asynchronous context manager."""
     async with AsyncHttpClient("https://search.example.com") as client:
         assert_that(client.client.is_closed).is_false()
 
 
 async def test_async_context_manager_closes_transport() -> None:
-    """Выход из асинхронного контекстного менеджера закрывает пул соединений."""
+    """Leaving the asynchronous context manager closes the connection pool."""
     async with AsyncHttpClient("https://mail.example.com") as client:
         pass
 
@@ -60,7 +60,7 @@ async def test_async_context_manager_closes_transport() -> None:
 
 
 async def test_reopening_closed_async_client_is_rejected() -> None:
-    """Повторный вход в закрытый асинхронный клиент запрещён, как в httpx."""
+    """Reentering a closed asynchronous client is forbidden, as in httpx."""
     client = AsyncHttpClient("https://backup.example.com")
     async with client:
         pass

@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    """Хук pytest: отправляет сводку результатов во все активные каналы."""
+    """Pytest hook that sends a result summary to all active channels."""
     settings = Settings()
     results = extract_test_results(session, exitstatus)
 
@@ -30,7 +30,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
 
 
 def extract_test_results(session: pytest.Session, exitstatus: int) -> TestResults:
-    """Извлекает результаты из pytest.Session в независимую структуру."""
+    """Extract results from pytest.Session into an independent structure."""
     tr = cast("TerminalReporter | None", session.config.pluginmanager.get_plugin("terminalreporter"))
 
     passed = failed = error = skipped = xfailed = xpassed = 0
@@ -69,7 +69,7 @@ def extract_test_results(session: pytest.Session, exitstatus: int) -> TestResult
 
 
 def get_active_notifiers(settings: Settings) -> list[NotifierBase]:
-    """Возвращает список активных нотификаторов на основе флагов destinations."""
+    """Return active notifiers based on the destinations flags."""
     notifiers = []
 
     for destination, notifier_class in NOTIFIER_REGISTRY.items():
@@ -82,7 +82,7 @@ def get_active_notifiers(settings: Settings) -> list[NotifierBase]:
 
 
 def extract_failure_info(report: pytest.TestReport) -> TestFailureInfo:
-    """Извлекает информацию об ошибке из TestReport."""
+    """Extract error information from TestReport."""
     file_path, _line, test_name = report.location
     error_message = get_short_error_message(report)
     traceback = report.longreprtext
@@ -98,7 +98,7 @@ def extract_failure_info(report: pytest.TestReport) -> TestFailureInfo:
 
 
 def get_short_error_message(report: pytest.TestReport) -> str:
-    """Извлекает краткое сообщение об ошибке из отчёта."""
+    """Extract a short error message from the report."""
     longrepr = report.longrepr
 
     if longrepr is None:
@@ -122,7 +122,7 @@ def get_short_error_message(report: pytest.TestReport) -> str:
 
 
 def exitstatus_to_text(exitstatus: int) -> str:
-    """Преобразует код выхода pytest в текст."""
+    """Convert a pytest exit code to text."""
     try:
         code = pytest.ExitCode(exitstatus)
     except ValueError:

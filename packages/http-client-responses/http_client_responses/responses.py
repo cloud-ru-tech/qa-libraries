@@ -18,138 +18,138 @@ RS = TypeVar("RS", bound=BaseModel)  # Response Schema
 
 
 class _Unset:
-    """Маркер «значение ещё не вычислено»: None — валидный результат парсинга, отличать его нужно чем-то другим."""
+    """Mark values not yet computed: None is a valid parsing result and needs a separate sentinel."""
 
 
 _UNSET = _Unset()
 
 
 class ResponseWrapper:
-    """Базовый класс-обёртка над ответом на запрос."""
+    """Base wrapper class for a request response."""
 
     def __init__(self, response: Response) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param response: значение настройки ``response``.
+        :param response: Value of ``response``.
         """
         self.response = response
 
     def __repr__(self) -> str:
-        """Получить HTTP-контекст ответа для диагностики."""
+        """Get the response HTTP context for diagnostics."""
         method = request_method(self.response)
         return f"<{type(self).__name__} {method} {request_url(self.response)} -> {self.status_code}>"
 
     @property
     def status_code(self) -> int:
-        """HTTP-код ответа."""
+        """HTTP response status code."""
         return self.response.status_code
 
     @property
     def reason_phrase(self) -> str:
-        """Описание HTTP-кода ответа."""
+        """HTTP response reason phrase."""
         return self.response.reason_phrase
 
     @property
     def headers(self) -> Headers:
-        """Заголовки ответа.
+        """Response headers.
 
-        `httpx.Headers`, а не `dict`: доступ по ключу регистронезависим, а `get_list()` отдаёт
-        все значения заголовка, который сервер прислал несколько раз (например, `Set-Cookie`).
+        Use `httpx.Headers`, rather than `dict`: key lookup is case-insensitive and `get_list()` returns
+        all values of a header sent more than once by the server (such as `Set-Cookie`).
         """
         return self.response.headers
 
     @property
     def raw_headers(self) -> dict[str, str]:
-        """Заголовки ответа обычным словарём.
+        """Response headers as a plain dictionary.
 
-        Повторяющиеся заголовки склеиваются в одну строку через запятую — если это важно,
-        используйте `headers`.
+        Repeated headers are joined into one comma-separated string; if this matters,
+        use `headers`.
         """
         return dict(self.response.headers)
 
     @property
     def cookies(self) -> Cookies:
-        """Cookies ответа."""
+        """Response cookies."""
         return self.response.cookies
 
     @property
     def content(self) -> bytes:
-        """Тело ответа в байтах.
+        """Response body as bytes.
 
-        :raises httpx.ResponseNotRead: если ответ получен стримингом и тело ещё не прочитано
+        :raises httpx.ResponseNotRead: If the response is streaming and its body has not been read
         """
         return self.response.content
 
     @property
     def text(self) -> str:
-        """Тело ответа строкой.
+        """Response body as a string.
 
-        :raises httpx.ResponseNotRead: если ответ получен стримингом и тело ещё не прочитано
+        :raises httpx.ResponseNotRead: If the response is streaming and its body has not been read
         """
         return self.response.text
 
     @property
     def url(self) -> str:
-        """URL запроса, на который получен ответ.
+        """URL of the request that produced the response.
 
-        :raises RuntimeError: если ответ создан вручную и запрос в нём не проставлен
+        :raises RuntimeError: If the response was created manually without a request
         """
         return str(self.response.url)
 
     @property
     def request(self) -> Request:
-        """Запрос, на который получен ответ.
+        """Request that produced the response.
 
-        :raises RuntimeError: если ответ создан вручную и запрос в нём не проставлен
+        :raises RuntimeError: If the response was created manually without a request
         """
         return self.response.request
 
     @property
     def elapsed(self) -> timedelta:
-        """Время между отправкой запроса и получением ответа.
+        """Time between sending the request and receiving the response.
 
-        :raises RuntimeError: если тело ответа ещё не прочитано целиком
+        :raises RuntimeError: If the response body has not been fully read
         """
         return self.response.elapsed
 
     @property
     def is_success(self) -> bool:
-        """Проверить, что статус находится в диапазоне 2xx."""
+        """Check whether the status is in the 2xx range."""
         return self.response.is_success
 
     @property
     def is_error(self) -> bool:
-        """Проверить, что статус находится в диапазоне 4xx или 5xx."""
+        """Check whether the status is in the 4xx or 5xx range."""
         return self.response.is_error
 
     @property
     def is_client_error(self) -> bool:
-        """Проверить, что статус находится в диапазоне 4xx."""
+        """Check whether the status is in the 4xx range."""
         return self.response.is_client_error
 
     @property
     def is_server_error(self) -> bool:
-        """Проверить, что статус находится в диапазоне 5xx."""
+        """Check whether the status is in the 5xx range."""
         return self.response.is_server_error
 
     def raise_for_status(self) -> Self:
-        """Проверить статус ответа.
+        """Check the response status.
 
-        Возвращает сам объект-обёртку, чтобы проверку можно было выстроить в цепочку:
+        Return the wrapper itself to allow chained calls:
         `response.raise_for_status().model()`.
 
-        :raises httpx.HTTPStatusError: если статус ответа не 2xx, включая 1xx и редиректы
-        :raises RuntimeError: если ответ создан вручную и запрос в нём не проставлен
-        :returns: этот же объект
+        :raises httpx.HTTPStatusError: If the response status is not 2xx, including 1xx and redirects
+        :raises RuntimeError: If the response was created manually without a request
+        :returns: The same object
         """
         self.response.raise_for_status()
         return self
 
     def json(self) -> object:
-        """Разобрать тело ответа как JSON без валидации схемы.
+        """Parse the response body as JSON without schema validation.
 
-        :raises ResponseParseError: если тело не является валидным JSON
-        :returns: разобранное тело ответа
+        :raises ResponseParseError: If the body is not valid JSON
+        :returns: Parsed response body
         """
         try:
             return cast("object", self.response.json())
@@ -158,25 +158,25 @@ class ResponseWrapper:
 
 
 class GenericResponse[RT](ResponseWrapper):
-    """Ответ на запрос вместе с методом парсинга данных из тела."""
+    """Response with a method for parsing body data."""
 
     def __init__(self, response: Response, parser: Callable[[Response], RT]) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param response: значение настройки ``response``.
-        :param parser: значение настройки ``parser``.
+        :param response: Value of ``response``.
+        :param parser: Value of ``parser``.
         """
         super().__init__(response)
         self.parser = parser
         self._parsed: RT | _Unset = _UNSET
 
     def parse(self) -> RT:
-        """Разобрать тело ответа.
+        """Parse the response body.
 
-        Результат вычисляется один раз и переиспользуется при повторных вызовах.
+        Compute the result once and reuse it for subsequent calls.
 
-        :raises ResponseParseError: если парсер не смог разобрать тело
-        :returns: результат работы парсера
+        :raises ResponseParseError: If the parser cannot parse the body
+        :returns: Parser result
         """
         if self._parsed is _UNSET:
             try:
@@ -187,21 +187,21 @@ class GenericResponse[RT](ResponseWrapper):
 
 
 class JsonResponse[RS: BaseModel](GenericResponse[RS]):
-    """Ответ на запрос вместе с JSON схемой тела ответа в виде pydantic модели."""
+    """Response with a JSON body schema represented by a pydantic model."""
 
     def __init__(self, response: Response, schema: type[RS]) -> None:
-        """Инициализировать объект.
+        """Initialize the object.
 
-        :param response: значение настройки ``response``.
-        :param schema: значение настройки ``schema``.
+        :param response: Value of ``response``.
+        :param schema: Value of ``schema``.
         """
         super().__init__(response, lambda r: schema.model_validate_json(r.content))
         self.schema = schema
 
     def model(self) -> RS:
-        """Разобрать тело ответа в pydantic модель.
+        """Parse the response body into a pydantic model.
 
-        :raises ResponseParseError: если тело не соответствует схеме
-        :returns: заполненная модель схемы ответа
+        :raises ResponseParseError: If the body does not match the schema
+        :returns: Populated response schema model
         """
         return self.parse()

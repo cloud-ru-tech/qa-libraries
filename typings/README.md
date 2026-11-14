@@ -1,24 +1,26 @@
 # typings
 
-Стабы типов для сторонних библиотек, у которых нет пригодных аннотаций:
+English | [Русский](README.ru.md)
 
-- `glom` — не поставляет ни `py.typed`, ни стабов;
-- `allure_commons` — есть `py.typed`, но публичные функции (`allure.title`, `allure.step`, `allure.attach`) без аннотаций.
+Type stubs for third-party libraries without suitable annotations:
 
-Без стабов строгий mypy (`disallow_any_expr`, `disallow_any_decorated`) выдаёт ошибки на каждом  
-вызове этих библиотек. Отключать проверки через `ignore_missing_imports` нельзя, так как это послабление распространится на весь модуль, а не только на вызовы библиотеки.
+- `glom` — provides neither `py.typed` nor stubs;
+- `allure_commons` — includes `py.typed`, but public functions (`allure.title`, `allure.step`, `allure.attach`) have no annotations.
 
-Стабы описывают только ту часть API, которую используют пакеты репозитория. Каталог подключается
-через `mypy_path` в корневом `pyproject.toml` и не попадает в собранные пакеты.
+Without stubs, strict mypy (`disallow_any_expr`, `disallow_any_decorated`) reports errors on every
+call to these libraries. Do not disable checks with `ignore_missing_imports`: this weakens checking for the entire module, not only the library calls.
 
-При обновлении `glom` или `allure-pytest` сверьте стабы с установленными версиями:
+The stubs describe only the API used by packages in this repository. The directory is included
+through `mypy_path` in the root `pyproject.toml` and is not included in built packages.
+
+When updating `glom` or `allure-pytest`, check the stubs against the installed versions:
 
 ```shell
 make stubtest
 ```
 
-Новую библиотеку добавляйте сюда, только если её типы недоступны для mypy и нет пригодного пакета `types-*` на PyPI.
+Add a new library here only if mypy cannot access its types and there is no suitable `types-*` package on PyPI.
 
-`google.rpc` сюда не добавляйте: `googleapis-common-protos` поставляет свои `.pyi`, только без
-маркера `py.typed`. mypy читает их благодаря `follow_untyped_imports` в корневом `pyproject.toml`.
-Это согласованное решение, свой стаб для `google.rpc` не нужен.
+Do not add `google.rpc` here: `googleapis-common-protos` provides its own `.pyi` files, but without
+a `py.typed` marker. mypy reads them through `follow_untyped_imports` in the root `pyproject.toml`.
+This is an agreed decision; no custom stub for `google.rpc` is needed.
