@@ -5,7 +5,7 @@ authors = [
     { name = "Andrew Fernatiy", email = "akfernatii@cloud.ru" },
 ]
 dependencies = [
-    "mcp[cli]>=1.25.0,<2",
+    "mcp[cli]>=2.3.0,<3",
     "httpx>=0.28.1,<0.29",
     "anyio>=4.16.0,<5",
     "pydantic>=2.9.2,<3",
