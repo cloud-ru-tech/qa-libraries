@@ -22,7 +22,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "pytest>=8.4.0,<10",
+    "pytest>=9.2.0,<10",
 ]
 license = "Apache-2.0"
 license-files = [
