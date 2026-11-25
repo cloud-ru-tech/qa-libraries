@@ -34,7 +34,7 @@ dev = [
     "assertpy>=1.1,<2",
     "faker>=40.54.0,<41",
     "grpc-stubs",
-    "grpcio-tools>=1.84.0,<2",
+    "grpcio-tools>=1.85.3,<2",
     "hypothesis>=6.170.15,<7",
     "mypy>=2.3.0,<3",
     "pre-commit>=4.5.1,<5",

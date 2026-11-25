@@ -40,7 +40,7 @@ Issues = "https://github.com/cloud-ru-tech/qa-libraries/issues"
 
 [project.optional-dependencies]
 codegen = [
-    "grpcio-tools>=1.71.0,<2",
+    "grpcio-tools>=1.85.3,<2",
 ]
 
 [build-system]
