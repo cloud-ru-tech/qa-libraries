@@ -12,6 +12,11 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    ignore:
+      # pytest-cases does not support pytest 9.1+ yet.
+      # https://github.com/smarie/python-pytest-cases/issues/385
+      - dependency-name: pytest
+        versions: [">=9.1"]
     groups:
       minor-and-patch:
         update-types: [minor, patch]
