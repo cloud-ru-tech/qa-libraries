@@ -1,8 +1,7 @@
-import httpx2
-
 from pytest_notifier.models import TestResults
 from pytest_notifier.settings import Settings
 
+from ._delivery import post_notification
 from .base import NotifierBase
 
 
@@ -68,11 +67,10 @@ class TelegramNotifier(NotifierBase):
         bot_token = self.tg.bot_token.get_secret_value()
         url = f"{self.BASE_URL}{bot_token}/sendMessage"
 
-        payload = {
+        payload: dict[str, object] = {
             "chat_id": self.tg.chat_id,
             "text": text,
             "parse_mode": "Markdown",
         }
 
-        with httpx2.Client(timeout=self.tg.timeout_seconds) as client:
-            client.post(url, json=payload).raise_for_status()
+        post_notification("Telegram", url, payload, self.tg.timeout_seconds, bot_token=bot_token)
