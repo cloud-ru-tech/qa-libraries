@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from http_client import AsyncHttpClient, options
-from httpx import BasicAuth, Timeout
+from httpx2 import BasicAuth, Timeout
 
 from . import settings
 from .decorators import async_metrics_decorator, async_stream_trace_decorator
@@ -21,7 +21,7 @@ from .logging_setup import demo_logger, http_logger
 if TYPE_CHECKING:
     from contextlib import AbstractAsyncContextManager
 
-    import httpx
+    import httpx2
 
     from .decorators import TransportMetrics
 
@@ -29,37 +29,37 @@ if TYPE_CHECKING:
 class AsyncHttpbinClient(AsyncHttpClient):
     """Asynchronous client for httpbin."""
 
-    async def get_echo(self, **params: str) -> httpx.Response:
+    async def get_echo(self, **params: str) -> httpx2.Response:
         """GET /get: echo the query string."""
         request = self.client.build_request("GET", "/get", params=params)
         return await self.send(request)
 
-    async def post_json(self, payload: object) -> httpx.Response:
+    async def post_json(self, payload: object) -> httpx2.Response:
         """POST /post: echo the request body."""
         request = self.client.build_request("POST", "/post", json=payload)
         return await self.send(request)
 
-    async def put_json(self, payload: object) -> httpx.Response:
+    async def put_json(self, payload: object) -> httpx2.Response:
         """PUT /put: echo the request body."""
         request = self.client.build_request("PUT", "/put", json=payload)
         return await self.send(request)
 
-    async def patch_json(self, payload: object) -> httpx.Response:
+    async def patch_json(self, payload: object) -> httpx2.Response:
         """PATCH /patch: echo the request body."""
         request = self.client.build_request("PATCH", "/patch", json=payload)
         return await self.send(request)
 
-    async def delete_resource(self) -> httpx.Response:
+    async def delete_resource(self) -> httpx2.Response:
         """DELETE /delete."""
         request = self.client.build_request("DELETE", "/delete")
         return await self.send(request)
 
-    async def get_request_headers(self) -> httpx.Response:
+    async def get_request_headers(self) -> httpx2.Response:
         """GET /headers: headers received by the service from the client."""
         request = self.client.build_request("GET", "/headers")
         return await self.send(request)
 
-    async def basic_auth(self, user: str, password: str, *, anonymous: bool = False) -> httpx.Response:
+    async def basic_auth(self, user: str, password: str, *, anonymous: bool = False) -> httpx2.Response:
         """GET /basic-auth/{user}/{password}: check Basic authentication.
 
         :param user: Username expected by the service
@@ -69,7 +69,7 @@ class AsyncHttpbinClient(AsyncHttpClient):
         request = self.client.build_request("GET", f"/basic-auth/{user}/{password}")
         return await self.send(request, anonymous=anonymous)
 
-    async def delay(self, seconds: float, *, timeout_seconds: float) -> httpx.Response:
+    async def delay(self, seconds: float, *, timeout_seconds: float) -> httpx2.Response:
         """GET /delay/{seconds}: delayed response.
 
         :param seconds: Service-side delay
@@ -78,7 +78,7 @@ class AsyncHttpbinClient(AsyncHttpClient):
         request = self.client.build_request("GET", f"/delay/{seconds}", timeout=timeout_seconds)
         return await self.send(request)
 
-    async def redirect(self, times: int, *, follow_redirects: bool | None = None) -> httpx.Response:
+    async def redirect(self, times: int, *, follow_redirects: bool | None = None) -> httpx2.Response:
         """GET /redirect/{times}: redirect chain ending at /get.
 
         :param times: Chain length
@@ -87,17 +87,17 @@ class AsyncHttpbinClient(AsyncHttpClient):
         request = self.client.build_request("GET", f"/redirect/{times}")
         return await self.send(request, follow_redirects=follow_redirects)
 
-    async def status(self, code: int) -> httpx.Response:
+    async def status(self, code: int) -> httpx2.Response:
         """GET /status/{code}: response with the specified status."""
         request = self.client.build_request("GET", f"/status/{code}")
         return await self.send(request)
 
-    async def get_bytes(self, size: int) -> httpx.Response:
+    async def get_bytes(self, size: int) -> httpx2.Response:
         """GET /bytes/{size}: random bytes in one chunk (application/octet-stream)."""
         request = self.client.build_request("GET", f"/bytes/{size}")
         return await self.send(request)
 
-    def stream_lines(self, count: int) -> AbstractAsyncContextManager[httpx.Response]:
+    def stream_lines(self, count: int) -> AbstractAsyncContextManager[httpx2.Response]:
         """GET /stream/{count}: stream of JSON lines.
 
         The method is not a coroutine: it returns an asynchronous context manager,
@@ -106,7 +106,7 @@ class AsyncHttpbinClient(AsyncHttpClient):
         request = self.client.build_request("GET", f"/stream/{count}")
         return self.stream_request(request)
 
-    def stream_bytes(self, size: int) -> AbstractAsyncContextManager[httpx.Response]:
+    def stream_bytes(self, size: int) -> AbstractAsyncContextManager[httpx2.Response]:
         """GET /stream-bytes/{size}: stream of random bytes (application/octet-stream)."""
         request = self.client.build_request("GET", f"/stream-bytes/{size}")
         return self.stream_request(request)
@@ -117,7 +117,7 @@ class AsyncEchoApiClient(AsyncHttpClient):
 
     DEFAULT_URL_SUFFIX = "/anything/api/v1"
 
-    async def ping(self) -> httpx.Response:
+    async def ping(self) -> httpx2.Response:
         """GET {suffix}/ping."""
         request = self.client.build_request("GET", self.endpoint("ping"))
         return await self.send(request)

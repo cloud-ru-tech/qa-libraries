@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, cast
 if TYPE_CHECKING:
     from logging import Logger
 
-    import httpx
+    import httpx2
     from http_client import ClientOption
     from http_client.client import BaseHttpClient
     from http_client.types import ResponseHook
@@ -21,7 +21,7 @@ API_KEY_HEADER = "X-Api-Key"
 STARTED_AT_EXTENSION = "demo_started_at"
 
 
-def stamp_started_at(request: httpx.Request) -> None:
+def stamp_started_at(request: httpx2.Request) -> None:
     """Store the send timestamp in the request extensions.
 
     extensions is the only place that survives until the response hook:
@@ -37,7 +37,7 @@ def log_elapsed(logger: Logger) -> ResponseHook:
     :returns: Response hook paired with stamp_started_at
     """
 
-    def log_elapsed_hook(response: httpx.Response) -> None:
+    def log_elapsed_hook(response: httpx2.Response) -> None:
         started_at = cast("dict[str, object]", response.request.extensions).get(STARTED_AT_EXTENSION)
         if not isinstance(started_at, float):
             return
@@ -64,7 +64,7 @@ def warn_on_server_error(logger: Logger) -> ResponseHook:
     :returns: Response hook
     """
 
-    def warn_on_server_error_hook(response: httpx.Response) -> None:
+    def warn_on_server_error_hook(response: httpx2.Response) -> None:
         if response.is_server_error:
             logger.warning(
                 "Сервер вернул %s на %s %s",
@@ -87,7 +87,7 @@ def with_api_key(api_key: str) -> ClientOption:
     :returns: Client option
     """
 
-    def add_api_key(request: httpx.Request) -> None:
+    def add_api_key(request: httpx2.Request) -> None:
         request.headers[API_KEY_HEADER] = api_key
 
     def option(client: BaseHttpClient) -> None:

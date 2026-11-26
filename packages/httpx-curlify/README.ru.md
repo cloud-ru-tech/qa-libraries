@@ -6,7 +6,7 @@
 
 [English](README.md) | Русский
 
-Библиотека для преобразования HTTP-запросов из `httpx.Request` в формат curl-команд. Удобна для отладки, логирования и документирования API-запросов.
+Библиотека для преобразования HTTP-запросов из `httpx2.Request` в формат curl-команд. Удобна для отладки, логирования и документирования API-запросов.
 
 - [httpx-curlify](#httpx-curlify)
   - [Установка](#установка)
@@ -46,10 +46,10 @@ uvx library-skills
 Простое преобразование GET-запроса:
 
 ```python
-import httpx
+import httpx2
 from httpx_curlify import to_curl
 
-request = httpx.Request("GET", "https://example.com/api/users")
+request = httpx2.Request("GET", "https://example.com/api/users")
 curl_command = to_curl(request)
 print(curl_command)
 ```
@@ -64,7 +64,7 @@ curl -X GET \
 POST-запрос с JSON:
 
 ```python
-request = httpx.Request(
+request = httpx2.Request(
     "POST",
     "https://example.com/api/users",
     json={"name": "John", "age": 30},
@@ -86,7 +86,7 @@ curl -X POST \
 Запрос с заголовками:
 
 ```python
-request = httpx.Request(
+request = httpx2.Request(
     "GET",
     "https://example.com/api/data",
     headers={
@@ -105,7 +105,7 @@ print(curl_command)
 Скрытие заголовков:
 
 ```python
-request = httpx.Request(
+request = httpx2.Request(
     "GET",
     "https://example.com/api/data",
     headers={
@@ -129,7 +129,7 @@ curl -X GET \
 Скрытие данных в JSON:
 
 ```python
-request = httpx.Request(
+request = httpx2.Request(
     "POST",
     "https://example.com/api/login",
     json={"username": "john", "password": "secret123"},
@@ -150,7 +150,7 @@ curl -X POST \
 Скрытие вложенных данных:
 
 ```python
-request = httpx.Request(
+request = httpx2.Request(
     "POST",
     "https://example.com/api/data",
     json={"user": {"name": "John", "password": "secret"}},
@@ -173,7 +173,7 @@ curl -X POST \
 Можно передать дополнительные параметры для `json.dumps`:
 
 ```python
-request = httpx.Request(
+request = httpx2.Request(
     "POST",
     "https://example.com/api/data",
     json={"name": "John", "age": 30},

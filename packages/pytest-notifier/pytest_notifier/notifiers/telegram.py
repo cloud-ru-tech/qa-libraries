@@ -1,4 +1,4 @@
-import httpx
+import httpx2
 
 from pytest_notifier.models import TestResults
 from pytest_notifier.settings import Settings
@@ -74,5 +74,5 @@ class TelegramNotifier(NotifierBase):
             "parse_mode": "Markdown",
         }
 
-        with httpx.Client(timeout=self.tg.timeout_seconds) as client:
+        with httpx2.Client(timeout=self.tg.timeout_seconds) as client:
             client.post(url, json=payload).raise_for_status()

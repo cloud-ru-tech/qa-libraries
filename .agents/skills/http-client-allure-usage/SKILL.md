@@ -3,7 +3,7 @@ name: http-client-allure-usage
 description: Putting http_client calls into an Allure report — the http_client_allure library turns every request into an Allure step and attaches the request and response payloads, with secret masking, curl serialization and streaming support. Use when a test report must show which requests were sent and what the service answered, when configuring masking or attachment size for reports, or when steps/attachments look wrong in a project that imports http_client_allure. Key names are wrap_requests_in_steps, wrap_requests_and_responses_in_steps.
 license: Apache-2.0
 metadata:
-  library-version: "1.0.0"
+  library-version: "2.0.0"
   source: packages/http-client-allure
 ---
 
@@ -47,7 +47,7 @@ import logging
 
 from http_client import options
 from http_client_allure import wrap_requests_and_responses_in_steps
-from httpx import BasicAuth
+from httpx2 import BasicAuth
 
 client = OrdersClient(
     "https://api.example.com",
@@ -93,7 +93,7 @@ Both options accept the same set; `attach_response` and `attach_response_headers
 }
 ```
 
-`Response headers: status = 200 [OK]` (JSON) — the response headers, masked the same way as the request ones. Repeated headers are joined with a comma, exactly as httpx renders them:
+`Response headers: status = 200 [OK]` (JSON) — the response headers, masked the same way as the request ones. Repeated headers are joined with a comma, exactly as httpx2 renders them:
 
 ```json
 {
@@ -123,7 +123,7 @@ Add project-specific paths (glom syntax, same as `with_logger`):
 wrap_requests_in_steps(sanitize_keys=["client.pin", "items.*.token"])
 ```
 
-httpx lowercases header names, so write `"authorization"`, not `"Authorization"`.
+httpx2 lowercases header names, so write `"authorization"`, not `"Authorization"`.
 
 `use_default_sanitize_keys=False` replaces the built-in list instead of extending it — everything, including `authorization`, then shows in clear text. Use it only when a test must prove what was actually sent.
 

@@ -23,7 +23,7 @@
       "content-length": "124",
       "content-type": "application/json",
       "host": "example.com",
-      "user-agent": "python-httpx/0.28.1"
+      "user-agent": "qa-client/1.0"
     },
     "method": "POST",
     "url": "https://example.com/api/v2/users"

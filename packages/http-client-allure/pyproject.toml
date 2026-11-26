@@ -1,6 +1,6 @@
 [project]
 name = "cloudru-qa-http-client-allure"
-version = "1.0.0"
+version = "2.0.0"
 description = "Интеграция HTTP-клиента с Allure"
 authors = [
     { name = "Алексей Кирютин", email = "ayukiryutin@cloud.ru" },
@@ -8,10 +8,11 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "httpx2>=2.16.2,<3",
     "allure-pytest>=2.16.0,<3",
     "attrs>=26.1.0",
-    "cloudru-qa-http-client>=1.0.0,<2",
-    "cloudru-qa-httpx-curlify>=1.0.0,<2",
+    "cloudru-qa-http-client>=2.0.0,<3",
+    "cloudru-qa-httpx-curlify>=2.0.0,<3",
 ]
 license = "Apache-2.0"
 license-files = [

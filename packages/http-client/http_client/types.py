@@ -2,9 +2,9 @@ from collections.abc import Awaitable, Callable, Mapping, Sequence
 from contextlib import AbstractAsyncContextManager, AbstractContextManager
 from typing import Protocol, TypedDict
 
-import httpx
-from httpx._client import UseClientDefault
-from httpx._types import (
+import httpx2
+from httpx2._client import UseClientDefault
+from httpx2._types import (
     AuthTypes,
     CookieTypes,
     HeaderTypes,
@@ -15,8 +15,8 @@ from httpx._types import (
 )
 
 type EventHook[T = object] = Callable[[T], Awaitable[None] | None]
-type RequestHook = EventHook[httpx.Request]
-type ResponseHook = EventHook[httpx.Response]
+type RequestHook = EventHook[httpx2.Request]
+type ResponseHook = EventHook[httpx2.Response]
 type RequestData = Mapping[str, object]
 
 
@@ -41,6 +41,21 @@ class QueryOptions(TypedDict, total=False):
     timeout: TimeoutTypes | UseClientDefault
     extensions: dict[str, object] | None
     anonymous: bool
+
+
+class WebSocketSessionOptions(TypedDict, total=False):
+    """Limits and keepalive settings for a WebSocket session."""
+
+    max_message_size_bytes: int
+    queue_size: int
+    keepalive_ping_interval_seconds: float | None
+    keepalive_ping_timeout_seconds: float | None
+
+
+class WebSocketOptions(QueryOptions, WebSocketSessionOptions, total=False):
+    """Options for the WebSocket handshake and session."""
+
+    subprotocols: list[str] | None
 
 
 class RequestOptions(QueryOptions, total=False):
@@ -71,13 +86,13 @@ class SyncSendMethod(Protocol):
 
     def __call__(
         self,
-        request: httpx.Request,
+        request: httpx2.Request,
         *,
         stream: bool = False,
         auth: AuthTypes | None = None,
         follow_redirects: bool | None = None,
         anonymous: bool = False,
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         """Send a prepared HTTP request and return the response."""
         ...
 
@@ -87,13 +102,13 @@ class AsyncSendMethod(Protocol):
 
     async def __call__(
         self,
-        request: httpx.Request,
+        request: httpx2.Request,
         *,
         stream: bool = False,
         auth: AuthTypes | None = None,
         follow_redirects: bool | None = None,
         anonymous: bool = False,
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         """Send a prepared HTTP request asynchronously and return the response."""
         ...
 
@@ -103,12 +118,12 @@ class SyncStreamRequestMethod(Protocol):
 
     def __call__(
         self,
-        request: httpx.Request,
+        request: httpx2.Request,
         *,
         anonymous: bool = False,
         auth: AuthTypes | None = None,
         follow_redirects: bool | None = None,
-    ) -> AbstractContextManager[httpx.Response]:
+    ) -> AbstractContextManager[httpx2.Response]:
         """Open a streaming HTTP response context."""
         ...
 
@@ -118,12 +133,12 @@ class AsyncStreamRequestMethod(Protocol):
 
     def __call__(
         self,
-        request: httpx.Request,
+        request: httpx2.Request,
         *,
         anonymous: bool = False,
         auth: AuthTypes | None = None,
         follow_redirects: bool | None = None,
-    ) -> AbstractAsyncContextManager[httpx.Response]:
+    ) -> AbstractAsyncContextManager[httpx2.Response]:
         """Open an asynchronous streaming HTTP response context."""
         ...
 

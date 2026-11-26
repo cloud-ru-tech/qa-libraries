@@ -1,11 +1,11 @@
-import httpx
+import httpx2
 
 from http_client_allure.settings import StepSettings
 
 from .body import encode_query_params, sanitize_query_params
 
 
-def build_step_message(request: httpx.Request, settings: StepSettings) -> str:
+def build_step_message(request: httpx2.Request, settings: StepSettings) -> str:
     """Build an Allure step title for the request.
 
     Mask query parameters as in attachments: the step title is visible in the report.

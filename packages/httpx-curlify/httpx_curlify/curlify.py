@@ -3,7 +3,7 @@ from collections.abc import Callable, Sequence
 from shlex import quote
 from typing import TypedDict, Unpack, cast
 
-import httpx
+import httpx2
 
 from .sanitaizer import sanitize
 
@@ -23,7 +23,7 @@ class JsonDumpsOptions(TypedDict, total=False):
 
 
 def to_curl(
-    request: httpx.Request,
+    request: httpx2.Request,
     sanitize_keys: Sequence[str] = (),
     json_dumps_kwargs: JsonDumpsOptions | None = None,
 ) -> str:

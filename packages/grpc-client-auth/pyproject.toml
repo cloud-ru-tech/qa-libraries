@@ -1,6 +1,6 @@
 [project]
 name = "cloudru-qa-grpc-client-auth"
-version = "1.0.0"
+version = "2.0.0"
 description = "Авторизация для gRPC-клиента"
 authors = [
     { name = "Алексей Кирютин", email = "ayukiryutin@cloud.ru" },
@@ -31,8 +31,8 @@ classifiers = [
 ]
 dependencies = [
     "cloudru-qa-grpc-client>=1.0.0,<2",
-    "cloudru-qa-http-client-auth>=1.0.0,<2",
-    "cloudru-qa-http-client>=1.0.0,<2",
+    "cloudru-qa-http-client-auth>=2.0.0,<3",
+    "cloudru-qa-http-client>=2.0.0,<3",
 ]
 
 [project.urls]

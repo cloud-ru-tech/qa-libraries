@@ -2,7 +2,7 @@ import json
 from typing import cast
 
 import allure
-import httpx
+import httpx2
 from http_client.utils import sanitizer
 
 from http_client_allure.settings import StepSettings
@@ -11,10 +11,10 @@ from .attachment import Attachment
 from .body import JSON_CONTENT_TYPE, STREAMED_CONTENT, UNPARSED, decode, parse_json_body
 
 
-def parse_response_headers_for_attach(response: httpx.Response, settings: StepSettings) -> Attachment:
+def parse_response_headers_for_attach(response: httpx2.Response, settings: StepSettings) -> Attachment:
     """Build an attachment with response headers.
 
-    httpx joins repeated headers with commas, matching the request attachment.
+    httpx2 joins repeated headers with commas, matching the request attachment.
 
     :param response: HTTP response
     :param settings: Step settings
@@ -31,7 +31,7 @@ def parse_response_headers_for_attach(response: httpx.Response, settings: StepSe
 
 
 def parse_response_for_attach(
-    response: httpx.Response,
+    response: httpx2.Response,
     body: bytes | None,
     settings: StepSettings,
 ) -> Attachment | None:

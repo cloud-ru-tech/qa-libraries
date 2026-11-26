@@ -2,7 +2,7 @@ from typing import cast
 
 from http_client import AsyncHttpClient, HttpClient
 from http_client_responses import GenericResponse, JsonResponse
-from httpx import Response
+from httpx2 import Response
 
 from .models import ExampleRequest, ExampleResponse
 

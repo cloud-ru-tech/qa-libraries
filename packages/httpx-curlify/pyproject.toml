@@ -1,7 +1,7 @@
 [project]
 name = "cloudru-qa-httpx-curlify"
-version = "1.0.0"
-description = "Преобразование запросов httpx.Request в команды curl"
+version = "2.0.0"
+description = "Преобразование запросов httpx2.Request в команды curl"
 authors = [
     { name = "Алексей Кирютин", email = "ayukiryutin@cloud.ru" },
 ]
@@ -9,7 +9,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "glom>=24.11.0",
-    "httpx>=0.28.1,<0.29",
+    "httpx2>=2.16.2,<3",
 ]
 license = "Apache-2.0"
 license-files = [

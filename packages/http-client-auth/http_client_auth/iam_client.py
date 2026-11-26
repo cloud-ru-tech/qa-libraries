@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from typing import Self, cast
 
-import httpx
+import httpx2
 from http_client import AsyncHttpClient, HttpClient
-from httpx import codes
+from httpx2 import codes
 
 from .exceptions import IAM_AuthError, IAM_InvalidJsonResponseError
 
@@ -76,7 +76,7 @@ def _openid_payload(key_id: str, key_secret: str) -> dict[str, str]:
     }
 
 
-def _parse_auth_data(response: httpx.Response) -> AuthData:
+def _parse_auth_data(response: httpx2.Response) -> AuthData:
     """Parse an IAM response.
 
     :param response: IAM response

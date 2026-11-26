@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from functools import wraps
 from typing import Unpack
 
-import httpx
+import httpx2
 from http_client import AsyncHttpClient, HttpClient, options
 from http_client.types import AsyncSendMethod, SendOptions, SyncSendMethod
 from http_client_auth import (
@@ -52,7 +52,7 @@ def record_sent_requests(calls: list[str]) -> Callable[[SyncSendMethod], SyncSen
 
     def decorator(func: SyncSendMethod) -> SyncSendMethod:
         @wraps(func)
-        def wrapper(request: httpx.Request, **kwargs: Unpack[SendOptions]) -> httpx.Response:
+        def wrapper(request: httpx2.Request, **kwargs: Unpack[SendOptions]) -> httpx2.Response:
             calls.append(f"{request.method} {request.url.path}")
             return func(request, **kwargs)
 
@@ -72,7 +72,7 @@ def delay_sent_requests(delay: float) -> Callable[[SyncSendMethod], SyncSendMeth
 
     def decorator(func: SyncSendMethod) -> SyncSendMethod:
         @wraps(func)
-        def wrapper(request: httpx.Request, **kwargs: Unpack[SendOptions]) -> httpx.Response:
+        def wrapper(request: httpx2.Request, **kwargs: Unpack[SendOptions]) -> httpx2.Response:
             time.sleep(delay)
             return func(request, **kwargs)
 
@@ -90,7 +90,7 @@ def delay_sent_requests_async(delay: float) -> Callable[[AsyncSendMethod], Async
 
     def decorator(func: AsyncSendMethod) -> AsyncSendMethod:
         @wraps(func)
-        async def wrapper(request: httpx.Request, **kwargs: Unpack[SendOptions]) -> httpx.Response:
+        async def wrapper(request: httpx2.Request, **kwargs: Unpack[SendOptions]) -> httpx2.Response:
             await asyncio.sleep(delay)
             return await func(request, **kwargs)
 

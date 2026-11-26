@@ -6,7 +6,6 @@ from collections.abc import Awaitable, Callable, Mapping
 from contextlib import AsyncExitStack
 from copy import copy, deepcopy
 from dataclasses import dataclass, field
-from datetime import timedelta
 from typing import TYPE_CHECKING, Self, cast
 
 from mcp import ClientSession, ListToolsResult, ServerCapabilities, types
@@ -179,9 +178,7 @@ class BaseAsyncMCPClient:
         """
         session = await self._get_session()
         values = self._metadata(metadata)
-        return await session.list_tools(
-            params=types.PaginatedRequestParams(_meta=types.RequestParams.Meta.model_validate(values))
-        )
+        return await session.list_tools(params=types.PaginatedRequestParams(meta=values))
 
     async def call_tool(
         self,
@@ -210,7 +207,7 @@ class BaseAsyncMCPClient:
                 name=name,
                 arguments=call_arguments,
                 meta=merged_metadata or None,
-                read_timeout_seconds=timedelta(seconds=timeout) if timeout is not None else None,
+                read_timeout_seconds=timeout,
             )
             response = ToolCallResponse(result)
             for hook in self._response_hooks:
@@ -225,7 +222,7 @@ class BaseAsyncMCPClient:
     async def get_server_capabilities(self) -> ServerCapabilities | None:
         """Return capabilities negotiated during initialization."""
         session = await self._get_session()
-        return session.get_server_capabilities()
+        return session.server_capabilities
 
     async def ping_server(self, *, metadata: Mapping[str, object] | None = None) -> bool:
         """Return whether the server answers a protocol ping.
@@ -234,19 +231,17 @@ class BaseAsyncMCPClient:
         :return: Whether the protocol ping completed successfully.
         """
         session = await self._get_session()
-        request = types.ClientRequest(
-            types.PingRequest(
-                params=types.RequestParams(_meta=types.RequestParams.Meta.model_validate(self._metadata(metadata))),
-            )
-        )
-        response = await session.send_request(request, cast("type[types.Result]", types.EmptyResult))
+        response = await session.send_ping(meta=self._metadata(metadata))
         return bool(response)
 
-    def _metadata(self, explicit: Mapping[str, object] | None) -> dict[str, object]:
+    def _metadata(self, explicit: Mapping[str, object] | None) -> types.RequestParamsMeta:
         values: dict[str, object] = {}
         for provider in self._config.metadata_providers:
             values.update(provider())
-        return {**values, **self._config.default_metadata, **(explicit or {})}
+        values.update(self._config.default_metadata)
+        if explicit is not None:
+            values.update(explicit)
+        return cast("types.RequestParamsMeta", values)
 
     def _reset_connection(self) -> None:
         self._session = None

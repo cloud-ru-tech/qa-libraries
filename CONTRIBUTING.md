@@ -52,7 +52,7 @@ CI checks the code on Python 3.13 and 3.14. To check the second version locally,
 - Checks are strict: ruff with all rules, mypy in strict mode, and warnings treated as
 errors. Linters and static analyzers must pass without errors.
 - Use `noqa`, `type: ignore`, or weaker check settings only with an explanation in the pull request.
-- Discuss new dependencies in the pull request. Set version bounds: `httpx>=0.28.1,<0.29`.
+- Discuss new dependencies in the pull request. Set version bounds: `httpx2>=2.16.2,<3`.
 - Cover new behavior and fixed bugs with tests in `packages/<name>/tests`.
 - Write docstrings in reST format: `:param:`, `:returns:`, `:raises:`.
 - When the API changes, update the library README and its skill in `.agents/skills/<name>-usage`.

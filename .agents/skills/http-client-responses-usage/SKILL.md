@@ -1,17 +1,17 @@
 ---
 name: http-client-responses-usage
-description: Typing HTTP client responses with the http_client_responses library — wrappers over httpx.Response that carry the parsed body type, so a client method returns JsonResponse[Model] instead of a bare Response. Use when adding or annotating endpoint methods, validating a response body against a pydantic model, parsing a non-JSON body, or handling body parse failures. Key names are ResponseWrapper, GenericResponse, JsonResponse, ResponseParseError, model(), parse(), raise_for_status().
+description: Typing HTTP client responses with the http_client_responses library — wrappers over httpx2.Response that carry the parsed body type, so a client method returns JsonResponse[Model] instead of a bare Response. Use when adding or annotating endpoint methods, validating a response body against a pydantic model, parsing a non-JSON body, or handling body parse failures. Key names are ResponseWrapper, GenericResponse, JsonResponse, ResponseParseError, model(), parse(), raise_for_status().
 license: Apache-2.0
 metadata:
-  library-version: "1.0.0"
+  library-version: "2.0.0"
   source: packages/http-client-responses
 ---
 
 # Typing responses with http_client_responses
 
-The library gives an endpoint method a return type that says what the body contains. Instead of `-> httpx.Response` followed by a manual `response.json()` and a hand-written validation, the method returns `JsonResponse[User]` and the caller writes `.model()`.
+The library gives an endpoint method a return type that says what the body contains. Instead of `-> httpx2.Response` followed by a manual `response.json()` and a hand-written validation, the method returns `JsonResponse[User]` and the caller writes `.model()`.
 
-Three classes, all wrapping a single `httpx.Response`:
+Three classes, all wrapping a single `httpx2.Response`:
 
 | Class | When | How the body is read |
 |---|---|---|
@@ -21,7 +21,7 @@ Three classes, all wrapping a single `httpx.Response`:
 
 `JsonResponse` is a `GenericResponse`, which is a `ResponseWrapper` — everything below `ResponseWrapper` is available on all three.
 
-The library depends only on `httpx` and `pydantic`. It works with any `httpx.Response`, from `http_client` or from a plain `httpx.Client`.
+The library depends only on `httpx2` and `pydantic`. It works with any `httpx2.Response`, from `http_client` or from a plain `httpx2.Client`.
 
 ## Hard rules
 
@@ -29,7 +29,7 @@ The library depends only on `httpx` and `pydantic`. It works with any `httpx.Res
 2. Do not parse inside the endpoint method. The constructor never touches the body; parsing happens when the caller asks for it. A method that returns `User` instead of `JsonResponse[User]` throws away the status, headers, and the ability to assert on a failed response.
 3. Catch `ResponseParseError`, never `pydantic.ValidationError`. Every parser failure is wrapped, including the pydantic one.
 4. Do not reimplement `raise_for_status`, `is_success`, or header lookup — they are already on the wrapper.
-5. For streaming responses, either use the raw `httpx` response or call `read()` before parsing. See `references/pitfalls.md`.
+5. For streaming responses, either use the raw `httpx2` response or call `read()` before parsing. See `references/pitfalls.md`.
 
 Before claiming a wrapper cannot do something, check `references/pitfalls.md` — it documents the behaviour that trips people up.
 
@@ -38,7 +38,7 @@ Before claiming a wrapper cannot do something, check `references/pitfalls.md` �
 ```python
 from http_client import HttpClient
 from http_client_responses import GenericResponse, JsonResponse
-from httpx import Response
+from httpx2 import Response
 from pydantic import BaseModel
 
 
@@ -125,18 +125,18 @@ Available on `ResponseWrapper`, and therefore on all three classes.
 |---|---|---|
 | `status_code` | `int` | |
 | `reason_phrase` | `str` | |
-| `headers` | `httpx.Headers` | case-insensitive; `get_list()` returns every value of a repeated header |
+| `headers` | `httpx2.Headers` | case-insensitive; `get_list()` returns every value of a repeated header |
 | `raw_headers` | `dict[str, str]` | one value per header, repeats joined by `, ` |
-| `cookies` | `httpx.Cookies` | |
+| `cookies` | `httpx2.Cookies` | |
 | `content` / `text` | `bytes` / `str` | |
 | `url` | `str` | |
-| `request` | `httpx.Request` | |
+| `request` | `httpx2.Request` | |
 | `elapsed` | `timedelta` | |
 | `is_success` / `is_error` | `bool` | |
 | `is_client_error` / `is_server_error` | `bool` | 4xx / 5xx |
-| `raise_for_status()` | `Self` | raises `httpx.HTTPStatusError` on **any** non-2xx status |
+| `raise_for_status()` | `Self` | raises `httpx2.HTTPStatusError` on **any** non-2xx status |
 | `json()` | `object` | JSON parse without schema validation; narrow or validate before accessing fields |
-| `response` | `httpx.Response` | the wrapped response, for anything the facade does not cover |
+| `response` | `httpx2.Response` | the wrapped response, for anything the facade does not cover |
 
 Use `headers.get_list("set-cookie")` for headers a server sends more than once — `raw_headers` collapses them into one string.
 
@@ -164,17 +164,17 @@ except ResponseParseError as error:
 ```
 
 - `error.cause` and `error.__cause__` hold the original exception (`pydantic.ValidationError`, `json.JSONDecodeError`, whatever the parser raised).
-- `error.response` holds the `httpx.Response`.
+- `error.response` holds the `httpx2.Response`.
 - The body in the message is truncated to `ResponseParseError.BODY_PREVIEW_LIMIT` bytes (512).
 
 `raise_for_status()` does not raise this — a 500 with a valid body is not a parse error. Check the status and parse the body as two separate steps.
 
 ## Testing with these wrappers
 
-The wrapper takes any `httpx.Response`, so a unit test does not need a client:
+The wrapper takes any `httpx2.Response`, so a unit test does not need a client:
 
 ```python
-from httpx import Request, Response
+from httpx2 import Request, Response
 
 wrapper = JsonResponse(Response(200, json={"users": [], "total": 0}), UsersPage)
 assert wrapper.model().total == 0

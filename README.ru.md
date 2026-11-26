@@ -47,7 +47,7 @@ client = HttpClient(
 ```python
 from http_client import BaseHttpClient, ClientOption, HttpClient
 from http_client_retries import with_retries_failed_requests
-from httpx import Request
+from httpx2 import Request
 
 
 def with_region(region: str) -> ClientOption:
@@ -69,13 +69,13 @@ client = HttpClient("https://api.example.com", with_region("ru-central-1"), with
 
 **HTTP**
 
-- [`http-client`](packages/http-client/README.ru.md) — базовый HTTP-клиент на httpx
+- [`http-client`](packages/http-client/README.ru.md) — базовый HTTP-клиент на httpx2
 - [`http-client-auth`](packages/http-client-auth/README.ru.md) — авторизация токенами IAM
 - [`http-client-retries`](packages/http-client-retries/README.ru.md) — повторные попытки запросов
 - [`http-client-responses`](packages/http-client-responses/README.ru.md) — типизированные ответы с моделями pydantic
 - [`http-client-structlog`](packages/http-client-structlog/README.ru.md) — структурированные логи через structlog
 - [`http-client-allure`](packages/http-client-allure/README.ru.md) — запросы и ответы в отчёте Allure
-- [`httpx-curlify`](packages/httpx-curlify/README.ru.md) — запрос httpx в виде команды curl
+- [`httpx-curlify`](packages/httpx-curlify/README.ru.md) — запрос httpx2 в виде команды curl
 
 **gRPC**
 

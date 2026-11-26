@@ -6,7 +6,7 @@
 
 [English](README.md) | Русский
 
-Обёртки над `httpx.Response`, которые знают, во что разбирать тело ответа.
+Обёртки над `httpx2.Response`, которые знают, во что разбирать тело ответа.
 
 Метод клиента возвращает не голый `Response`, из которого потом руками достают JSON, а объект с типом ожидаемых данных. Тип виден в сигнатуре метода, разбор вызывается одной строкой, а IDE и mypy подсказывают поля модели.
 
@@ -49,7 +49,7 @@ uvx library-skills install --skill http-client-responses-usage --yes
 
 ```python
 from http_client import HttpClient
-from httpx import Response
+from httpx2 import Response
 from pydantic import BaseModel
 from http_client_responses import GenericResponse, JsonResponse
 
@@ -124,16 +124,16 @@ users = client.get_users(ExampleRequest()).raise_for_status().model()
 |---|---|---|
 | `status_code` | `int` | |
 | `reason_phrase` | `str` | |
-| `headers` | `httpx.Headers` | `get_list()` отдаёт все значения повторяющегося заголовка |
+| `headers` | `httpx2.Headers` | `get_list()` отдаёт все значения повторяющегося заголовка |
 | `raw_headers` | `dict[str, str]` | по одному значению на заголовок |
-| `cookies` | `httpx.Cookies` | |
+| `cookies` | `httpx2.Cookies` | |
 | `content` / `text` | `bytes` / `str` | |
 | `url` | `str` | |
-| `request` | `httpx.Request` | |
+| `request` | `httpx2.Request` | |
 | `elapsed` | `timedelta` | |
 | `is_success` / `is_error` | `bool` | |
 | `is_client_error` / `is_server_error` | `bool` | 4xx / 5xx |
-| `raise_for_status()` | `Self` | бросает `httpx.HTTPStatusError` на любой не-2xx статус |
+| `raise_for_status()` | `Self` | бросает `httpx2.HTTPStatusError` на любой не-2xx статус |
 | `json()` | `Any` | разбор тела как JSON без валидации схемы |
 
 Для `Set-Cookie` и других заголовков, которые приходят по нескольку раз, берите `headers.get_list("set-cookie")`.

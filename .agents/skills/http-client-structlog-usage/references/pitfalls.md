@@ -38,7 +38,7 @@ other. Both installed means two records per request in two different formats. Pi
 
 ## Every attempt is a separate pair of records
 
-A retry inside `httpx.Auth.auth_flow`, or any send decorator that calls through more than once, re-runs
+A retry inside `httpx2.Auth.auth_flow`, or any send decorator that calls through more than once, re-runs
 the request hook — with a **new** `trace_id` each time:
 
 ```
@@ -59,13 +59,10 @@ in a test will show the difference; it is not a stray mutation.
 
 ## The async hook reads the response body
 
-An httpx response hook fires **before** the client has read the body, and on the async client the stream
+An httpx2 response hook fires **before** the client has read the body, and on the async client the stream
 is only reachable through `await`. So `parse_response_async` awaits `aread()` for buffered responses
-before building the record. The caller sees no difference — httpx would have read the same body a moment
+before building the record. The caller sees no difference — httpx2 would have read the same body a moment
 later — and a streamed response is skipped and stays unread.
-
-This is why the library requires `http-client` 2.1: the helpers that tell a streamed response from a
-buffered one became public API in that version.
 
 ## The hook is chosen by `isinstance(client, AsyncHttpClient)`
 

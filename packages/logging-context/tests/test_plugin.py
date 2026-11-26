@@ -349,7 +349,7 @@ def test_captures_third_party_loggers_by_default(pytester: pytest.Pytester) -> N
         import logging
 
         def test_calls_api():
-            logging.getLogger("httpx").warning("ЗАПРОС УШЁЛ")
+            logging.getLogger("httpx2").warning("ЗАПРОС УШЁЛ")
         """,
     )
 

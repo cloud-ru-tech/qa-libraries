@@ -6,10 +6,9 @@ import os
 import sys
 from typing import TYPE_CHECKING, cast
 
-import mcp.server.session
 import uvicorn
 from mcp import types
-from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.mcpserver import Context, MCPServer
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -26,7 +25,7 @@ EXPECTED_TOOL_NAMES = [
     "echo_arguments_and_metadata_structured",
     "crash_server",
 ]
-app = cast("Callable[[str], FastMCP[None]]", FastMCP)("TestServer")
+app = cast("Callable[[str], MCPServer[None]]", MCPServer)("TestServer")
 
 
 class ToolFailureError(RuntimeError):
@@ -70,16 +69,16 @@ def echo_arguments_and_metadata(
 
 
 def echo_arguments_and_metadata_structured(
-    ctx: Context[mcp.server.session.ServerSession, object, object],
+    ctx: Context[None, object],
     arguments: dict[str, object] | None = None,
 ) -> types.CallToolResult:
     request_metadata = ctx.request_context.meta
-    metadata = cast("dict[str, object]", request_metadata.model_dump(exclude_none=True)) if request_metadata else {}
+    metadata = dict(request_metadata or {})
     result = {"received_arguments": arguments or {}, "received_metadata": metadata}
     return types.CallToolResult(
         content=[types.TextContent(type="text", text=json.dumps(result))],
-        structuredContent=result,
-        _meta=metadata or None,
+        structured_content=result,
+        meta=metadata or None,
     )
 
 

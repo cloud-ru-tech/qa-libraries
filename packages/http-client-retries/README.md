@@ -91,15 +91,15 @@ from http_client_retries import options
 client = HttpClient("https://api.example.com", options.with_retries_failed_requests())
 ```
 
-Retries `httpx.RequestError` (including timeouts and dropped connections), `httpcore.NetworkError`,
-and `httpcore.PoolTimeout`. Other errors propagate immediately without retries.
+Retries `httpx2.RequestError` (including timeouts and dropped connections), `httpcore2.NetworkError`,
+and `httpcore2.PoolTimeout`. Other errors propagate immediately without retries.
 
 Errors that retries cannot resolve are excluded, so they do not waste
 the retry budget and waiting time:
 
-- `httpx.TooManyRedirects`: a retry follows the same redirect chain;
-- `httpx.UnsupportedProtocol`: the URL scheme does not change;
-- `httpx.DecodingError`: the server returns the same unreadable body.
+- `httpx2.TooManyRedirects`: a retry follows the same redirect chain;
+- `httpx2.UnsupportedProtocol`: the URL scheme does not change;
+- `httpx2.DecodingError`: the server returns the same unreadable body.
 
 > **Retries are not limited to idempotent methods.** `POST` and `PATCH` are retried just like
 > `GET`. A network error does not prove that the server did not perform the operation: the request may have arrived,
@@ -141,7 +141,7 @@ be replayed, its response is returned as is, even if the condition requested a r
 `with_retries_if` retries while your condition returns `True`:
 
 ```python
-from httpx import Response
+from httpx2 import Response
 
 
 def is_throttled(response: Response) -> bool:
@@ -151,7 +151,7 @@ def is_throttled(response: Response) -> bool:
 client = HttpClient("https://api.example.com", options.with_retries_if(is_throttled))
 ```
 
-The condition can be any function that takes an `httpx.Response` and returns a `bool`.
+The condition can be any function that takes an `httpx2.Response` and returns a `bool`.
 
 Combine these options with each other and with `http_client` options:
 
@@ -275,7 +275,7 @@ When attempts are exhausted, behavior depends on `reraise`:
 | `reraise` | Exception raised |
 |---|---|
 | `False` (default) | `tenacity.RetryError`; the original error is available through `err.last_attempt.exception()` |
-| `True` | The original error, such as `httpx.ConnectError` |
+| `True` | The original error, such as `httpx2.ConnectError` |
 
 ```python
 from tenacity import RetryError
@@ -286,12 +286,12 @@ except RetryError as err:
     original = err.last_attempt.exception()
 ```
 
-`reraise=True` is useful when the caller already handles `httpx` exceptions:
+`reraise=True` is useful when the caller already handles `httpx2` exceptions:
 
 ```python
 from http_client_retries import RetryOverrides
 
-import httpx
+import httpx2
 
 client = HttpClient(
     "https://api.example.com", options.with_retries_failed_requests(overrides=RetryOverrides(reraise=True))
@@ -299,7 +299,7 @@ client = HttpClient(
 
 try:
     response = client.get("/orders/42")
-except httpx.ConnectError:
+except httpx2.ConnectError:
     ...
 ```
 
@@ -354,10 +354,10 @@ client = HttpClient(
 Identifiers set manually by the caller also stay the same across retries.
 
 The rule is simple: **the identifier belongs to the request object**. Different requests get different
-values; all sends of one `httpx.Request`, including retries, share one identifier.
+values; all sends of one `httpx2.Request`, including retries, share one identifier.
 
-There is one limitation. Built-in httpx authentication schemes (`BasicAuth`, `DigestAuth`, or a function)
-reuse the request object, preserving the identifier. A custom `httpx.Auth` that
+There is one limitation. Built-in httpx2 authentication schemes (`BasicAuth`, `DigestAuth`, or a function)
+reuse the request object, preserving the identifier. A custom `httpx2.Auth` that
 creates a **new** `Request` instead of modifying the original gets a new identifier on each
 attempt: the library does not copy headers to the new request. If the server relies
 on `X-Request-ID` to prevent duplicates, set the header yourself in this case.
@@ -369,14 +369,14 @@ To retry calls outside `http_client`, use the decorators directly.
 `retry_if_failed` retries connection errors:
 
 ```python
-import httpx
+import httpx2
 
 from http_client_retries import retry_if_failed
 
 
 @retry_if_failed
 def fetch_status():
-    return httpx.get("https://api.example.com/health")
+    return httpx2.get("https://api.example.com/health")
 ```
 
 `retry_if` retries based on a result condition:
@@ -387,7 +387,7 @@ from http_client_retries import retry_if
 
 @retry_if(lambda response: response.status_code == 503)
 def fetch_report():
-    return httpx.get("https://api.example.com/report")
+    return httpx2.get("https://api.example.com/report")
 ```
 
 Both also support asynchronous functions:
@@ -395,7 +395,7 @@ Both also support asynchronous functions:
 ```python
 @retry_if_failed
 async def fetch_status():
-    async with httpx.AsyncClient() as client:
+    async with httpx2.AsyncClient() as client:
         return await client.get("https://api.example.com/health")
 ```
 

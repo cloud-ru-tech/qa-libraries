@@ -3,7 +3,7 @@ from collections.abc import Iterator
 from pathlib import Path
 from threading import Thread
 
-import httpx
+import httpx2
 import pytest
 from assertpy import assert_that
 from http_client import options
@@ -29,7 +29,7 @@ def tls_server(tmp_path: Path) -> Iterator[TlsServer]:
 def test_sync_client_rejects_untrusted_certificate(tls_server: TlsServer, new_client: SyncClientFactory) -> None:
     client = new_client(tls_server.url)
 
-    with pytest.raises(httpx.ConnectError):
+    with pytest.raises(httpx2.ConnectError):
         client.get("/")
 
 
@@ -38,7 +38,7 @@ async def test_async_client_rejects_untrusted_certificate(
 ) -> None:
     client = new_async_client(tls_server.url)
 
-    with pytest.raises(httpx.ConnectError):
+    with pytest.raises(httpx2.ConnectError):
         await client.get("/")
 
 
@@ -86,13 +86,6 @@ async def test_async_ca_bundle_path_trusts_its_certificate(
     client = new_async_client(tls_server.url, options.with_verify_context(verify=str(tls_server.certificate)))
 
     assert_that((await client.get("/")).text).is_equal_to("verified TLS transport")
-
-
-def test_truststore_rejects_untrusted_certificate(tls_server: TlsServer, new_client: SyncClientFactory) -> None:
-    client = new_client(tls_server.url, options.use_truststore())
-
-    with pytest.raises(httpx.ConnectError):
-        client.get("/")
 
 
 async def test_verify_context_applies_to_subclassed_async_client(

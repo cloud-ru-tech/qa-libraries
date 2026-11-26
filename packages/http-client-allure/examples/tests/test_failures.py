@@ -1,9 +1,9 @@
 import allure
-import httpx
+import httpx2
 import pytest
 from http_client import AsyncHttpClient, HttpClient, options
 from http_client_allure import wrap_requests_and_responses_in_steps, wrap_requests_in_steps
-from httpx import codes
+from httpx2 import codes
 
 from .assertions import assert_that
 
@@ -23,7 +23,7 @@ def test_marks_step_failed_on_timeout(httpbin_url: str) -> None:
 
     with (
         HttpClient(httpbin_url, *client_options) as client,
-        pytest.raises(httpx.ReadTimeout),
+        pytest.raises(httpx2.ReadTimeout),
     ):
         client.get("/delay/3")
 
@@ -32,7 +32,7 @@ def test_marks_step_failed_on_timeout(httpbin_url: str) -> None:
 def test_marks_step_failed_on_connection_error() -> None:
     with (
         HttpClient("http://127.0.0.1:1", wrap_requests_in_steps()) as client,
-        pytest.raises(httpx.ConnectError),
+        pytest.raises(httpx2.ConnectError),
     ):
         client.get("/orders")
 
@@ -42,7 +42,7 @@ async def test_marks_async_step_failed_on_timeout(httpbin_url: str) -> None:
     client_options = (options.with_timeout(0.3), wrap_requests_and_responses_in_steps())
 
     async with AsyncHttpClient(httpbin_url, *client_options) as client:
-        with pytest.raises(httpx.ReadTimeout):
+        with pytest.raises(httpx2.ReadTimeout):
             await client.get("/delay/2")
 
 
@@ -50,7 +50,7 @@ async def test_marks_async_step_failed_on_timeout(httpbin_url: str) -> None:
 def test_attaches_response_when_stream_breaks(httpbin_url: str) -> None:
     with (
         HttpClient(httpbin_url, wrap_requests_and_responses_in_steps()) as client,
-        pytest.raises(httpx.HTTPStatusError),
+        pytest.raises(httpx2.HTTPStatusError),
     ):
         check_status_inside_stream(client)
 

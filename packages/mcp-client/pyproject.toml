@@ -5,18 +5,18 @@ authors = [
     { name = "Andrew Fernatiy", email = "akfernatii@cloud.ru" },
 ]
 dependencies = [
-    "mcp[cli]>=1.25.0,<2",
-    "httpx>=0.28.1,<0.29",
+    "mcp[cli]>=2.3.0,<3",
+    "httpx2>=2.16.2,<3",
     "anyio>=4.16.0,<5",
     "pydantic>=2.9.2,<3",
     "tenacity>=9.1.2,<10",
-    "cloudru-qa-http-client>=1.0.0,<2",
-    "cloudru-qa-http-client-structlog>=1.0.0,<2",
-    "cloudru-qa-http-client-responses>=1.0.0,<2",
-    "cloudru-qa-http-client-retries>=1.0.0,<2",
+    "cloudru-qa-http-client>=2.0.0,<3",
+    "cloudru-qa-http-client-structlog>=2.0.0,<3",
+    "cloudru-qa-http-client-responses>=2.0.0,<3",
+    "cloudru-qa-http-client-retries>=2.0.0,<3",
 ]
 name = "cloudru-qa-mcp-client"
-version = "1.0.0"
+version = "2.0.0"
 license = "Apache-2.0"
 requires-python = ">=3.13"
 license-files = [

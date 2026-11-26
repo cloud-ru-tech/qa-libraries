@@ -26,7 +26,7 @@ Two records per HTTP call. Field sets differ; `headers`, `body` and `trace_id` a
 serialized into JSON strings — see `pitfalls.md` for why that matters to the renderer.
 
 A response is not logged at all when the request fails before a response exists — a connect error or
-timeout raises out of `httpx` and only the request record remains. Catch those in the calling code;
+timeout raises out of `httpx2` and only the request record remains. Catch those in the calling code;
 the option does not log exceptions.
 
 ## Body rendering
@@ -86,7 +86,7 @@ Two independent passes run over every value, path-based first, name-based second
 | glom paths | `sanitize_keys` | the exact path only — `user.password` does not match `order.user.password` |
 | secret names | `DEFAULT_SANITIZE_KEYS` | a field with that name at any depth, including inside arrays |
 
-Both replace the value with `****`. Name matching is case-insensitive; glom paths are literal, and httpx
+Both replace the value with `****`. Name matching is case-insensitive; glom paths are literal, and httpx2
 lowercases header names before the hook runs, so paths that point at headers must be lowercase too.
 
 Default names: `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-api-key`, `api-key`,

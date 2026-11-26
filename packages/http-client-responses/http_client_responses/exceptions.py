@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from ._utils import body_preview, request_method, request_url
 
 if TYPE_CHECKING:
-    from httpx import Response
+    from httpx2 import Response
 
 
 class ResponseParseError(Exception):

@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, TypedDict, Unpack, cast
+from contextlib import asynccontextmanager, nullcontext
+from typing import TYPE_CHECKING, TypedDict, Unpack
 
-import httpx
+import httpx2
 from http_client import AsyncHttpClient
-from httpx._client import UseClientDefault
+from httpx2._client import UseClientDefault
 from mcp.client.stdio import StdioServerParameters, stdio_client
 from mcp.client.streamable_http import streamable_http_client
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Mapping
 
-    from httpx._types import (
+    from httpx2._types import (
         AuthTypes,
         CookieTypes,
         HeaderTypes,
@@ -39,27 +39,27 @@ class _BuildRequestOptions(TypedDict, total=False):
     extensions: Mapping[str, object] | None
 
 
-class _HttpClientAdapter(httpx.AsyncClient):
+class _HttpClientAdapter(httpx2.AsyncClient):
     def __init__(self, client: AsyncHttpClient) -> None:
-        super().__init__()
+        super().__init__(max_redirects=client.client.max_redirects)
         self._workspace_client = client
 
     def build_request(
         self,
         method: str,
-        url: httpx.URL | str,
+        url: httpx2.URL | str,
         **options: Unpack[_BuildRequestOptions],
-    ) -> httpx.Request:
+    ) -> httpx2.Request:
         return self._workspace_client.client.build_request(method, url, **options)
 
     async def send(
         self,
-        request: httpx.Request,
+        request: httpx2.Request,
         *,
         stream: bool = False,
-        auth: AuthTypes | UseClientDefault | None = httpx.USE_CLIENT_DEFAULT,
-        follow_redirects: bool | UseClientDefault = httpx.USE_CLIENT_DEFAULT,
-    ) -> httpx.Response:
+        auth: AuthTypes | UseClientDefault | None = httpx2.USE_CLIENT_DEFAULT,
+        follow_redirects: bool | UseClientDefault = httpx2.USE_CLIENT_DEFAULT,
+    ) -> httpx2.Response:
         return await self._workspace_client.send(
             request,
             stream=stream,
@@ -83,14 +83,14 @@ def stdio_connection_handler(
 
     def handler() -> AsyncConnectionHandler:
         parameters = StdioServerParameters(command=command, args=args or [], env=env)
-        return cast("AsyncConnectionHandler", stdio_client(parameters))
+        return stdio_client(parameters)
 
     return handler
 
 
 def streamable_http_connection_handler(
     url: str,
-    http_client: httpx.AsyncClient | AsyncHttpClient | None = None,
+    http_client: httpx2.AsyncClient | AsyncHttpClient | None = None,
 ) -> ConnectionHandlerFactory:
     """Create an HTTP transport retaining workspace authentication and decorators.
 
@@ -101,14 +101,10 @@ def streamable_http_connection_handler(
 
     @asynccontextmanager
     async def handler() -> AsyncIterator[Streams]:
-        if isinstance(http_client, AsyncHttpClient):
-            async with (
-                _HttpClientAdapter(http_client) as adapter,
-                streamable_http_client(url, http_client=adapter) as (reader, writer, _),
-            ):
-                yield reader, writer
-        else:
-            async with streamable_http_client(url, http_client=http_client) as (reader, writer, _):
-                yield reader, writer
+        transport = (
+            _HttpClientAdapter(http_client) if isinstance(http_client, AsyncHttpClient) else nullcontext(http_client)
+        )
+        async with transport as client, streamable_http_client(url, http_client=client) as streams:
+            yield streams
 
     return handler

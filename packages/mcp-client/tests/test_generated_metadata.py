@@ -19,7 +19,8 @@ from mcp_client.options import (
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Mapping
 
-    from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
+    from anyio.streams.memory import MemoryObjectReceiveStream
+    from mcp.client._transport import WriteStream
     from mcp_client.custom_types import Streams
     from mcp_client.results import ToolCallResponse
 
@@ -53,10 +54,12 @@ class RecordingConnection:
     async def _forward(
         self,
         source: MemoryObjectReceiveStream[SessionMessage],
-        destination: MemoryObjectSendStream[SessionMessage],
+        destination: WriteStream[SessionMessage],
     ) -> None:
         async for message in source:
-            payload = cast("Mapping[str, object]", message.message.model_dump(mode="json", exclude_none=True))
+            payload = cast(
+                "Mapping[str, object]", message.message.model_dump(mode="json", by_alias=True, exclude_none=True)
+            )
             method = payload.get("method")
             if "id" in payload and isinstance(method, str):
                 params = cast("Mapping[str, object]", payload.get("params", {}))

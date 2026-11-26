@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING
 from assertpy import assert_that
 from http_client import HttpClient, options
 from http_client_allure import wrap_requests_in_steps
-from httpx import codes
-from pytest_httpx import HTTPXMock
+from httpx2 import codes
+from pytest_httpx2 import HTTPXMock
 
 from .allure_recorder import Report
 from .assertions import assert_attachment
@@ -28,9 +28,9 @@ def build_client() -> HttpClient:
     )
 
 
-def test_attaches_method_of_original_request(report: Report, httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(status_code=codes.FOUND, headers={"location": FINAL_URL})
-    httpx_mock.add_response(status_code=codes.OK, url=FINAL_URL)
+def test_attaches_method_of_original_request(report: Report, httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(status_code=codes.FOUND, headers={"location": FINAL_URL})
+    httpx2_mock.add_response(status_code=codes.OK, url=FINAL_URL)
 
     with build_client() as client:
         follow_redirect(client)
@@ -38,9 +38,9 @@ def test_attaches_method_of_original_request(report: Report, httpx_mock: HTTPXMo
     assert_attachment(report.request_attachment).has_json_value("method", "POST")
 
 
-def test_attaches_url_of_original_request(report: Report, httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(status_code=codes.FOUND, headers={"location": FINAL_URL})
-    httpx_mock.add_response(status_code=codes.OK, url=FINAL_URL)
+def test_attaches_url_of_original_request(report: Report, httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(status_code=codes.FOUND, headers={"location": FINAL_URL})
+    httpx2_mock.add_response(status_code=codes.OK, url=FINAL_URL)
 
     with build_client() as client:
         follow_redirect(client)
@@ -48,9 +48,9 @@ def test_attaches_url_of_original_request(report: Report, httpx_mock: HTTPXMock)
     assert_attachment(report.request_attachment).has_json_value("url", "https://shop.test/cart")
 
 
-def test_attaches_body_of_original_request(report: Report, httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(status_code=codes.FOUND, headers={"location": FINAL_URL})
-    httpx_mock.add_response(status_code=codes.OK, url=FINAL_URL)
+def test_attaches_body_of_original_request(report: Report, httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(status_code=codes.FOUND, headers={"location": FINAL_URL})
+    httpx2_mock.add_response(status_code=codes.OK, url=FINAL_URL)
 
     with build_client() as client:
         follow_redirect(client)
@@ -58,9 +58,9 @@ def test_attaches_body_of_original_request(report: Report, httpx_mock: HTTPXMock
     assert_attachment(report.request_attachment).has_json_value("body.sku", "TEA-42")
 
 
-def test_names_step_after_original_request(report: Report, httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(status_code=codes.FOUND, headers={"location": FINAL_URL})
-    httpx_mock.add_response(status_code=codes.OK, url=FINAL_URL)
+def test_names_step_after_original_request(report: Report, httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(status_code=codes.FOUND, headers={"location": FINAL_URL})
+    httpx2_mock.add_response(status_code=codes.OK, url=FINAL_URL)
 
     with build_client() as client:
         follow_redirect(client)

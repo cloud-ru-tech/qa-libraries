@@ -1,6 +1,6 @@
 import pytest
 from http_client_responses import ResponseParseError, ResponseWrapper
-from httpx import HTTPStatusError, Request, Response
+from httpx2 import HTTPStatusError, Request, Response
 
 from .assertions import assert_that
 

@@ -8,7 +8,7 @@ English | [Русский](README.ru.md)
 
 The library adds an IAM access token to outgoing HTTP requests. It obtains the token using a key identifier and secret key, then caches and refreshes it automatically. Calling code does not need to manage token lifetime or retries.
 
-Use it when a service requires `Authorization: Bearer <token>` and IAM issues the token. Works both directly with [httpx](https://www.python-httpx.org/) and with the [HTTP client](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/http-client).
+Use it when a service requires `Authorization: Bearer <token>` and IAM issues the token. Works both directly with [httpx2](https://github.com/pydantic/httpx2) and with the [HTTP client](https://github.com/cloud-ru-tech/qa-libraries/tree/master/packages/http-client).
 
 - [Installation](#installation)
 - [Skills for AI agents](#skills-for-ai-agents)
@@ -49,15 +49,15 @@ For Claude Code, add `--claude`. The instructions are shipped with the library v
 ### Synchronous client
 
 ```python
-import httpx
+import httpx2
 from http_client import HttpClient, options
 from http_client_auth import IAM_Auth, IAM_HttpClient
 
 iam_client = IAM_HttpClient("https://iam.example.com")
 auth = IAM_Auth("your_key_id", "your_key_secret", iam_client)
 
-# Directly with httpx
-response = httpx.get("https://api.example.com/data", auth=auth)
+# Directly with httpx2
+response = httpx2.get("https://api.example.com/data", auth=auth)
 
 # With http-client
 client = HttpClient("https://api.example.com", options.with_auth(auth))
@@ -67,15 +67,15 @@ response = client.get("/data")
 ### Asynchronous client
 
 ```python
-import httpx
+import httpx2
 from http_client import AsyncHttpClient, options
 from http_client_auth import IAM_AsyncAuth, IAM_AsyncHttpClient
 
 iam_client = IAM_AsyncHttpClient("https://iam.example.com")
 auth = IAM_AsyncAuth("your_key_id", "your_key_secret", iam_client)
 
-# Directly with httpx
-async with httpx.AsyncClient(auth=auth) as client:
+# Directly with httpx2
+async with httpx2.AsyncClient(auth=auth) as client:
     response = await client.get("https://api.example.com/data")
 
 # With http-client
@@ -182,7 +182,7 @@ Authorization:
 
 | Class | Purpose |
 |---|---|
-| `IAM_Auth` | authorization for synchronous requests; implements `httpx.Auth` |
+| `IAM_Auth` | authorization for synchronous requests; implements `httpx2.Auth` |
 | `IAM_AsyncAuth` | the same for asynchronous requests |
 
 IAM clients are passed to the authorization object as the first argument after the keys:

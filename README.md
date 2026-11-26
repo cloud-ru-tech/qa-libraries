@@ -47,7 +47,7 @@ You can write your own extension in the same way and use it alongside the built-
 ```python
 from http_client import BaseHttpClient, ClientOption, HttpClient
 from http_client_retries import with_retries_failed_requests
-from httpx import Request
+from httpx2 import Request
 
 
 def with_region(region: str) -> ClientOption:
@@ -69,13 +69,13 @@ The gRPC, SSH, and MCP clients follow the same approach: they also accept `Clien
 
 **HTTP**
 
-- [`http-client`](packages/http-client) — base HTTP client built on httpx
+- [`http-client`](packages/http-client) — base HTTP client built on httpx2
 - [`http-client-auth`](packages/http-client-auth) — authorization with IAM tokens
 - [`http-client-retries`](packages/http-client-retries) — request retries
 - [`http-client-responses`](packages/http-client-responses) — typed responses with pydantic models
 - [`http-client-structlog`](packages/http-client-structlog) — structured logs with structlog
 - [`http-client-allure`](packages/http-client-allure) — requests and responses in Allure reports
-- [`httpx-curlify`](packages/httpx-curlify) — httpx requests as curl commands
+- [`httpx-curlify`](packages/httpx-curlify) — httpx2 requests as curl commands
 
 **gRPC**
 

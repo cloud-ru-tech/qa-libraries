@@ -204,8 +204,10 @@ wait_until(predicate, options=WaitOptions(expected_exceptions=(ConnectionError, 
 wait_until(
     predicate,
     options=WaitOptions(
-        expected_exceptions=httpx.HTTPStatusError,
-        retry_on_exception=lambda error: isinstance(error, httpx.HTTPStatusError) and error.response.status_code >= 500,
+        expected_exceptions=httpx2.HTTPStatusError,
+        retry_on_exception=lambda error: (
+            isinstance(error, httpx2.HTTPStatusError) and error.response.status_code >= 500
+        ),
     ),
 )
 ```
@@ -364,12 +366,12 @@ notes, and custom subclass state. An exception cannot be serialized if its
 `last_result` or `last_exception` cannot be serialized.
 
 `TimeoutExpiredError` inherits from built-in `TimeoutError`, so one `except TimeoutError`
-catches timeouts from both this library and `asyncio`. httpx timeouts are outside this
-hierarchy: `httpx.TimeoutException` inherits from `httpx.TransportError` and must be
+catches timeouts from both this library and `asyncio`. httpx2 timeouts are outside this
+hierarchy: `httpx2.TimeoutException` inherits from `httpx2.TransportError` and must be
 caught separately:
 
 ```python
-except (TimeoutError, httpx.TimeoutException):
+except (TimeoutError, httpx2.TimeoutException):
     ...
 ```
 

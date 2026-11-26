@@ -1,6 +1,6 @@
 from typing import cast
 
-import httpx
+import httpx2
 
 
 class IamError(Exception):
@@ -10,7 +10,7 @@ class IamError(Exception):
 class IamAuthError(IamError):
     """IAM authentication error."""
 
-    def __init__(self, response: httpx.Response) -> None:
+    def __init__(self, response: httpx2.Response) -> None:
         """Initialize the object.
 
         :param response: Value of ``response``.
@@ -21,7 +21,7 @@ class IamAuthError(IamError):
 class IamInvalidJsonResponseError(IamError):
     """IAM JSON response validation error."""
 
-    def __init__(self, response: httpx.Response) -> None:
+    def __init__(self, response: httpx2.Response) -> None:
         # Exclude the body from the message: a successful IAM response contains a valid access token.
         """Initialize the object.
 

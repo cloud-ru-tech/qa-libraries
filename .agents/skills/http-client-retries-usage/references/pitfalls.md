@@ -9,7 +9,7 @@ one-shot stream, or a `files=` part backed by a non-seekable file, the call is m
 original exception propagates unwrapped — no `RetryError`, no log line from `before_sleep_hook`,
 nothing in the metrics.
 
-This is intentional: httpx reuses the same `Request` object across attempts, so a consumed generator
+This is intentional: httpx2 reuses the same `Request` object across attempts, so a consumed generator
 would raise `StreamConsumed` and a spent file object would quietly send an empty body that the server
 happily answers with 200.
 
@@ -74,24 +74,24 @@ silently drop one of two distinct callables. Declare each parameter in one optio
 constructor options. Public registration methods reject calls after construction with `RuntimeError`;
 applying a new retry option to an already constructed client is unsupported.
 
-## A custom `httpx.Auth` can break identifier stability
+## A custom `httpx2.Auth` can break identifier stability
 
 Every attempt reuses one `Request`, so `X-Request-ID` and `Traceparent` stay constant — including
 under `BasicAuth`, `DigestAuth`, and callable auth, which all mutate the request in place.
 
-An `Auth` subclass that *constructs a new* `httpx.Request` in `auth_flow` produces a fresh
+An `Auth` subclass that *constructs a new* `httpx2.Request` in `auth_flow` produces a fresh
 identifier on every attempt. The library does not copy headers into a request it did not create.
 If the server deduplicates by `X-Request-ID`, set the header yourself in such a scheme.
 
 ## Testing: mock transports hide replay bugs
 
-`httpx.MockTransport` (and `pytest_httpx`) call `request.read()`, which buffers the body. After that
+`httpx2.MockTransport` (and `pytest_httpx2`) call `request.read()`, which buffers the body. After that
 every body looks replayable, and a test that should catch a truncated retry passes.
 
-To test replay behaviour, write a bare `httpx.BaseTransport` / `httpx.AsyncBaseTransport` that reads
+To test replay behaviour, write a bare `httpx2.BaseTransport` / `httpx2.AsyncBaseTransport` that reads
 `request.stream` the way a real transport does.
 
-## Testing: `httpx_mock.get_requests()` returns the same object per attempt
+## Testing: `httpx2_mock.get_requests()` returns the same object per attempt
 
 Since retries reuse one `Request`, post-hoc header assertions see only the final state — a test
 asserting "the identifier is stable" passes even when it is not. Capture headers at send time, from
@@ -99,8 +99,8 @@ inside the transport or a request hook.
 
 ## False alarms when reading the code
 
-- `request_body.py` imports private httpx classes (`IteratorByteStream`, `MultipartStream`) inside a
-  `try/except ImportError`. If a future httpx moves them, the tuples fall back to empty and every
+- `request_body.py` imports private httpx2 classes (`IteratorByteStream`, `MultipartStream`) inside a
+  `try/except ImportError`. If a future httpx2 moves them, the tuples fall back to empty and every
   unbuffered body is classified as non-replayable. That is a deliberate fail-closed: no retries
   beats truncated data.
 - A rejected response carries `extensions["http_client_retries.rejected"] = True`. It is an internal

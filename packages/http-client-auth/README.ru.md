@@ -8,7 +8,7 @@
 
 Библиотека подставляет в исходящие HTTP-запросы токен доступа, выданный сервисом IAM. Токен запрашивается по паре «идентификатор ключа + секретный ключ», кешируется и обновляется автоматически — вызывающему коду не нужно ничего знать про время жизни токена и повторные попытки.
 
-Подходит, когда сервис требует заголовок `Authorization: Bearer <token>`, а токен выдаёт IAM. Работает и с [httpx](https://www.python-httpx.org/) напрямую, и с [HTTP-клиентом](https://github.com/cloud-ru-tech/qa-libraries/blob/master/packages/http-client/README.ru.md).
+Подходит, когда сервис требует заголовок `Authorization: Bearer <token>`, а токен выдаёт IAM. Работает и с [httpx2](https://github.com/pydantic/httpx2) напрямую, и с [HTTP-клиентом](https://github.com/cloud-ru-tech/qa-libraries/blob/master/packages/http-client/README.ru.md).
 
 - [Установка](#установка)
 - [Скиллы для AI-агентов](#скиллы-для-ai-агентов)
@@ -49,15 +49,15 @@ uvx library-skills install --skill http-client-auth-usage --yes
 ### Синхронный клиент
 
 ```python
-import httpx
+import httpx2
 from http_client import HttpClient, options
 from http_client_auth import IAM_Auth, IAM_HttpClient
 
 iam_client = IAM_HttpClient("https://iam.example.com")
 auth = IAM_Auth("your_key_id", "your_key_secret", iam_client)
 
-# С httpx напрямую
-response = httpx.get("https://api.example.com/data", auth=auth)
+# С httpx2 напрямую
+response = httpx2.get("https://api.example.com/data", auth=auth)
 
 # С http-client
 client = HttpClient("https://api.example.com", options.with_auth(auth))
@@ -67,15 +67,15 @@ response = client.get("/data")
 ### Асинхронный клиент
 
 ```python
-import httpx
+import httpx2
 from http_client import AsyncHttpClient, options
 from http_client_auth import IAM_AsyncAuth, IAM_AsyncHttpClient
 
 iam_client = IAM_AsyncHttpClient("https://iam.example.com")
 auth = IAM_AsyncAuth("your_key_id", "your_key_secret", iam_client)
 
-# С httpx напрямую
-async with httpx.AsyncClient(auth=auth) as client:
+# С httpx2 напрямую
+async with httpx2.AsyncClient(auth=auth) as client:
     response = await client.get("https://api.example.com/data")
 
 # С http-client
@@ -182,7 +182,7 @@ iam_client = IAM_OpenID_HttpClient(
 
 | Класс | Назначение |
 |---|---|
-| `IAM_Auth` | авторизация для синхронных запросов, реализует `httpx.Auth` |
+| `IAM_Auth` | авторизация для синхронных запросов, реализует `httpx2.Auth` |
 | `IAM_AsyncAuth` | то же для асинхронных запросов |
 
 Клиенты IAM — передаются в объект авторизации первым аргументом после ключей:

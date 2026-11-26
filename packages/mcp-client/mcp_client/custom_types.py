@@ -4,13 +4,12 @@ from collections.abc import Awaitable, Callable, Mapping
 from contextlib import AbstractAsyncContextManager
 from typing import TYPE_CHECKING, Protocol
 
-from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
-from mcp.shared.message import SessionMessage
+from mcp.client._transport import TransportStreams
 
 if TYPE_CHECKING:
     from .results import ToolCallResponse
 
-type Streams = tuple[MemoryObjectReceiveStream[SessionMessage | Exception], MemoryObjectSendStream[SessionMessage]]
+type Streams = TransportStreams
 type AsyncConnectionHandler = AbstractAsyncContextManager[Streams]
 type ConnectionHandlerFactory = Callable[[], AsyncConnectionHandler]
 type AsyncOperation[T] = Callable[[], Awaitable[T]]

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from httpx import ResponseNotRead
+from httpx2 import ResponseNotRead
 
 if TYPE_CHECKING:
-    from httpx import Response
+    from httpx2 import Response
 
 UNKNOWN = "?"
 STREAMED_BODY = "<streamed content>"

@@ -3,7 +3,7 @@ name: http-client-structlog-usage
 description: Structured request/response logging for the http_client library — the with_structlogger option that writes every HTTP call into structlog as separate fields instead of one text line, with secret masking on by default. Use when a project imports http_client_structlog, when wiring structlog into an HTTP client, or when tuning what ends up in the access log (fields, masking, level, JSON indent, streaming, async). Key names are with_structlogger, sanitize_keys, use_default_sanitize_keys, trace_id.
 license: Apache-2.0
 metadata:
-  library-version: "1.0.0"
+  library-version: "2.0.0"
   source: packages/http-client-structlog
 ---
 
@@ -22,11 +22,10 @@ This library adds no client of its own and no way to log outside of the option.
 1. Install **one** logging option. `with_structlogger` and `options.with_logger` each append their own
    hooks; passing both logs every request twice.
 2. Pass it as a constructor option, exactly like the built-in ones. There is no post-construction setup.
-3. Requires `http-client` **2.1 or newer**. Earlier versions lack the public log helpers this library
-   imports, and the async client will fail on import.
+3. Use `cloudru-qa-http-client>=2.0.0,<3` with this version of the logging option.
 4. `sanitize_keys` holds **exact glom paths**; the default secret list works **by field name at any
    depth**. They are two different mechanisms — see `references/fields.md` before adding a path.
-5. Write header names lowercase (`"authorization"`) — httpx lowercases them before the hook sees them.
+5. Write header names lowercase (`"authorization"`) — httpx2 lowercases them before the hook sees them.
 6. Do not turn off `use_default_sanitize_keys` to "clean up" the log. It unmasks passwords and tokens.
 
 Before debugging odd output, read `references/pitfalls.md` — it covers the non-obvious behaviour.
@@ -34,14 +33,14 @@ Before debugging odd output, read `references/pitfalls.md` — it covers the non
 ## Usage
 
 ```python
-import httpx
+import httpx2
 import structlog
 from http_client import HttpClient
 from http_client_structlog import with_structlogger
 
 
 class OrdersClient(HttpClient):
-    def get_order(self, order_id: str) -> httpx.Response:
+    def get_order(self, order_id: str) -> httpx2.Response:
         request = self.client.build_request("GET", f"/orders/{order_id}")
         return self.send(request)
 
@@ -54,7 +53,7 @@ Combines with any other option:
 
 ```python
 from http_client import options
-from httpx import BasicAuth
+from httpx2 import BasicAuth
 
 client = OrdersClient(
     "https://api.example.com",
@@ -74,7 +73,7 @@ from http_client import AsyncHttpClient
 
 
 class AsyncOrdersClient(AsyncHttpClient):
-    async def get_order(self, order_id: str) -> httpx.Response:
+    async def get_order(self, order_id: str) -> httpx2.Response:
         request = self.client.build_request("GET", f"/orders/{order_id}")
         return await self.send(request)
 

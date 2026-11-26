@@ -20,6 +20,8 @@ English | [Русский](README.ru.md)
     - [Decorating the send method](#decorating-the-send-method)
     - [Streaming requests](#streaming-requests)
       - [The `stream` method](#the-stream-method)
+      - [Server-sent events (SSE)](#server-sent-events-sse)
+      - [WebSocket](#websocket)
       - [The `stream_request` method](#the-stream_request-method)
       - [Decorating the stream\_request method](#decorating-the-stream_request-method)
     - [The request method](#the-request-method)
@@ -69,7 +71,7 @@ All options (logging, request identification, tracing, default headers, and othe
 import logging
 
 from http_client import HttpClient, options
-from httpx import BasicAuth
+from httpx2 import BasicAuth
 
 with HttpClient(
     "https://api.example.com",
@@ -86,7 +88,7 @@ with HttpClient(
 import logging
 
 from http_client import HttpClient, options
-from httpx import Response
+from httpx2 import Response
 
 
 class CustomHttpClient(HttpClient):
@@ -133,7 +135,7 @@ Configure the client with `ClientOption` options. Each option receives the actua
 
 ```python
 from http_client import BaseHttpClient, ClientOption
-from httpx import Request
+from httpx2 import Request
 
 
 def with_region(region: str) -> ClientOption:
@@ -172,7 +174,7 @@ Usage example:
 ```python
 import logging
 
-from httpx import Request, Response
+from httpx2 import Request, Response
 
 from http_client import HttpClient, options
 
@@ -198,7 +200,7 @@ With `AsyncHttpClient`, synchronous hooks are automatically wrapped as async. Yo
 
 ```python
 from http_client import AsyncHttpClient, options
-from httpx import Request
+from httpx2 import Request
 
 
 async def my_async_request_hook(request: Request) -> None:
@@ -211,7 +213,7 @@ client = AsyncHttpClient(
 )
 ```
 
-See the [`httpx` documentation](https://www.python-httpx.org/advanced/event-hooks/) for more about hooks.
+See the [`httpx2` documentation](https://pydantic.dev/docs/httpx2/advanced/event-hooks/) for more about hooks.
 
 ### Decorating the send method
 
@@ -230,12 +232,12 @@ from http_client import HttpClient, options
 from http_client.types import SendOptions, SyncSendMethod
 from typing import Unpack
 import logging
-import httpx
+import httpx2
 
 
 def logging_decorator(func: SyncSendMethod) -> SyncSendMethod:
     @wraps(func)
-    def wrapper(request: httpx.Request, **kwargs: Unpack[SendOptions]) -> httpx.Response:
+    def wrapper(request: httpx2.Request, **kwargs: Unpack[SendOptions]) -> httpx2.Response:
         logging.getLogger(__name__).info("Sending request: %s %s", request.method, request.url)
         response = func(request, **kwargs)
         logging.getLogger(__name__).info("Received response: %s", response.status_code)
@@ -255,12 +257,12 @@ from http_client import AsyncHttpClient, options
 from http_client.types import AsyncSendMethod, SendOptions
 from typing import Unpack
 import logging
-import httpx
+import httpx2
 
 
 def async_logging_decorator(func: AsyncSendMethod) -> AsyncSendMethod:
     @wraps(func)
-    async def wrapper(request: httpx.Request, **kwargs: Unpack[SendOptions]) -> httpx.Response:
+    async def wrapper(request: httpx2.Request, **kwargs: Unpack[SendOptions]) -> httpx2.Response:
         logging.getLogger(__name__).info("Sending request: %s %s", request.method, request.url)
         response = await func(request, **kwargs)
         logging.getLogger(__name__).info("Received response: %s", response.status_code)
@@ -290,7 +292,7 @@ The HTTP client supports streaming requests in two ways:
 
 #### The `stream` method
 
-`stream(method, url, **kwargs)` is fully compatible with the `httpx` API. It takes an HTTP method and URL, builds a request, and returns a context manager:
+`stream(method, url, **kwargs)` is fully compatible with the `httpx2` API. It takes an HTTP method and URL, builds a request, and returns a context manager:
 
 ```python
 from http_client import HttpClient, options
@@ -301,7 +303,7 @@ client = HttpClient(
     options.with_logger(logger),
 )
 
-# Streaming download (httpx contract)
+# Streaming download (httpx2 contract)
 with client.stream("GET", "/large-file.zip") as response:
     response.raise_for_status()
 
@@ -328,9 +330,69 @@ async with client.stream("GET", "/stream-data") as response:
         process_line(line)
 ```
 
+#### Server-sent events (SSE)
+
+`sse(url, method="GET", max_event_size=..., **options)` opens an `httpx2.EventSource`.
+Pass request options such as `headers`, `params`, or `json`. Set `max_event_size` in bytes to limit each event.
+Read events inside the context. Exiting the context closes the response.
+
+```python
+from http_client import HttpClient
+
+with HttpClient("https://example.com") as client, client.sse("/events") as events:
+    events.response.raise_for_status()
+    for event in events:
+        print(event.data)
+```
+
+```python
+from http_client import AsyncHttpClient
+
+async with AsyncHttpClient("https://example.com") as client:
+    async with client.sse("/events", method="POST", json={"topic": "builds"}, max_event_size=65_536) as events:
+        events.response.raise_for_status()
+        async for event in events:
+            print(event.data)
+```
+
+#### WebSocket
+
+Install the optional WebSocket dependencies with `pip install "cloudru-qa-http-client[ws]"`.
+The default installation supports HTTP and SSE.
+
+`websocket(url, **options)` opens a `WebSocketSession` with `HttpClient` or an `AsyncWebSocketSession` with
+`AsyncHttpClient`. The opening HTTP request uses the client’s authentication. Pass `auth=` to override it
+for one connection. To supply your own `Authorization` header when the client has authentication configured,
+pass `anonymous=True` with the header. After the handshake, the session sends and receives WebSocket frames.
+Use it inside the context. Exiting the context closes the session.
+
+Pass `subprotocols=["events"]` to offer a protocol for this connection, or `subprotocols=[]` to offer none.
+If you omit `subprotocols` or pass `None`, the client uses the configured `Sec-WebSocket-Protocol` header, if any.
+
+```python
+import os
+
+from http_client import HttpClient
+
+auth = (os.environ["API_USER"], os.environ["API_PASSWORD"])
+with HttpClient("https://example.com") as client:
+    with client.websocket("wss://example.com/echo", auth=auth) as session:
+        session.send_text("hello")
+        print(session.receive_text())
+```
+
+```python
+from http_client import AsyncHttpClient
+
+async with AsyncHttpClient("https://example.com") as client:
+    async with client.websocket("wss://example.com/echo") as session:
+        await session.send_text("hello")
+        print(await session.receive_text())
+```
+
 #### The `stream_request` method
 
-`stream_request(request, **kwargs)` takes a ready-made `httpx.Request` and supports all client options, including decorators:
+`stream_request(request, **kwargs)` takes a ready-made `httpx2.Request` and supports all client options, including decorators:
 
 ```python
 request = client.client.build_request("GET", "/large-file.zip")
@@ -351,14 +413,14 @@ from http_client import HttpClient, options
 from http_client.types import StreamOptions, SyncStreamRequestMethod
 from collections.abc import Iterator
 from typing import Unpack
-import httpx
+import httpx2
 import logging
 
 
 def stream_logging_decorator(func: SyncStreamRequestMethod) -> SyncStreamRequestMethod:
     @wraps(func)
     @contextmanager
-    def wrapper(request: httpx.Request, **kwargs: Unpack[StreamOptions]) -> Iterator[httpx.Response]:
+    def wrapper(request: httpx2.Request, **kwargs: Unpack[StreamOptions]) -> Iterator[httpx2.Response]:
         logging.getLogger(__name__).info("Starting stream: %s %s", request.method, request.url)
         with func(request, **kwargs) as response:
             logging.getLogger(__name__).info("Stream status: %s", response.status_code)
@@ -386,7 +448,7 @@ response = client.request("PATCH", "/api/resource", json={"field": "value"})
 `with_timeout` sets different types of HTTP request timeouts:
 
 ```python
-from httpx import Timeout
+from httpx2 import Timeout
 from http_client import HttpClient, options
 
 # Set different timeout types
@@ -402,10 +464,10 @@ client = HttpClient("https://example.com", options.with_timeout(timeout))
 
 ### Authorization
 
-`with_auth` configures HTTP request authorization. All `httpx` authorization mechanisms are supported. You can also implement your own; see the [`httpx` documentation](https://www.python-httpx.org/advanced/authentication/#custom-authentication-schemes).
+`with_auth` configures HTTP request authorization. All `httpx2` authorization mechanisms are supported. You can also implement your own; see the [`httpx2` documentation](https://pydantic.dev/docs/httpx2/advanced/authentication/#custom-authentication-schemes).
 
 ```python
-from httpx import BasicAuth, DigestAuth
+from httpx2 import BasicAuth, DigestAuth
 from http_client import HttpClient, options
 
 # Basic authorization
@@ -485,7 +547,7 @@ Disable the default protection with an explicit flag, for example when debugging
 options.with_logger(logger, use_default_sanitize_keys=False)
 ```
 
-⚠️ Masking applies only to access log records written by this library. `httpx` exceptions may contain the full URL, including query parameters, so do not pass secrets in URLs.
+⚠️ Masking applies only to access log records written by this library. `httpx2` exceptions may contain the full URL, including query parameters, so do not pass secrets in URLs.
 
 ### Closing connections
 
@@ -506,13 +568,13 @@ client.close()  # HttpClient
 await client.aclose()  # AsyncHttpClient
 ```
 
-A closed client cannot be reopened: like `httpx`, this raises `RuntimeError`.
+A closed client cannot be reopened: like `httpx2`, this raises `RuntimeError`.
 
 ### TLS connection
 
-The library provides two options to configure TLS connections. Both work the same with `HttpClient` and `AsyncHttpClient`.
-
-1. `with_verify_context` — sets the TLS verification context:
+By default, HTTPX2 verifies certificates against the operating system's trust store.
+`SSL_CERT_FILE` and `SSL_CERT_DIR` override the default CA locations.
+Both `HttpClient` and `AsyncHttpClient` accept a custom TLS context through `with_verify_context`.
 
 ```python
 import ssl
@@ -524,20 +586,6 @@ ssl_context.load_verify_locations("/path/to/ca-certificates.crt")
 
 # Set the SSL context
 client = HttpClient("https://example.com", options.with_verify_context(verify=ssl_context))
-```
-
-2. `use_truststore` — uses the system certificate store for verification:
-
-```python
-from http_client import HttpClient, options
-
-# Use the system certificate store
-client = HttpClient("https://example.com", options.use_truststore())
-```
-
-To use `use_truststore`, install the extra dependency:
-```
-pip install "cloudru-qa-http-client[truststore]"
 ```
 
 ### Default headers

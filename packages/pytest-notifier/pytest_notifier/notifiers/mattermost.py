@@ -1,4 +1,4 @@
-import httpx
+import httpx2
 
 from pytest_notifier.models import TestFailureInfo, TestResults
 from pytest_notifier.settings import Settings
@@ -80,5 +80,5 @@ class MattermostNotifier(NotifierBase):
         url = str(self.mm.webhook_url)
         timeout = self.mm.timeout_seconds
 
-        with httpx.Client(timeout=timeout) as client:
+        with httpx2.Client(timeout=timeout) as client:
             client.post(url, json=payload).raise_for_status()

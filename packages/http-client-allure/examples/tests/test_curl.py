@@ -1,5 +1,5 @@
 import allure
-import httpx
+import httpx2
 from http_client import HttpClient, options
 from http_client_allure import wrap_requests_and_responses_in_steps, wrap_requests_in_steps
 
@@ -31,7 +31,7 @@ def test_attaches_post_body_as_curl(httpbin_url: str) -> None:
 @allure.title("Секреты в команде curl замаскированы")
 def test_masks_secrets_in_curl(httpbin_url: str) -> None:
     client_options = (
-        options.with_auth(httpx.BasicAuth("courier", "hunter2")),
+        options.with_auth(httpx2.BasicAuth("courier", "hunter2")),
         wrap_requests_in_steps(serialize_request_to_curl=True),
     )
 

@@ -2,16 +2,16 @@
 
 Non-obvious behaviour that costs time when you hit it unprepared.
 
-## Options run before the httpx client exists
+## Options run before the httpx2 client exists
 
 Order inside `__init__`: `BaseHttpClient.__init__` creates typed internal configuration and runs
-the options; then `HttpClient.__init__` creates the httpx transport from that configuration.
+the options; then `HttpClient.__init__` creates the httpx2 transport from that configuration.
 
 Two consequences:
 
 1. An option that touches `client.client` raises `AttributeError` — there is no transport yet.
 2. Setting `client.timeout`, `auth`, `verify` or `url_suffix` after construction raises `RuntimeError`.
-   Set them through constructor options. For transport-level changes supported by httpx, use its
+   Set them through constructor options. For transport-level changes supported by httpx2, use its
    public API directly, for example `client.client.timeout`, or rebuild the client.
 
 ## Decorators are frozen once
@@ -35,7 +35,7 @@ An absolute URL or a `..` segment raises `ValueError` instead of silently escapi
 
 ## A decorator that sends twice runs the hooks twice
 
-Event hooks fire inside `httpx.Client.send`, so a decorator that calls `func()` twice runs every
+Event hooks fire inside `httpx2.Client.send`, so a decorator that calls `func()` twice runs every
 request hook twice. The built-in ID hooks preserve existing `X-Request-ID` and `Traceparent` values;
 reusing one request keeps its identifiers stable across retries. A newly built request gets new
 identifiers unless the caller provided them. Other hooks, including logging, still run per attempt.

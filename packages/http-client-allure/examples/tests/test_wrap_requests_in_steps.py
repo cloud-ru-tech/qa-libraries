@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 import allure
 from http_client import HttpClient, options
 from http_client_allure import wrap_requests_in_steps
-from httpx import codes
+from httpx2 import codes
 
 from .assertions import assert_that
 

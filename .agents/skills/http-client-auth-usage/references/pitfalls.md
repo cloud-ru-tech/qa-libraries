@@ -4,17 +4,17 @@ Non-obvious behaviour that costs time when you hit it unprepared.
 
 ## A sync/async mismatch sends unauthenticated requests, silently
 
-`IAM_Auth` overrides only `sync_auth_flow`; `IAM_AsyncAuth` overrides only `async_auth_flow`. Everything else falls back to `httpx.Auth`, whose default `auth_flow` yields the request unchanged.
+`IAM_Auth` overrides only `sync_auth_flow`; `IAM_AsyncAuth` overrides only `async_auth_flow`. Everything else falls back to `httpx2.Auth`, whose default `auth_flow` yields the request unchanged.
 
-So passing `IAM_Auth` to an `httpx.AsyncClient` (or `IAM_AsyncAuth` to a sync one) raises nothing, issues no token, and touches no header. The request goes out bare and the service answers 401 — which looks like an expired key, not like wiring.
+So passing `IAM_Auth` to an `httpx2.AsyncClient` (or `IAM_AsyncAuth` to a sync one) raises nothing, issues no token, and touches no header. The request goes out bare and the service answers 401 — which looks like an expired key, not like wiring.
 
 ```python
 # WRONG — no Authorization header, no exception, no log line
-async with httpx.AsyncClient(auth=IAM_Auth("kid", "secret", iam_client)) as client:
+async with httpx2.AsyncClient(auth=IAM_Auth("kid", "secret", iam_client)) as client:
     await client.get("https://api.example.com/data")
 ```
 
-The IAM client must match too: `IAM_Auth` needs `IAM_HttpClient` or `IAM_OpenID_HttpClient`, `IAM_AsyncAuth` needs the async twins. That half is caught statically — the constructors are typed with `IAM_SyncClientT` / `IAM_AsyncClientT`, so mypy flags it. The client-side mismatch is not typed at all: `httpx.Client(auth=...)` accepts any `Auth`.
+The IAM client must match too: `IAM_Auth` needs `IAM_HttpClient` or `IAM_OpenID_HttpClient`, `IAM_AsyncAuth` needs the async twins. That half is caught statically — the constructors are typed with `IAM_SyncClientT` / `IAM_AsyncClientT`, so mypy flags it. The client-side mismatch is not typed at all: `httpx2.Client(auth=...)` accepts any `Auth`.
 
 When debugging a 401, check the outgoing request's headers before checking the key.
 

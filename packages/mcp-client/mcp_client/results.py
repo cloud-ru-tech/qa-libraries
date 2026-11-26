@@ -23,12 +23,12 @@ class ToolCallResponse:
     @property
     def is_success(self) -> bool:
         """Return whether the server reported success."""
-        return not self.result.isError
+        return not self.result.is_error
 
     @property
     def is_error(self) -> bool:
         """Return whether the server reported an error."""
-        return self.result.isError
+        return self.result.is_error
 
     @property
     def content(self) -> list[Content]:
@@ -38,7 +38,7 @@ class ToolCallResponse:
     @property
     def structured_content(self) -> dict[str, object] | None:
         """Return the structured response content."""
-        return cast("dict[str, object] | None", self.result.structuredContent)
+        return cast("dict[str, object] | None", self.result.structured_content)
 
     @property
     def metadata(self) -> dict[str, object] | None:

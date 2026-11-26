@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self, cast
 
-import httpx
+import httpx2
 from assertpy.assertpy import AssertionBuilder
 from tenacity import RetryError
 
@@ -21,7 +21,7 @@ class HttpbinAssertions(_Builder):
 
     def has_status(self, expected: int) -> Self:
         """Check the response status code."""
-        actual = cast("httpx.Response", self.val).status_code
+        actual = cast("httpx2.Response", self.val).status_code
         if actual != expected:
             self.error(f"Expected status <{expected}>, but was <{actual}>")
 
@@ -29,7 +29,7 @@ class HttpbinAssertions(_Builder):
 
     def has_text(self, expected: str) -> Self:
         """Check the text response body."""
-        actual = cast("httpx.Response", self.val).text
+        actual = cast("httpx2.Response", self.val).text
         if actual != expected:
             self.error(f"Expected body <{expected}>, but was <{actual}>")
 
@@ -37,7 +37,7 @@ class HttpbinAssertions(_Builder):
 
     def has_empty_body(self) -> Self:
         """Check that the response body is empty."""
-        actual = cast("httpx.Response", self.val).content
+        actual = cast("httpx2.Response", self.val).content
         if actual:
             self.error(f"Expected an empty body, but was <{actual!r}>")
 
@@ -45,7 +45,7 @@ class HttpbinAssertions(_Builder):
 
     def has_response_header(self, name: str, expected: str) -> Self:
         """Check a header returned by the server."""
-        actual = cast("str | None", cast("httpx.Response", self.val).headers.get(name))
+        actual = cast("httpx2.Response", self.val).headers.get(name)
         if actual != expected:
             self.error(f"Expected response header <{name}> to be <{expected}>, but was <{actual}>")
 
@@ -53,7 +53,7 @@ class HttpbinAssertions(_Builder):
 
     def hits_path(self, expected: str) -> Self:
         """Check the final request path after redirects."""
-        actual = cast("httpx.Response", self.val).url.path
+        actual = cast("httpx2.Response", self.val).url.path
         if actual != expected:
             self.error(f"Expected the request to land on <{expected}>, but landed on <{actual}>")
 
@@ -70,7 +70,7 @@ class HttpbinAssertions(_Builder):
     def have_distinct_json_field(self, path: str) -> Self:
         """Check that each response in the list has its own field value."""
         values = [
-            _read_field(cast("object", response.json()), path) for response in cast("list[httpx.Response]", self.val)
+            _read_field(cast("object", response.json()), path) for response in cast("list[httpx2.Response]", self.val)
         ]
         if len(set(values)) != len(values):
             self.error(f"Expected every response to carry its own <{path}>, but was <{values}>")
@@ -124,17 +124,17 @@ class HttpbinAssertions(_Builder):
             self.error(f"Expected <RetryError>, but was <{type(error).__name__}>")
 
         response = cast("object", cast("RetryError", error).last_attempt.result())
-        if not isinstance(response, cast("type[object]", httpx.Response)):
-            self.error(f"Expected RetryError to keep an <httpx.Response>, but kept <{type(response).__name__}>")
+        if not isinstance(response, cast("type[object]", httpx2.Response)):
+            self.error(f"Expected RetryError to keep an <httpx2.Response>, but kept <{type(response).__name__}>")
 
-        status = cast("httpx.Response", response).status_code
+        status = cast("httpx2.Response", response).status_code
         if status != expected:
             self.error(f"Expected the last attempt to answer <{expected}>, but answered <{status}>")
 
         return self
 
     def _body(self) -> dict[str, object]:
-        return cast("dict[str, object]", cast("httpx.Response", self.val).json())
+        return cast("dict[str, object]", cast("httpx2.Response", self.val).json())
 
     def _headers(self) -> dict[str, list[str]]:
         return {name.lower(): values for name, values in cast("dict[str, list[str]]", self._body()["headers"]).items()}

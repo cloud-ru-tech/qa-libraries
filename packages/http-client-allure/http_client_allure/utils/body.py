@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from typing import cast
 from urllib.parse import urlencode
 
-import httpx
+import httpx2
 from http_client.utils import sanitizer
 
 STREAMED_CONTENT = "<streamed content>"
@@ -80,7 +80,7 @@ def render_body(
 QueryParams = dict[str, str | list[str]]
 
 
-def sanitize_query_params(request: httpx.Request, sanitize_keys: Sequence[str]) -> QueryParams:
+def sanitize_query_params(request: httpx2.Request, sanitize_keys: Sequence[str]) -> QueryParams:
     """Return request query parameters with secrets masked.
 
     Collect repeated keys into a list to keep the report consistent with

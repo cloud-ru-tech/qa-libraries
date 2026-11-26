@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager, contextmanager, suppress
 from functools import wraps
 
 import allure
-import httpx
+import httpx2
 from http_client.types import (
     AsyncSendDecorator,
     AsyncSendMethod,
@@ -14,7 +14,7 @@ from http_client.types import (
     SyncStreamRequestDecorator,
     SyncStreamRequestMethod,
 )
-from httpx._types import AuthTypes
+from httpx2._types import AuthTypes
 
 from .settings import StepSettings
 from .utils import (
@@ -42,13 +42,13 @@ def step_send_decorator(settings: StepSettings) -> SyncSendDecorator:
     def decorator(func: SyncSendMethod) -> SyncSendMethod:
         @wraps(func)
         def wrapper(
-            request: httpx.Request,
+            request: httpx2.Request,
             *,
             stream: bool = False,
             auth: AuthTypes | None = None,
             follow_redirects: bool | None = None,
             anonymous: bool = False,
-        ) -> httpx.Response:
+        ) -> httpx2.Response:
             body: bytes | None = None
 
             with allure.step(_step_message(request, settings)):
@@ -88,13 +88,13 @@ def async_step_send_decorator(settings: StepSettings) -> AsyncSendDecorator:
     def decorator(func: AsyncSendMethod) -> AsyncSendMethod:
         @wraps(func)
         async def wrapper(
-            request: httpx.Request,
+            request: httpx2.Request,
             *,
             stream: bool = False,
             auth: AuthTypes | None = None,
             follow_redirects: bool | None = None,
             anonymous: bool = False,
-        ) -> httpx.Response:
+        ) -> httpx2.Response:
             body: bytes | None = None
             step_message = _step_message(request, settings)
 
@@ -139,14 +139,14 @@ def step_stream_decorator(settings: StepSettings) -> SyncStreamRequestDecorator:
         @wraps(func)
         @contextmanager
         def wrapper(
-            request: httpx.Request,
+            request: httpx2.Request,
             *,
             anonymous: bool = False,
             auth: AuthTypes | None = None,
             follow_redirects: bool | None = None,
-        ) -> Iterator[httpx.Response]:
+        ) -> Iterator[httpx2.Response]:
             body = _request_body(request, settings, streaming=True)
-            response: httpx.Response | None = None
+            response: httpx2.Response | None = None
 
             with allure.step(_step_message(request, settings)):
                 try:
@@ -177,15 +177,15 @@ def async_step_stream_decorator(settings: StepSettings) -> AsyncStreamRequestDec
         @wraps(func)
         @asynccontextmanager
         async def wrapper(
-            request: httpx.Request,
+            request: httpx2.Request,
             *,
             anonymous: bool = False,
             auth: AuthTypes | None = None,
             follow_redirects: bool | None = None,
-        ) -> AsyncIterator[httpx.Response]:
+        ) -> AsyncIterator[httpx2.Response]:
             body = await _arequest_body(request, settings, streaming=True)
             step_message = _step_message(request, settings)
-            response: httpx.Response | None = None
+            response: httpx2.Response | None = None
 
             try:
                 async with func(
@@ -210,7 +210,7 @@ def async_step_stream_decorator(settings: StepSettings) -> AsyncStreamRequestDec
     return decorator
 
 
-def _request_body(request: httpx.Request, settings: StepSettings, *, streaming: bool) -> bytes | None:
+def _request_body(request: httpx2.Request, settings: StepSettings, *, streaming: bool) -> bytes | None:
     """Read the request body before sending while the stream is known to be intact."""
     if not settings.attach_request:
         return None
@@ -221,7 +221,7 @@ def _request_body(request: httpx.Request, settings: StepSettings, *, streaming: 
     return read_request_body(request)
 
 
-async def _arequest_body(request: httpx.Request, settings: StepSettings, *, streaming: bool) -> bytes | None:
+async def _arequest_body(request: httpx2.Request, settings: StepSettings, *, streaming: bool) -> bytes | None:
     """Asynchronous version of _request_body."""
     if not settings.attach_request:
         return None
@@ -233,8 +233,8 @@ async def _arequest_body(request: httpx.Request, settings: StepSettings, *, stre
 
 
 def _attach_stream(
-    request: httpx.Request,
-    response: httpx.Response | None,
+    request: httpx2.Request,
+    response: httpx2.Response | None,
     body: bytes | None,
     settings: StepSettings,
 ) -> None:
@@ -249,14 +249,14 @@ def _attach_stream(
         _attach_response(response, peek_response_body(response), settings)
 
 
-def _attach_request(request: httpx.Request, body: bytes | None, settings: StepSettings) -> None:
+def _attach_request(request: httpx2.Request, body: bytes | None, settings: StepSettings) -> None:
     if not settings.attach_request:
         return
 
     _attach_safely("Request details", lambda: parse_request_for_attach(request, body, settings), settings)
 
 
-def _attach_response(response: httpx.Response, body: bytes | None, settings: StepSettings) -> None:
+def _attach_response(response: httpx2.Response, body: bytes | None, settings: StepSettings) -> None:
     if settings.attach_response_headers:
         _attach_safely(
             "Response headers",
@@ -289,7 +289,7 @@ def _attach_safely(name: str, build: Callable[[], Attachment | None], settings: 
             ).attach()
 
 
-def _step_message(request: httpx.Request, settings: StepSettings) -> str:
+def _step_message(request: httpx2.Request, settings: StepSettings) -> str:
     """Build a step title without letting masking errors prevent sending."""
     try:
         return build_step_message(request, settings)

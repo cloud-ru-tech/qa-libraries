@@ -5,7 +5,7 @@ from typing import cast
 import pytest
 from http_client.config import DEFAULT_OCTET_STREAM_LOG_MAXLENGTH, LoggingConfig, configure_logging
 from http_client.options import with_logger
-from pytest_httpx import HTTPXMock
+from pytest_httpx2 import HTTPXMock
 
 from .support.clients import AsyncClientFactory, SyncClientFactory
 from .support.logs import RecordedLog, assert_that
@@ -26,12 +26,12 @@ def nested_secret_payload(request: pytest.FixtureRequest) -> tuple[object, str]:
 
 def test_masks_nested_default_secrets_in_request_log(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
     nested_secret_payload: tuple[object, str],
 ) -> None:
     payload, expected = nested_secret_payload
-    httpx_mock.add_response()
+    httpx2_mock.add_response()
     client = new_client("https://accounts.test", with_logger(recorded_log.logger))
 
     client.post("/profiles", json=payload)
@@ -41,12 +41,12 @@ def test_masks_nested_default_secrets_in_request_log(
 
 def test_masks_nested_default_secrets_in_response_log(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
     nested_secret_payload: tuple[object, str],
 ) -> None:
     payload, expected = nested_secret_payload
-    httpx_mock.add_response(json=payload)
+    httpx2_mock.add_response(json=payload)
     client = new_client("https://tokens.test", with_logger(recorded_log.logger))
 
     client.get("/credentials")
@@ -56,12 +56,12 @@ def test_masks_nested_default_secrets_in_response_log(
 
 async def test_masks_nested_default_secrets_in_async_request_log(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
     nested_secret_payload: tuple[object, str],
 ) -> None:
     payload, expected = nested_secret_payload
-    httpx_mock.add_response()
+    httpx2_mock.add_response()
     client = new_async_client("https://profiles.test", with_logger(recorded_log.logger))
 
     await client.post("/settings", json=payload)
@@ -71,12 +71,12 @@ async def test_masks_nested_default_secrets_in_async_request_log(
 
 async def test_masks_nested_default_secrets_in_async_response_log(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
     nested_secret_payload: tuple[object, str],
 ) -> None:
     payload, expected = nested_secret_payload
-    httpx_mock.add_response(json=payload)
+    httpx2_mock.add_response(json=payload)
     client = new_async_client("https://sessions.test", with_logger(recorded_log.logger))
 
     await client.get("/identity")
@@ -86,10 +86,10 @@ async def test_masks_nested_default_secrets_in_async_response_log(
 
 def test_preserves_nested_values_when_default_masking_is_disabled(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
-    httpx_mock.add_response()
+    httpx2_mock.add_response()
     client = new_client("https://masking.test", with_logger(recorded_log.logger, use_default_sanitize_keys=False))
 
     client.post("/diagnostics", json={"nested": {"password": "explicitly-visible"}})
@@ -97,9 +97,11 @@ def test_preserves_nested_values_when_default_masking_is_disabled(
     assert_that(recorded_log.request).has_body('{"nested": {"password": "explicitly-visible"}}')
 
 
-def test_logs_request_trace_id(recorded_log: RecordedLog, httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
+def test_logs_request_trace_id(
+    recorded_log: RecordedLog, httpx2_mock: HTTPXMock, new_client: SyncClientFactory
+) -> None:
     """The request log starts with the exchange ID."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.get("/api/test")
@@ -109,11 +111,11 @@ def test_logs_request_trace_id(recorded_log: RecordedLog, httpx_mock: HTTPXMock,
 
 def test_response_repeats_request_trace_id(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """The response log has the same exchange ID as the request log."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.get("/api/test")
@@ -123,11 +125,11 @@ def test_response_repeats_request_trace_id(
 
 def test_logs_request_method_and_url(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Include the method and URL in the request log."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://shop.example.com", with_logger(recorded_log.logger))
 
     client.get("/api/orders")
@@ -135,9 +137,9 @@ def test_logs_request_method_and_url(
     assert_that(recorded_log.request).describes_request("GET", "https://shop.example.com/api/orders")
 
 
-def test_logs_request_headers(recorded_log: RecordedLog, httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
+def test_logs_request_headers(recorded_log: RecordedLog, httpx2_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
     """Include request headers in the request log."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.get("/api/test", headers={"X-Correlation-Id": "abc-42"})
@@ -145,9 +147,9 @@ def test_logs_request_headers(recorded_log: RecordedLog, httpx_mock: HTTPXMock, 
     assert_that(recorded_log.request).has_header("x-correlation-id", "abc-42")
 
 
-def test_logs_query_params(recorded_log: RecordedLog, httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
+def test_logs_query_params(recorded_log: RecordedLog, httpx2_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
     """Include query parameters in the request log."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.get("/api/search", params={"q": "kittens"})
@@ -156,10 +158,10 @@ def test_logs_query_params(recorded_log: RecordedLog, httpx_mock: HTTPXMock, new
 
 
 def test_masks_secret_query_param(
-    recorded_log: RecordedLog, httpx_mock: HTTPXMock, new_client: SyncClientFactory
+    recorded_log: RecordedLog, httpx2_mock: HTTPXMock, new_client: SyncClientFactory
 ) -> None:
     """Mask common secrets in the query string."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.get("/api/search", params={"token": "qp-secret-value"})
@@ -169,11 +171,11 @@ def test_masks_secret_query_param(
 
 def test_masks_authorization_header_by_default(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Mask the authorization header even when sanitize_keys is not specified."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.get("/api/test", headers={"Authorization": "Bearer eyJhbGciOi"})
@@ -183,11 +185,11 @@ def test_masks_authorization_header_by_default(
 
 def test_replaces_masked_header_with_stars(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """A placeholder replaces the masked header."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.get("/api/test", headers={"Authorization": "Bearer eyJhbGciOi"})
@@ -197,11 +199,11 @@ def test_replaces_masked_header_with_stars(
 
 def test_masks_api_key_header_by_default(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Mask the API key even when sanitize_keys is not specified."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.get("/api/test", headers={"X-Api-Key": "ak-9f3c1"})
@@ -211,11 +213,11 @@ def test_masks_api_key_header_by_default(
 
 def test_masks_password_in_json_body(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Mask the password in the request body."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.post("/api/login", json={"username": "ivan", "password": "hunter2"})
@@ -225,11 +227,11 @@ def test_masks_password_in_json_body(
 
 def test_masks_access_token_in_json_body(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Mask the access token in the request body."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.post("/api/refresh", json={"access_token": "at-77123"})
@@ -239,11 +241,11 @@ def test_masks_access_token_in_json_body(
 
 def test_masks_key_listed_in_sanitize_keys(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Also mask a key specified by the caller."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger, sanitize_keys=["card.number"]))
 
     client.post("/api/pay", json={"card": {"number": "4111111111111111"}})
@@ -253,11 +255,11 @@ def test_masks_key_listed_in_sanitize_keys(
 
 def test_keeps_non_secret_data_in_json_body(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Keep nonsecret body fields unchanged in logs."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.post("/api/login", json={"username": "ivan", "password": "hunter2"})
@@ -267,11 +269,11 @@ def test_keeps_non_secret_data_in_json_body(
 
 def test_default_masking_can_be_disabled(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Disable default masking with an explicit flag."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger, use_default_sanitize_keys=False))
 
     client.get("/api/test", headers={"Authorization": "Bearer visible"})
@@ -279,9 +281,9 @@ def test_default_masking_can_be_disabled(
     assert_that(recorded_log.request).reveals("Bearer visible")
 
 
-def test_logs_response_status(recorded_log: RecordedLog, httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
+def test_logs_response_status(recorded_log: RecordedLog, httpx2_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
     """Include the status code and reason phrase in the response log."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.get("/api/test")
@@ -290,10 +292,10 @@ def test_logs_response_status(recorded_log: RecordedLog, httpx_mock: HTTPXMock, 
 
 
 def test_logs_error_response_status(
-    recorded_log: RecordedLog, httpx_mock: HTTPXMock, new_client: SyncClientFactory
+    recorded_log: RecordedLog, httpx2_mock: HTTPXMock, new_client: SyncClientFactory
 ) -> None:
     """Log error responses the same way as successful responses."""
-    httpx_mock.add_response(status_code=404)
+    httpx2_mock.add_response(status_code=404)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.get("/api/non-existent")
@@ -301,9 +303,11 @@ def test_logs_error_response_status(
     assert_that(recorded_log.response).describes_response(404, "Not Found")
 
 
-def test_logs_response_headers(recorded_log: RecordedLog, httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
+def test_logs_response_headers(
+    recorded_log: RecordedLog, httpx2_mock: HTTPXMock, new_client: SyncClientFactory
+) -> None:
     """Include response headers in the response log."""
-    httpx_mock.add_response(status_code=200, headers={"X-Ratelimit-Remaining": "97"})
+    httpx2_mock.add_response(status_code=200, headers={"X-Ratelimit-Remaining": "97"})
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.get("/api/test")
@@ -312,11 +316,11 @@ def test_logs_response_headers(recorded_log: RecordedLog, httpx_mock: HTTPXMock,
 
 
 def test_logs_json_response_body(
-    recorded_log: RecordedLog, httpx_mock: HTTPXMock, new_client: SyncClientFactory
+    recorded_log: RecordedLog, httpx2_mock: HTTPXMock, new_client: SyncClientFactory
 ) -> None:
     """Log JSON response bodies."""
     payload: dict[str, str] = {"status": "success"}
-    httpx_mock.add_response(status_code=200, json=payload)
+    httpx2_mock.add_response(status_code=200, json=payload)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.get("/api/test")
@@ -325,11 +329,11 @@ def test_logs_json_response_body(
 
 
 def test_logs_error_response_body(
-    recorded_log: RecordedLog, httpx_mock: HTTPXMock, new_client: SyncClientFactory
+    recorded_log: RecordedLog, httpx2_mock: HTTPXMock, new_client: SyncClientFactory
 ) -> None:
     """Log error response bodies."""
     payload: dict[str, str] = {"message": "Not found"}
-    httpx_mock.add_response(status_code=404, json=payload)
+    httpx2_mock.add_response(status_code=404, json=payload)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.get("/api/non-existent")
@@ -339,7 +343,7 @@ def test_logs_error_response_body(
 
 def test_logs_plain_text_response_body(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Log a response body with Content-Type: text/plain.
@@ -347,7 +351,7 @@ def test_logs_plain_text_response_body(
     Regression: the condition checked the reversed MIME type "plain/text",
     so text bodies were never logged.
     """
-    httpx_mock.add_response(status_code=200, headers={"Content-Type": "text/plain"}, content=b"Hello, world!")
+    httpx2_mock.add_response(status_code=200, headers={"Content-Type": "text/plain"}, content=b"Hello, world!")
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.get("/api/text")
@@ -357,11 +361,11 @@ def test_logs_plain_text_response_body(
 
 def test_decodes_body_with_declared_charset(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Decode the body using the Content-Type encoding rather than always using utf-8."""
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         status_code=200,
         headers={"Content-Type": "text/plain; charset=iso-8859-1"},
         content="café".encode("iso-8859-1"),
@@ -375,7 +379,7 @@ def test_decodes_body_with_declared_charset(
 
 def test_decodes_body_with_charset_among_other_parameters(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Select the encoding by parameter name rather than taking everything after charset=.
@@ -383,7 +387,7 @@ def test_decodes_body_with_charset_among_other_parameters(
     Regression: a Content-Type with multiple parameters was interpreted as having the encoding
     "iso-8859-1; format=flowed", causing the body to be logged as <Error parse: LookupError>.
     """
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         status_code=200,
         headers={"Content-Type": "text/plain; charset=iso-8859-1; format=flowed"},
         content="café".encode("iso-8859-1"),
@@ -397,11 +401,11 @@ def test_decodes_body_with_charset_among_other_parameters(
 
 def test_falls_back_to_utf8_for_unknown_charset(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """An unknown encoding must not hide the body."""
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         status_code=200,
         headers={"Content-Type": "text/plain; charset=totally-unknown"},
         content="привет".encode(),
@@ -415,11 +419,11 @@ def test_falls_back_to_utf8_for_unknown_charset(
 
 def test_marks_unsupported_content_type(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Explicitly mark unsupported body types as not logged."""
-    httpx_mock.add_response(status_code=200, headers={"Content-Type": "application/xml"}, content=b"<a/>")
+    httpx2_mock.add_response(status_code=200, headers={"Content-Type": "application/xml"}, content=b"<a/>")
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.get("/api/test")
@@ -429,11 +433,11 @@ def test_marks_unsupported_content_type(
 
 def test_marks_undecodable_octet_stream_body(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Log the size of a binary body instead of its contents."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.post("/binary", content=b"\xff\xfe\x00\x01", headers={"Content-Type": "application/octet-stream"})
@@ -443,11 +447,11 @@ def test_marks_undecodable_octet_stream_body(
 
 def test_omits_body_when_request_has_no_content_type(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """A request without a body has no Body line in the log."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.get("/api/test")
@@ -459,7 +463,7 @@ def test_omits_body_when_request_has_no_content_type(
 def test_never_logs_body_longer_than_limit(
     limit: int,
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Truncation never logs a body longer than the limit.
@@ -467,7 +471,7 @@ def test_never_logs_body_longer_than_limit(
     Regression: with a limit below five characters, truncation produced a string
     longer than the original and duplicated its contents.
     """
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     configure_logging(options=LoggingConfig(octet_stream_log_maxlength=limit))
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
@@ -478,12 +482,12 @@ def test_never_logs_body_longer_than_limit(
 
 def test_keeps_head_and_tail_of_trimmed_body(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """A truncated body retains the beginning and end of its contents."""
     payload = "x" * DEFAULT_OCTET_STREAM_LOG_MAXLENGTH + "y" * DEFAULT_OCTET_STREAM_LOG_MAXLENGTH
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     client.post("/binary", content=payload.encode(), headers={"Content-Type": "application/octet-stream"})
@@ -493,12 +497,12 @@ def test_keeps_head_and_tail_of_trimmed_body(
 
 def test_logs_whole_body_without_limit(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Log the whole body when no limit is set."""
     payload = "payload-that-is-never-trimmed"
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     configure_logging(options=LoggingConfig(octet_stream_log_maxlength=None))
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
@@ -509,11 +513,11 @@ def test_logs_whole_body_without_limit(
 
 def test_formats_request_body_with_indent(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Apply the configured indentation to the request body."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger, json_indent=4, use_line_breaks=True))
 
     client.post("/api/test", json={"request": "data"})
@@ -523,12 +527,12 @@ def test_formats_request_body_with_indent(
 
 def test_formats_response_body_with_indent(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Apply the configured indentation to the response body."""
     payload: dict[str, dict[str, str]] = {"nested": {"deep": "value"}}
-    httpx_mock.add_response(status_code=200, json=payload)
+    httpx2_mock.add_response(status_code=200, json=payload)
     client = new_client("https://example.com", with_logger(recorded_log.logger, json_indent=2, use_line_breaks=True))
 
     client.get("/api/test")
@@ -538,11 +542,11 @@ def test_formats_response_body_with_indent(
 
 def test_logs_at_level_given_to_logger_option(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Use the log level from the client option."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_logger(recorded_log.logger, log_level=logging.WARNING))
 
     client.get("/api/test")
@@ -552,11 +556,11 @@ def test_logs_at_level_given_to_logger_option(
 
 def test_logs_request_at_globally_configured_level(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Log requests at the global level when the option has no level."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     configure_logging(options=LoggingConfig(log_level=logging.DEBUG))
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
@@ -567,11 +571,11 @@ def test_logs_request_at_globally_configured_level(
 
 def test_logs_response_at_globally_configured_level(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Log responses at the global level when the option has no level."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     configure_logging(options=LoggingConfig(log_level=logging.DEBUG))
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
@@ -582,11 +586,11 @@ def test_logs_response_at_globally_configured_level(
 
 def test_applies_globally_configured_indent(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Apply indentation configured globally as well as through client options."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     configure_logging(options=LoggingConfig(json_indent=4, use_line_breaks=True))
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
@@ -596,10 +600,10 @@ def test_applies_globally_configured_indent(
 
 
 def test_reports_parse_error_kind(
-    recorded_log: RecordedLog, httpx_mock: HTTPXMock, new_client: SyncClientFactory
+    recorded_log: RecordedLog, httpx2_mock: HTTPXMock, new_client: SyncClientFactory
 ) -> None:
     """Mark an unparsed body with the parsing error type."""
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         status_code=200,
         headers={"Content-Type": "application/json"},
         content=b'{"token": "SECRET-VALUE"',
@@ -613,11 +617,11 @@ def test_reports_parse_error_kind(
 
 def test_parse_error_does_not_leak_content(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Parsing error messages do not expose body contents in logs."""
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         status_code=200,
         headers={"Content-Type": "application/json"},
         content=b'{"token": "SECRET-VALUE"',
@@ -631,7 +635,7 @@ def test_parse_error_does_not_leak_content(
 
 def test_does_not_read_streamed_send(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """The logger does not consume send(stream=True).
@@ -639,7 +643,7 @@ def test_does_not_read_streamed_send(
     Regression: the is_streaming marker was only set in stream_request,
     so the logger consumed the whole stream before returning it to the caller.
     """
-    httpx_mock.add_response(status_code=200, headers={"Content-Type": "text/plain"}, content=b"x" * 64)
+    httpx2_mock.add_response(status_code=200, headers={"Content-Type": "text/plain"}, content=b"x" * 64)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
     request = client.client.build_request("GET", "/api/data")
 
@@ -651,12 +655,12 @@ def test_does_not_read_streamed_send(
 
 def test_does_not_read_stream_request(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """The logger does not consume a stream_request streaming response either."""
     payload: dict[str, str] = {"data": "value"}
-    httpx_mock.add_response(status_code=200, json=payload)
+    httpx2_mock.add_response(status_code=200, json=payload)
     client = new_client("https://example.com", with_logger(recorded_log.logger))
 
     with client.stream("GET", "/stream"):
@@ -667,11 +671,11 @@ def test_does_not_read_stream_request(
 
 def test_logs_stream_request_method_and_url(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """Log streaming requests the same way as regular requests."""
-    httpx_mock.add_response(status_code=200, content=b"chunk")
+    httpx2_mock.add_response(status_code=200, content=b"chunk")
     client = new_client("https://feed.example.com", with_logger(recorded_log.logger))
 
     with client.stream("GET", "/events") as response:
@@ -682,11 +686,11 @@ def test_logs_stream_request_method_and_url(
 
 async def test_logs_async_request_method_and_url(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
 ) -> None:
     """Log asynchronous client requests the same way as synchronous requests."""
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_async_client("https://async.example.com", with_logger(recorded_log.logger))
 
     await client.get("/api/test")
@@ -696,16 +700,16 @@ async def test_logs_async_request_method_and_url(
 
 async def test_logs_async_json_response_body(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
 ) -> None:
     """Log the asynchronous client JSON response body.
 
-    Regression: the response hook runs before httpx finishes reading the response,
+    Regression: the response hook runs before httpx2 finishes reading the response,
     so synchronous read() on an asynchronous stream produced <Error parse: ...>.
     """
     payload: dict[str, str] = {"status": "ok"}
-    httpx_mock.add_response(status_code=200, json=payload)
+    httpx2_mock.add_response(status_code=200, json=payload)
     client = new_async_client("https://example.com", with_logger(recorded_log.logger))
 
     await client.get("/api/test")
@@ -715,11 +719,11 @@ async def test_logs_async_json_response_body(
 
 async def test_logs_async_text_response_body(
     recorded_log: RecordedLog,
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
 ) -> None:
     """Log the asynchronous client text response body."""
-    httpx_mock.add_response(status_code=200, headers={"Content-Type": "text/plain"}, content=b"hello")
+    httpx2_mock.add_response(status_code=200, headers={"Content-Type": "text/plain"}, content=b"hello")
     client = new_async_client("https://example.com", with_logger(recorded_log.logger))
 
     await client.get("/api/test")

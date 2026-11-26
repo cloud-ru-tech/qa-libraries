@@ -2,13 +2,13 @@ import asyncio
 import threading
 from collections.abc import AsyncGenerator, Generator
 
-import httpx
+import httpx2
 
 from .iam_client import IAM_AsyncClientT, IAM_SyncClientT
 from .store import AsyncAuthStore, AuthStore, InMemoryAsyncAuthStore, InMemoryAuthStore, Token
 
 
-class IamAuth(httpx.Auth):
+class IamAuth(httpx2.Auth):
     """Obtain a token from IAM and add it to HTTP requests."""
 
     def __init__(
@@ -33,7 +33,7 @@ class IamAuth(httpx.Auth):
         self._store = store if store is not None else InMemoryAuthStore()
         self._lock = threading.Lock()
 
-    def sync_auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response]:
+    def sync_auth_flow(self, request: httpx2.Request) -> Generator[httpx2.Request, httpx2.Response]:
         """Add an access token to the request and retry with a new token if the service rejects it.
 
         :param request: Outgoing request
@@ -46,7 +46,7 @@ class IamAuth(httpx.Auth):
         request.headers["Authorization"] = f"Bearer {token.access_token}"
         response = yield request
 
-        if response.status_code == httpx.codes.UNAUTHORIZED:
+        if response.status_code == httpx2.codes.UNAUTHORIZED:
             token = self._refresh_token(token)
             request.headers["Authorization"] = f"Bearer {token.access_token}"
             yield request
@@ -73,7 +73,7 @@ class IamAuth(httpx.Auth):
         return token
 
 
-class IamAsyncAuth(httpx.Auth):
+class IamAsyncAuth(httpx2.Auth):
     """Obtain a token from IAM asynchronously and add it to HTTP requests."""
 
     def __init__(
@@ -98,7 +98,7 @@ class IamAsyncAuth(httpx.Auth):
         self._store = store if store is not None else InMemoryAsyncAuthStore()
         self._lock = asyncio.Lock()
 
-    async def async_auth_flow(self, request: httpx.Request) -> AsyncGenerator[httpx.Request, httpx.Response]:
+    async def async_auth_flow(self, request: httpx2.Request) -> AsyncGenerator[httpx2.Request, httpx2.Response]:
         """Add an access token to the request and retry with a new token if the service rejects it.
 
         :param request: Outgoing request
@@ -111,7 +111,7 @@ class IamAsyncAuth(httpx.Auth):
         request.headers["Authorization"] = f"Bearer {token.access_token}"
         response = yield request
 
-        if response.status_code == httpx.codes.UNAUTHORIZED:
+        if response.status_code == httpx2.codes.UNAUTHORIZED:
             token = await self._refresh_token(token)
             request.headers["Authorization"] = f"Bearer {token.access_token}"
             yield request

@@ -1,12 +1,12 @@
 from collections.abc import Iterator
 
-import httpx
+import httpx2
 import pytest
 from assertpy import assert_that
 from http_client import AsyncHttpClient, HttpClient
 from http_client_allure import wrap_requests_in_steps
-from httpx import codes
-from pytest_httpx import HTTPXMock
+from httpx2 import codes
+from pytest_httpx2 import HTTPXMock
 
 from .allure_recorder import Report
 from .assertions import assert_attachment, assert_report
@@ -21,7 +21,7 @@ def failing_body() -> Iterator[bytes]:
     raise ValueError(BODY_FAILURE)
 
 
-def build_broken_json_request(client: AsyncHttpClient | HttpClient) -> httpx.Request:
+def build_broken_json_request(client: AsyncHttpClient | HttpClient) -> httpx2.Request:
     return client.client.build_request("POST", "/orders", content=BROKEN_JSON, headers=JSON_HEADERS)
 
 
@@ -31,8 +31,8 @@ def send_failing_body(client: HttpClient) -> None:
 
 
 @pytest.mark.usefixtures("report")
-def test_returns_response_when_curl_serialization_fails(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(status_code=codes.CREATED)
+def test_returns_response_when_curl_serialization_fails(httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(status_code=codes.CREATED)
 
     with HttpClient("https://legacy.test", wrap_requests_in_steps(serialize_request_to_curl=True)) as client:
         response = client.send(build_broken_json_request(client))
@@ -42,8 +42,8 @@ def test_returns_response_when_curl_serialization_fails(httpx_mock: HTTPXMock) -
     )
 
 
-def test_attaches_error_note_when_curl_serialization_fails(report: Report, httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(status_code=codes.CREATED)
+def test_attaches_error_note_when_curl_serialization_fails(report: Report, httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(status_code=codes.CREATED)
 
     with HttpClient("https://legacy.test", wrap_requests_in_steps(serialize_request_to_curl=True)) as client:
         client.send(build_broken_json_request(client))
@@ -52,8 +52,8 @@ def test_attaches_error_note_when_curl_serialization_fails(report: Report, httpx
 
 
 @pytest.mark.usefixtures("report")
-async def test_returns_response_when_async_curl_serialization_fails(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(status_code=codes.CREATED)
+async def test_returns_response_when_async_curl_serialization_fails(httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(status_code=codes.CREATED)
 
     async with AsyncHttpClient("https://legacy.test", wrap_requests_in_steps(serialize_request_to_curl=True)) as client:
         response = await client.send(build_broken_json_request(client))
@@ -63,8 +63,8 @@ async def test_returns_response_when_async_curl_serialization_fails(httpx_mock: 
     )
 
 
-def test_creates_step_when_request_body_generator_fails(report: Report, httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(status_code=codes.OK, is_optional=True)
+def test_creates_step_when_request_body_generator_fails(report: Report, httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(status_code=codes.OK, is_optional=True)
 
     with (
         HttpClient("https://uploads.test", wrap_requests_in_steps()) as client,
@@ -75,8 +75,8 @@ def test_creates_step_when_request_body_generator_fails(report: Report, httpx_mo
     assert_report(report).has_single_step("[POST] /parts")
 
 
-def test_marks_step_failed_when_request_body_generator_fails(report: Report, httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(status_code=codes.OK, is_optional=True)
+def test_marks_step_failed_when_request_body_generator_fails(report: Report, httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(status_code=codes.OK, is_optional=True)
 
     with (
         HttpClient("https://uploads.test", wrap_requests_in_steps()) as client,
@@ -88,8 +88,8 @@ def test_marks_step_failed_when_request_body_generator_fails(report: Report, htt
 
 
 @pytest.mark.usefixtures("report")
-def test_sends_request_when_sanitize_key_is_malformed(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(status_code=codes.OK)
+def test_sends_request_when_sanitize_key_is_malformed(httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(status_code=codes.OK)
 
     with HttpClient("https://legacy.test", wrap_requests_in_steps(sanitize_keys=["items["])) as client:
         response = client.get("/orders", params={"page": 1})

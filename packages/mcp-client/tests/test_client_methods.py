@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, cast
 
 import pytest
 from assertpy import assert_that
-from mcp import McpError
+from mcp import MCPError
 from mcp_client.client import BaseAsyncMCPClient
 from mcp_client.connection_handlers import stdio_connection_handler
 from mcp_client.exceptions import SessionNotInititalizedError, StreamInitFailureError
@@ -59,7 +59,7 @@ async def test_returns_arithmetic_result(connection_handler: ConnectionHandlerFa
 
 async def test_limits_slow_tool_reads(connection_handler: ConnectionHandlerFactory) -> None:
     async with BaseAsyncMCPClient(connection_handler) as client:
-        with pytest.raises(McpError, match="Timed out"):
+        with pytest.raises(cast("type[Exception]", MCPError), match="timed out"):
             await client.call_tool("slow_tool", {"duration_seconds": 0.4}, read_timeout_seconds=0.05)
 
 
@@ -93,7 +93,7 @@ async def test_lists_no_tools_on_empty_server() -> None:
 
 async def test_reports_server_termination(mock_server_path: str) -> None:
     async with BaseAsyncMCPClient(stdio_connection_handler(sys.executable, [mock_server_path])) as client:
-        with pytest.raises(McpError, match="Connection closed"):
+        with pytest.raises(cast("type[Exception]", MCPError), match="Connection closed"):
             await client.call_tool("crash_server")
 
 

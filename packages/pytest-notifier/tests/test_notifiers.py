@@ -1,4 +1,4 @@
-import httpx
+import httpx2
 import pytest
 from assertpy import assert_that
 from pydantic import AnyUrl, SecretStr
@@ -11,19 +11,19 @@ from pytest_notifier.settings import Destinations, MattermostSettings, Settings,
 
 
 @pytest.fixture()
-def requests(monkeypatch: pytest.MonkeyPatch) -> list[httpx.Request]:
-    captured: list[httpx.Request] = []
+def requests(monkeypatch: pytest.MonkeyPatch) -> list[httpx2.Request]:
+    captured: list[httpx2.Request] = []
 
-    def capture(request: httpx.Request) -> httpx.Response:
+    def capture(request: httpx2.Request) -> httpx2.Response:
         captured.append(request)
-        return httpx.Response(200)
+        return httpx2.Response(200)
 
-    client_class = httpx.Client
+    client_class = httpx2.Client
 
-    def client(*, timeout: float) -> httpx.Client:
-        return client_class(timeout=timeout, transport=httpx.MockTransport(capture))
+    def client(*, timeout: float) -> httpx2.Client:
+        return client_class(timeout=timeout, transport=httpx2.MockTransport(capture))
 
-    monkeypatch.setattr(httpx, "Client", client)
+    monkeypatch.setattr(httpx2, "Client", client)
     return captured
 
 
@@ -51,7 +51,7 @@ def test_skips_remote_channels_without_credentials() -> None:
     assert_that(get_active_notifiers(settings)).is_empty()
 
 
-def test_mattermost_posts_failure_details(requests: list[httpx.Request], failure_results: Results) -> None:
+def test_mattermost_posts_failure_details(requests: list[httpx2.Request], failure_results: Results) -> None:
     settings = Settings(mattermost=MattermostSettings(webhook_url=AnyUrl("https://notifications.example/hook")))
 
     MattermostNotifier(settings).send(failure_results)
@@ -59,7 +59,7 @@ def test_mattermost_posts_failure_details(requests: list[httpx.Request], failure
     assert_that(requests[0].content.decode()).contains("test_cart", "stock exhausted", "trace details")
 
 
-def test_mattermost_omits_disabled_traceback(requests: list[httpx.Request], failure_results: Results) -> None:
+def test_mattermost_omits_disabled_traceback(requests: list[httpx2.Request], failure_results: Results) -> None:
     settings = Settings(
         mattermost=MattermostSettings(webhook_url=AnyUrl("https://hooks.example/results"), send_traceback=False)
     )
@@ -69,7 +69,7 @@ def test_mattermost_omits_disabled_traceback(requests: list[httpx.Request], fail
     assert_that(requests[0].content.decode()).does_not_contain("trace details")
 
 
-def test_telegram_posts_to_configured_chat(requests: list[httpx.Request], failure_results: Results) -> None:
+def test_telegram_posts_to_configured_chat(requests: list[httpx2.Request], failure_results: Results) -> None:
     settings = Settings(telegram=TelegramSettings(bot_token=SecretStr("fake-token"), chat_id="case-chat"))
 
     TelegramNotifier(settings).send(failure_results)
@@ -77,7 +77,7 @@ def test_telegram_posts_to_configured_chat(requests: list[httpx.Request], failur
     assert_that(requests[0].content.decode()).contains("case-chat", "stock exhausted", "trace details")
 
 
-def test_telegram_omits_disabled_traceback(requests: list[httpx.Request], failure_results: Results) -> None:
+def test_telegram_omits_disabled_traceback(requests: list[httpx2.Request], failure_results: Results) -> None:
     settings = Settings(
         telegram=TelegramSettings(bot_token=SecretStr("fake-other"), chat_id="other-chat", send_traceback=False)
     )

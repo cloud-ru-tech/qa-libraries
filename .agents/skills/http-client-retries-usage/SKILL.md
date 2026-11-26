@@ -3,7 +3,7 @@ name: http-client-retries-usage
 description: Retrying HTTP requests in projects built on the http_client library — constructor options that retry on connection errors or on a condition over the response, a global tenacity-based policy, Retry-After support, and standalone retry decorators. Use when a client needs to survive network flapping, 429/503 throttling, or flaky upstreams, and when tuning attempt budgets, backoff, retry logging, or diagnosing why a request was not retried. Key names are with_retries_failed_requests, with_retries_if, configure, retry_if_failed, retry_if, log_retry_error_hook.
 license: Apache-2.0
 metadata:
-  library-version: "1.0.0"
+  library-version: "2.0.0"
   source: packages/http-client-retries
 ---
 
@@ -64,8 +64,8 @@ Both options cover `send` **and** `stream_request`, sync and async. Nothing extr
 
 ### Connection errors
 
-`with_retries_failed_requests()` retries `httpx.RequestError` (timeouts, connection resets, read
-errors), `httpcore.NetworkError`, and `httpcore.PoolTimeout`.
+`with_retries_failed_requests()` retries `httpx2.RequestError` (timeouts, connection resets, read
+errors), `httpcore2.NetworkError`, and `httpcore2.PoolTimeout`.
 
 Four `RequestError` subclasses are excluded, because a retry would produce the identical outcome
 while burning the whole budget: `TooManyRedirects`, `UnsupportedProtocol`, `DecodingError`,
@@ -79,19 +79,19 @@ server implements that semantics.
 ### A condition over the response
 
 ```python
-import httpx
+import httpx2
 from http_client import HttpClient
 from http_client_retries import options
 
 
-def is_throttled(response: httpx.Response) -> bool:
+def is_throttled(response: httpx2.Response) -> bool:
     return response.status_code == 429
 
 
 client = HttpClient("https://api.example.com", options.with_retries_if(is_throttled))
 ```
 
-The condition is any `Callable[[httpx.Response], bool]`. It is called once per attempt; an exception
+The condition is any `Callable[[httpx2.Response], bool]`. It is called once per attempt; an exception
 raised inside it closes the response and propagates.
 
 ### Combining them
@@ -112,7 +112,7 @@ how network failures and 5xx responses interleave. Option order does not matter.
 
 ## Replayable bodies
 
-A retry re-sends the same `httpx.Request` object, so its body must be readable more than once.
+A retry re-sends the same `httpx2.Request` object, so its body must be readable more than once.
 
 | Body | Retried |
 |---|---|
@@ -184,7 +184,7 @@ Full parameter list, defaults, and `Retry-After` handling: `references/parameter
 | `reraise` | What is raised |
 |---|---|
 | `False` (default) | `tenacity.RetryError`; the original error is at `err.last_attempt.exception()` |
-| `True` | the original exception, e.g. `httpx.ConnectError` |
+| `True` | the original exception, e.g. `httpx2.ConnectError` |
 
 `reraise` applies only to retries driven by exceptions. When the budget is exhausted on a response
 condition there is nothing to re-raise: the result is always `RetryError`, and the last response is
@@ -219,24 +219,24 @@ client = HttpClient(
 )
 ```
 
-The rule: **the identifier belongs to the request object.** One caveat about custom `httpx.Auth`
+The rule: **the identifier belongs to the request object.** One caveat about custom `httpx2.Auth`
 schemes is in `references/pitfalls.md`.
 
 ## Retrying arbitrary functions
 
 ```python
-import httpx
+import httpx2
 from http_client_retries import retry_if, retry_if_failed
 
 
 @retry_if_failed
 def fetch_status():
-    return httpx.get("https://api.example.com/health")
+    return httpx2.get("https://api.example.com/health")
 
 
 @retry_if(lambda response: response.status_code == 503)
 def fetch_report():
-    return httpx.get("https://api.example.com/report")
+    return httpx2.get("https://api.example.com/report")
 ```
 
 Both detect coroutine functions automatically and work on `async def` too. They read the global

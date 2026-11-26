@@ -154,7 +154,7 @@ iam_client = IAM_HttpClient(
 
 HTTP-клиенты IAM, хранилище токенов и модель токена берутся из библиотеки [`cloudru-qa-http-client-auth`](https://github.com/cloud-ru-tech/qa-libraries/blob/master/packages/http-client-auth/README.ru.md) и реэкспортируются отсюда, чтобы не приходилось держать в голове, что откуда импортируется.
 
-Там же есть `IAM_Auth` и `IAM_AsyncAuth` — это авторизация для HTTP-клиента (`httpx.Auth`), другой контракт. Для gRPC-клиента нужны `IAM_GrpcAuth` и `IAM_GrpcAsyncAuth` из этой библиотеки.
+Там же есть `IAM_Auth` и `IAM_AsyncAuth` — это авторизация для HTTP-клиента (`httpx2.Auth`), другой контракт. Для gRPC-клиента нужны `IAM_GrpcAuth` и `IAM_GrpcAsyncAuth` из этой библиотеки.
 
 ## Разработка
 
@@ -172,7 +172,7 @@ make check                         # форматирование, ruff, mypy и
 
 Тестам нужен запущенный Docker: контейнер с сервисом [grpcbin](https://grpcb.in/) поднимается
 автоматически, а тестовый API генерируется из `proto/` перед запуском. Запросы в IAM в тестах
-перехватываются через `pytest-httpx`.
+перехватываются через `httpx2-pytest`.
 
 Тесты прогоняются на Python 3.13 и 3.14. Окружение для другой версии создаётся отдельно:
 `make sync test-grpc-client-auth PYTHON_VERSION=3.14`.

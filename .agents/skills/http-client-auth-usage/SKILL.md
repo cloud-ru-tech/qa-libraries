@@ -1,22 +1,22 @@
 ---
 name: http-client-auth-usage
-description: "Authorizing HTTP requests with IAM-issued bearer tokens through the http_client_auth library — token issuing by key id/secret, caching with expiry, refresh on 401, custom token stores, and masking IAM secrets in logs. Use when a service expects an `Authorization: Bearer <token>` issued by IAM, when wiring authorization into an httpx or http_client client, or when implementing a token store shared between processes. Key names are IAM_Auth, IAM_AsyncAuth, IAM_HttpClient, IAM_OpenID_HttpClient, AuthStore, Token, IAM_SANITIZE_KEYS."
+description: "Authorizing HTTP requests with IAM-issued bearer tokens through the http_client_auth library — token issuing by key id/secret, caching with expiry, refresh on 401, custom token stores, and masking IAM secrets in logs. Use when a service expects an `Authorization: Bearer <token>` issued by IAM, when wiring authorization into an httpx2 or http_client client, or when implementing a token store shared between processes. Key names are IAM_Auth, IAM_AsyncAuth, IAM_HttpClient, IAM_OpenID_HttpClient, AuthStore, Token, IAM_SANITIZE_KEYS."
 license: Apache-2.0
 metadata:
-  library-version: "1.0.0"
+  library-version: "2.0.0"
   source: packages/http-client-auth
 ---
 
 # IAM authorization for HTTP clients
 
-`http_client_auth` provides an `httpx.Auth` implementation that puts an IAM-issued access token into every outgoing request and keeps that token fresh. Nothing else — no client, no transport, no retry policy.
+`http_client_auth` provides an `httpx2.Auth` implementation that puts an IAM-issued access token into every outgoing request and keeps that token fresh. Nothing else — no client, no transport, no retry policy.
 
 You always assemble two objects:
 
 1. **An IAM client** — decides *which* IAM endpoint issues the token: `IAM_HttpClient` / `IAM_OpenID_HttpClient` and their async twins. These are `http_client` subclasses, so every `options.with_*` applies to them.
 2. **An auth object** — `IAM_Auth` or `IAM_AsyncAuth`. Takes the key pair and the IAM client, and is passed to whatever sends the requests.
 
-The auth object is a plain `httpx.Auth`, so it works with `httpx.Client`, `httpx.AsyncClient`, and any `http_client` client via `options.with_auth(...)`.
+The auth object is a plain `httpx2.Auth`, so it works with `httpx2.Client`, `httpx2.AsyncClient`, and any `http_client` client via `options.with_auth(...)`.
 
 ## Hard rules
 
@@ -40,12 +40,12 @@ with IAM_HttpClient("https://iam.example.com") as iam_client:
         response = client.get("/orders")
 ```
 
-With bare `httpx` the auth object is passed the same way:
+With bare `httpx2` the auth object is passed the same way:
 
 ```python
-import httpx
+import httpx2
 
-response = httpx.get("https://api.example.com/orders", auth=auth)
+response = httpx2.get("https://api.example.com/orders", auth=auth)
 ```
 
 ## Canonical setup (async)
@@ -188,27 +188,27 @@ except IAM_Error as e:
 
 ## Testing clients that use the auth
 
-The auth makes a real HTTP call, so a test must mock **two** routes: the IAM token endpoint and the endpoint under test. With `pytest-httpx`:
+The auth makes a real HTTP call, so a test must mock **two** routes: the IAM token endpoint and the endpoint under test. With `httpx2-pytest`:
 
 ```python
 from http_client_auth.iam_client import PUBLIC_API_AUTHORIZE_ROUTE
-from pytest_httpx import HTTPXMock
+from pytest_httpx2 import HTTPXMock
 
 
-def test_sends_authorized_request(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(
+def test_sends_authorized_request(httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(
         url=f"https://iam.example.com{PUBLIC_API_AUTHORIZE_ROUTE}",
         method="POST",
         json={"access_token": "test-token", "expires_in": 3600},
     )
-    httpx_mock.add_response(url="https://api.example.com/orders", method="GET", json=[])
+    httpx2_mock.add_response(url="https://api.example.com/orders", method="GET", json=[])
 
     with IAM_HttpClient("https://iam.example.com") as iam_client:
         auth = IAM_Auth("key", "secret", iam_client)
         with HttpClient("https://api.example.com", options.with_auth(auth)) as client:
             client.get("/orders")
 
-    orders_request = httpx_mock.get_requests(url="https://api.example.com/orders")[0]
+    orders_request = httpx2_mock.get_requests(url="https://api.example.com/orders")[0]
     assert orders_request.headers["Authorization"] == "Bearer test-token"
 ```
 
@@ -219,7 +219,7 @@ store = InMemoryAuthStore()
 store.set("key", Token("stale-token", datetime.now(UTC) - timedelta(seconds=1)))
 ```
 
-`pytest-httpx` does not reproduce every transport behaviour — notably it reads request bodies itself, so a test built on it cannot prove that streaming bodies survive a 401 retry. Drive `sync_auth_flow` / `async_auth_flow` directly when that is what you are checking.
+`httpx2-pytest` does not reproduce every transport behaviour — notably it reads request bodies itself, so a test built on it cannot prove that streaming bodies survive a 401 retry. Drive `sync_auth_flow` / `async_auth_flow` directly when that is what you are checking.
 
 ## Known pitfalls
 

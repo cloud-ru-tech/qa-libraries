@@ -27,7 +27,7 @@ def test_context_manager_closes_transport() -> None:
 
 
 def test_reopening_closed_client_is_rejected() -> None:
-    """Reentering a closed client is forbidden, as in httpx."""
+    """Reentering a closed client is forbidden, as in httpx2."""
     client = HttpClient("https://metrics.example.com")
     with client:
         pass
@@ -60,7 +60,7 @@ async def test_async_context_manager_closes_transport() -> None:
 
 
 async def test_reopening_closed_async_client_is_rejected() -> None:
-    """Reentering a closed asynchronous client is forbidden, as in httpx."""
+    """Reentering a closed asynchronous client is forbidden, as in httpx2."""
     client = AsyncHttpClient("https://backup.example.com")
     async with client:
         pass

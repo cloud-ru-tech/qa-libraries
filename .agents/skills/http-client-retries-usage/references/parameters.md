@@ -6,7 +6,7 @@
 pip install cloudru-qa-http-client-retries
 ```
 
-Requires Python 3.13+. `cloudru-qa-http-client`, `httpx` and `tenacity` are installed as dependencies.
+Requires Python 3.13+. `cloudru-qa-http-client`, `httpx2` and `tenacity` are installed as dependencies.
 
 ## The policy parameters
 
@@ -116,7 +116,7 @@ Public helpers:
 | `async_retry_stream_if_failed`, `async_retry_stream_if` | decorators | async variants |
 | `log_retry_error_hook(logger)` | hook factory | logs method, URL, `trace_id`, and the error |
 | `parse_retry_after`, `wait_retry_after` | helpers | `Retry-After` handling |
-| `RETRYABLE_EXCEPTIONS` | tuple | `(httpx.RequestError, httpcore.NetworkError, httpcore.PoolTimeout)` |
+| `RETRYABLE_EXCEPTIONS` | tuple | `(httpx2.RequestError, httpcore2.NetworkError, httpcore2.PoolTimeout)` |
 | `RetryPolicy` | dataclass | the per-client policy object |
 
 Submodules `options`, `decorators`, `policy`, `retry_after`, `sleep_hooks` are exported too, so both
@@ -146,7 +146,7 @@ Failed http request [POST] https://api.example.com/orders with id=<trace_id>: Co
 
 `id` is `request.extensions["trace_id"]`, the identifier `http_client`'s logging option uses to link
 a request to its response, or `<none>` when logging is not enabled. When the retried callable had no
-`httpx.Request` among its arguments the record degrades to `Failed http request: <error>`.
+`httpx2.Request` among its arguments the record degrades to `Failed http request: <error>`.
 
 For a rejected response (a condition asked for the retry) the error reads
 `ServiceUnavailable: status code = <code>` — there is no exception in that case.

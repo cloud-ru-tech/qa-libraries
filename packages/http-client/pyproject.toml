@@ -1,6 +1,6 @@
 [project]
 name = "cloudru-qa-http-client"
-version = "1.0.0"
+version = "2.0.0"
 description = "Базовый HTTP-клиент"
 authors = [
     { name = "Алексей Кирютин", email = "ayukiryutin@cloud.ru" },
@@ -13,7 +13,7 @@ license-files = [
 requires-python = ">=3.13"
 keywords = [
     "http",
-    "httpx",
+    "httpx2",
     "client",
     "async",
 ]
@@ -30,17 +30,15 @@ classifiers = [
 ]
 dependencies = [
     "glom>=25.12.0",
-    "httpx>=0.28.1,<0.29",
+    "httpx2>=2.16.2,<3",
 ]
+
+[project.optional-dependencies]
+ws = ["httpx2[ws]>=2.16.2,<3", "wsproto>=1.2,<2"]
 
 [project.urls]
 Repository = "https://github.com/cloud-ru-tech/qa-libraries"
 Issues = "https://github.com/cloud-ru-tech/qa-libraries/issues"
-
-[project.optional-dependencies]
-truststore = [
-    "truststore>=0.10.4,<0.11",
-]
 
 [build-system]
 requires = [

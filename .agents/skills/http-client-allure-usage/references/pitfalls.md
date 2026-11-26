@@ -54,7 +54,7 @@ Consequence: a weird attachment is a reporting bug, never evidence that the requ
 
 ## `client.client.send(...)` never reaches the report
 
-The decorators live on `send` and `stream_request` of `http_client`. Calling straight into `httpx` skips them — the request happens and the report stays empty.
+The decorators live on `send` and `stream_request` of `http_client`. Calling straight into `httpx2` skips them — the request happens and the report stays empty.
 
 ## Repeated query keys survive as lists
 
@@ -65,5 +65,5 @@ The decorators live on `send` and `stream_request` of `http_client`. Calling str
 - `StepSettings` is exported from the package but you never build it yourself — the options assemble it from their parameters. It is public only so type annotations can name it.
 - Options register decorators through the public `add_send_decorator` / `add_stream_decorator` methods
   during client construction. Custom options use the same extension points.
-- `reader._is_loaded` checks `hasattr(message, "_content")` — the only way httpx exposes "the body is already in memory". It is a deliberate dependency on a private attribute, not an oversight.
+- `reader._is_loaded` checks `hasattr(message, "_content")` — the only way httpx2 exposes "the body is already in memory". It is a deliberate dependency on a private attribute, not an oversight.
 - `_attach_safely` catches bare `Exception`, and the decorators catch `BaseException`. Both are intentional: the first keeps reporting failures away from the caller, the second makes sure a cancelled or timed-out request still leaves a step behind.

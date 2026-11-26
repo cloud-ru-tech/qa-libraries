@@ -6,7 +6,7 @@ from typing import cast
 from uuid import uuid4
 
 from glom import GlomError
-from httpx import Request, Response
+from httpx2 import Request, Response
 
 from http_client.config import LOGGING_CONFIG as CFG
 
@@ -100,7 +100,7 @@ async def create_response_log_async(
 ) -> str:
     """Build an asynchronous client response log.
 
-    The httpx response hook runs before the client finishes reading the body, so
+    The httpx2 response hook runs before the client finishes reading the body, so
     an asynchronous response still has an asynchronous stream that cannot use synchronous read().
 
     :returns: Response log

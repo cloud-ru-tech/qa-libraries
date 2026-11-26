@@ -6,9 +6,9 @@ from http_client import options
 from http_client_auth import IAM_HttpClient, IAM_OpenID_HttpClient
 from http_client_auth.exceptions import IAM_AuthError, IAM_InvalidJsonResponseError
 from http_client_auth.iam_client import OPEN_ID_AUTHORIZE_ROUTE, PUBLIC_API_AUTHORIZE_ROUTE
-from httpx import codes
+from httpx2 import codes
 from pytest_cases import parametrize_with_cases
-from pytest_httpx import HTTPXMock
+from pytest_httpx2 import HTTPXMock
 
 from . import constants
 from .assertions import assert_that
@@ -20,10 +20,10 @@ class _TypedDecorator(Protocol):
 
 
 @cast("_TypedDecorator", parametrize_with_cases("iam", has_tag="sync"))
-def test_sends_credentials_to_iam(httpx_mock: HTTPXMock, iam: SyncIamCase) -> None:
+def test_sends_credentials_to_iam(httpx2_mock: HTTPXMock, iam: SyncIamCase) -> None:
     """The client sends the key ID and secret to IAM."""
     key_id, key_secret = "orders-key", "orders-secret"
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         url=f"{constants.IAM_URL}{iam.route}",
         method="POST",
         json=iam_auth_response("token-for-orders"),
@@ -32,14 +32,14 @@ def test_sends_credentials_to_iam(httpx_mock: HTTPXMock, iam: SyncIamCase) -> No
     with iam.client_class(constants.IAM_URL) as client:
         client.authorize(key_id, key_secret)
 
-    assert_that(httpx_mock).sent_json_to(iam.route, iam.payload_of(key_id, key_secret))
+    assert_that(httpx2_mock).sent_json_to(iam.route, iam.payload_of(key_id, key_secret))
 
 
 @cast("_TypedDecorator", parametrize_with_cases("iam", has_tag="sync"))
-def test_returns_access_token(httpx_mock: HTTPXMock, iam: SyncIamCase) -> None:
+def test_returns_access_token(httpx2_mock: HTTPXMock, iam: SyncIamCase) -> None:
     """The client returns the access token from the IAM response."""
     access_token = uuid4().hex
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         url=f"{constants.IAM_URL}{iam.route}",
         method="POST",
         json=iam_auth_response(access_token),
@@ -52,10 +52,10 @@ def test_returns_access_token(httpx_mock: HTTPXMock, iam: SyncIamCase) -> None:
 
 
 @cast("_TypedDecorator", parametrize_with_cases("iam", has_tag="sync"))
-def test_returns_token_lifetime(httpx_mock: HTTPXMock, iam: SyncIamCase) -> None:
+def test_returns_token_lifetime(httpx2_mock: HTTPXMock, iam: SyncIamCase) -> None:
     """The client returns the token lifetime from the IAM response."""
     expires_in = 900
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         url=f"{constants.IAM_URL}{iam.route}",
         method="POST",
         json=iam_auth_response("short-lived-token", expires_in),
@@ -67,9 +67,9 @@ def test_returns_token_lifetime(httpx_mock: HTTPXMock, iam: SyncIamCase) -> None
     assert_that(auth_data.expires_in).is_equal_to(expires_in)
 
 
-def test_raises_on_unsuccessful_status(httpx_mock: HTTPXMock) -> None:
+def test_raises_on_unsuccessful_status(httpx2_mock: HTTPXMock) -> None:
     """The client reports an authentication error if IAM returns a status other than 200."""
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         url=f"{constants.IAM_URL}{PUBLIC_API_AUTHORIZE_ROUTE}",
         method="POST",
         status_code=codes.UNAUTHORIZED,
@@ -80,9 +80,9 @@ def test_raises_on_unsuccessful_status(httpx_mock: HTTPXMock) -> None:
         client.authorize("revoked-key", "revoked-secret")
 
 
-def test_raises_on_malformed_body(httpx_mock: HTTPXMock) -> None:
+def test_raises_on_malformed_body(httpx2_mock: HTTPXMock) -> None:
     """The client reports a parsing error if the IAM response is not JSON."""
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         url=f"{constants.IAM_URL}{PUBLIC_API_AUTHORIZE_ROUTE}",
         method="POST",
         status_code=codes.OK,
@@ -93,9 +93,9 @@ def test_raises_on_malformed_body(httpx_mock: HTTPXMock) -> None:
         client.authorize("proxied-key", "proxied-secret")
 
 
-def test_raises_when_access_token_is_missing(httpx_mock: HTTPXMock) -> None:
+def test_raises_when_access_token_is_missing(httpx2_mock: HTTPXMock) -> None:
     """The client reports a parsing error if the IAM response has no access token."""
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         url=f"{constants.IAM_URL}{PUBLIC_API_AUTHORIZE_ROUTE}",
         method="POST",
         status_code=codes.OK,
@@ -106,10 +106,10 @@ def test_raises_when_access_token_is_missing(httpx_mock: HTTPXMock) -> None:
         client.authorize("partial-key", "partial-secret")
 
 
-def test_keeps_token_out_of_parse_error_message(httpx_mock: HTTPXMock) -> None:
+def test_keeps_token_out_of_parse_error_message(httpx2_mock: HTTPXMock) -> None:
     """The parsing error message does not contain the access token from the response body."""
     leaked_token = uuid4().hex
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         url=f"{constants.IAM_URL}{PUBLIC_API_AUTHORIZE_ROUTE}",
         method="POST",
         status_code=codes.OK,
@@ -123,10 +123,10 @@ def test_keeps_token_out_of_parse_error_message(httpx_mock: HTTPXMock) -> None:
 
 
 @cast("_TypedDecorator", parametrize_with_cases("iam", has_tag="async"))
-async def test_async_sends_credentials_to_iam(httpx_mock: HTTPXMock, iam: AsyncIamCase) -> None:
+async def test_async_sends_credentials_to_iam(httpx2_mock: HTTPXMock, iam: AsyncIamCase) -> None:
     """The asynchronous client sends the key ID and secret to IAM."""
     key_id, key_secret = "async-orders-key", "async-orders-secret"
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         url=f"{constants.IAM_URL}{iam.route}",
         method="POST",
         json=iam_auth_response("token-for-async-orders"),
@@ -135,14 +135,14 @@ async def test_async_sends_credentials_to_iam(httpx_mock: HTTPXMock, iam: AsyncI
     async with iam.client_class(constants.IAM_URL) as client:
         await client.authorize(key_id, key_secret)
 
-    assert_that(httpx_mock).sent_json_to(iam.route, iam.payload_of(key_id, key_secret))
+    assert_that(httpx2_mock).sent_json_to(iam.route, iam.payload_of(key_id, key_secret))
 
 
 @cast("_TypedDecorator", parametrize_with_cases("iam", has_tag="async"))
-async def test_async_returns_access_token(httpx_mock: HTTPXMock, iam: AsyncIamCase) -> None:
+async def test_async_returns_access_token(httpx2_mock: HTTPXMock, iam: AsyncIamCase) -> None:
     """The asynchronous client returns the access token from the IAM response."""
     access_token = uuid4().hex
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         url=f"{constants.IAM_URL}{iam.route}",
         method="POST",
         json=iam_auth_response(access_token),
@@ -154,10 +154,10 @@ async def test_async_returns_access_token(httpx_mock: HTTPXMock, iam: AsyncIamCa
     assert_that(auth_data.access_token).is_equal_to(access_token)
 
 
-def test_accepts_response_without_id_token(httpx_mock: HTTPXMock) -> None:
+def test_accepts_response_without_id_token(httpx2_mock: HTTPXMock) -> None:
     """The client accepts an IAM response without id_token: OpenID does not always return it."""
     access_token = uuid4().hex
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         url=f"{constants.IAM_URL}{OPEN_ID_AUTHORIZE_ROUTE}",
         method="POST",
         json=dict[str, object]({"access_token": access_token, "expires_in": 3600, "token_type": "Bearer"}),
@@ -169,10 +169,10 @@ def test_accepts_response_without_id_token(httpx_mock: HTTPXMock) -> None:
     assert_that(auth_data.access_token).is_equal_to(access_token)
 
 
-def test_sends_authorize_request_through_send_decorators(httpx_mock: HTTPXMock) -> None:
+def test_sends_authorize_request_through_send_decorators(httpx2_mock: HTTPXMock) -> None:
     """The authentication request passes through the client send decorators."""
     calls: list[str] = []
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         url=f"{constants.IAM_URL}{PUBLIC_API_AUTHORIZE_ROUTE}",
         method="POST",
         json=iam_auth_response("decorated-access-token"),
@@ -192,9 +192,9 @@ def test_sends_authorize_request_through_send_decorators(httpx_mock: HTTPXMock) 
         pytest.param(42, id="json_number"),
     ],
 )
-def test_raises_when_body_is_not_an_object(httpx_mock: HTTPXMock, body: object) -> None:
+def test_raises_when_body_is_not_an_object(httpx2_mock: HTTPXMock, body: object) -> None:
     """The client reports a parsing error if the IAM response body is not a JSON object."""
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         url=f"{constants.IAM_URL}{PUBLIC_API_AUTHORIZE_ROUTE}",
         method="POST",
         json=body,
@@ -204,9 +204,9 @@ def test_raises_when_body_is_not_an_object(httpx_mock: HTTPXMock, body: object) 
         client.authorize("boxed-key", "boxed-secret")
 
 
-def test_raises_when_access_token_is_not_a_string(httpx_mock: HTTPXMock) -> None:
+def test_raises_when_access_token_is_not_a_string(httpx2_mock: HTTPXMock) -> None:
     """The client reports a parsing error if the access token is not a string."""
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         url=f"{constants.IAM_URL}{PUBLIC_API_AUTHORIZE_ROUTE}",
         method="POST",
         json=dict[str, object]({"access_token": 12345, "expires_in": 3600}),
@@ -216,9 +216,9 @@ def test_raises_when_access_token_is_not_a_string(httpx_mock: HTTPXMock) -> None
         client.authorize("numeric-key", "numeric-secret")
 
 
-def test_raises_when_lifetime_is_not_a_number(httpx_mock: HTTPXMock) -> None:
+def test_raises_when_lifetime_is_not_a_number(httpx2_mock: HTTPXMock) -> None:
     """The client reports a parsing error if the lifetime is a string."""
-    httpx_mock.add_response(
+    httpx2_mock.add_response(
         url=f"{constants.IAM_URL}{PUBLIC_API_AUTHORIZE_ROUTE}",
         method="POST",
         json=dict[str, object]({"access_token": "stringly-typed-token", "expires_in": "3600"}),
@@ -228,8 +228,8 @@ def test_raises_when_lifetime_is_not_a_number(httpx_mock: HTTPXMock) -> None:
         client.authorize("stringly-key", "stringly-secret")
 
 
-def test_ignores_unknown_authorization_response_fields(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(
+def test_ignores_unknown_authorization_response_fields(httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(
         url=f"{constants.IAM_URL}{PUBLIC_API_AUTHORIZE_ROUTE}",
         method="POST",
         json=dict[str, object]({"access_token": "synthetic", "expires_in": 130, "unknown": "server extension"}),

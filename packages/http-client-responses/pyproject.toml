@@ -1,6 +1,6 @@
 [project]
 name = "cloudru-qa-http-client-responses"
-version = "1.0.0"
+version = "2.0.0"
 description = "Модели ответов на HTTP-запросы"
 authors = [
     { name = "Алексей Кирютин", email = "ayukiryutin@cloud.ru" },
@@ -13,7 +13,7 @@ license-files = [
 requires-python = ">=3.13"
 keywords = [
     "http",
-    "httpx",
+    "httpx2",
     "response",
     "pydantic",
     "testing",
@@ -30,7 +30,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "httpx>=0.28.1,<0.29",
+    "httpx2>=2.16.2,<3",
     "pydantic>=2.13.4,<3",
 ]
 

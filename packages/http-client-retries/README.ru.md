@@ -91,15 +91,15 @@ from http_client_retries import options
 client = HttpClient("https://api.example.com", options.with_retries_failed_requests())
 ```
 
-Повторяются `httpx.RequestError` (включая таймауты и обрывы соединения), `httpcore.NetworkError`
-и `httpcore.PoolTimeout`. Остальные ошибки пробрасываются сразу, без повторов.
+Повторяются `httpx2.RequestError` (включая таймауты и обрывы соединения), `httpcore2.NetworkError`
+и `httpcore2.PoolTimeout`. Остальные ошибки пробрасываются сразу, без повторов.
 
 Из этого списка исключены ошибки, результат которых от повтора не изменится, — иначе они впустую
 съедали бы весь бюджет попыток вместе с паузами:
 
-- `httpx.TooManyRedirects` — повтор пойдёт по той же цепочке редиректов;
-- `httpx.UnsupportedProtocol` — схема URL не изменится;
-- `httpx.DecodingError` — сервер вернёт то же нечитаемое тело.
+- `httpx2.TooManyRedirects` — повтор пойдёт по той же цепочке редиректов;
+- `httpx2.UnsupportedProtocol` — схема URL не изменится;
+- `httpx2.DecodingError` — сервер вернёт то же нечитаемое тело.
 
 > **Повторы не ограничены идемпотентными методами.** `POST` и `PATCH` повторяются наравне
 > с `GET`. Сетевая ошибка не доказывает, что сервер не выполнил операцию: запрос мог дойти,
@@ -141,7 +141,7 @@ client.send(client.client.build_request("POST", "/documents", content=stream_doc
 `with_retries_if` повторяет запрос, пока ваше условие возвращает `True`:
 
 ```python
-from httpx import Response
+from httpx2 import Response
 
 
 def is_throttled(response: Response) -> bool:
@@ -151,7 +151,7 @@ def is_throttled(response: Response) -> bool:
 client = HttpClient("https://api.example.com", options.with_retries_if(is_throttled))
 ```
 
-Условие — любая функция, принимающая `httpx.Response` и возвращающая `bool`.
+Условие — любая функция, принимающая `httpx2.Response` и возвращающая `bool`.
 
 Опции можно комбинировать между собой и с опциями самого `http_client`:
 
@@ -275,7 +275,7 @@ client = HttpClient(
 | `reraise` | Что возбуждается |
 |---|---|
 | `False` (по умолчанию) | `tenacity.RetryError`; исходная ошибка доступна через `err.last_attempt.exception()` |
-| `True` | сама исходная ошибка, например `httpx.ConnectError` |
+| `True` | сама исходная ошибка, например `httpx2.ConnectError` |
 
 ```python
 from tenacity import RetryError
@@ -286,12 +286,12 @@ except RetryError as err:
     original = err.last_attempt.exception()
 ```
 
-Вариант с `reraise=True` удобен, когда вызывающий код уже умеет обрабатывать исключения `httpx`:
+Вариант с `reraise=True` удобен, когда вызывающий код уже умеет обрабатывать исключения `httpx2`:
 
 ```python
 from http_client_retries import RetryOverrides
 
-import httpx
+import httpx2
 
 client = HttpClient(
     "https://api.example.com", options.with_retries_failed_requests(overrides=RetryOverrides(reraise=True))
@@ -299,7 +299,7 @@ client = HttpClient(
 
 try:
     response = client.get("/orders/42")
-except httpx.ConnectError:
+except httpx2.ConnectError:
     ...
 ```
 
@@ -354,10 +354,10 @@ client = HttpClient(
 Идентификатор, выставленный вызывающим кодом вручную, тоже сохраняется между попытками.
 
 Правило простое: **идентификатор принадлежит объекту запроса**. Разные запросы получают разные
-значения; все отправки одного `httpx.Request` — включая повторы — идут под одним.
+значения; все отправки одного `httpx2.Request` — включая повторы — идут под одним.
 
-Отсюда одно ограничение. Штатные схемы аутентификации httpx (`BasicAuth`, `DigestAuth`, функция)
-переиспользуют объект запроса, поэтому идентификатор сохраняется. Но своя `httpx.Auth`, которая
+Отсюда одно ограничение. Штатные схемы аутентификации httpx2 (`BasicAuth`, `DigestAuth`, функция)
+переиспользуют объект запроса, поэтому идентификатор сохраняется. Но своя `httpx2.Auth`, которая
 конструирует **новый** `Request` вместо изменения исходного, получит новый идентификатор на каждой
 попытке — переносить заголовки в порождённый запрос библиотека не берётся. Если сервер полагается
 на `X-Request-ID` для защиты от дублей, в такой схеме проставляйте заголовок сами.
@@ -369,14 +369,14 @@ client = HttpClient(
 `retry_if_failed` — повтор при ошибках соединения:
 
 ```python
-import httpx
+import httpx2
 
 from http_client_retries import retry_if_failed
 
 
 @retry_if_failed
 def fetch_status():
-    return httpx.get("https://api.example.com/health")
+    return httpx2.get("https://api.example.com/health")
 ```
 
 `retry_if` — повтор по условию на результат:
@@ -387,7 +387,7 @@ from http_client_retries import retry_if
 
 @retry_if(lambda response: response.status_code == 503)
 def fetch_report():
-    return httpx.get("https://api.example.com/report")
+    return httpx2.get("https://api.example.com/report")
 ```
 
 Оба работают и с асинхронными функциями:
@@ -395,7 +395,7 @@ def fetch_report():
 ```python
 @retry_if_failed
 async def fetch_status():
-    async with httpx.AsyncClient() as client:
+    async with httpx2.AsyncClient() as client:
         return await client.get("https://api.example.com/health")
 ```
 

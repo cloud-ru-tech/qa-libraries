@@ -193,7 +193,7 @@ logging_context_loggers = ["test-logger", "api-client"]
 logging_context_level = "INFO"
 ```
 
-По умолчанию в логи попадают и сообщения сторонних библиотек (`httpx`, `urllib3`,
+По умолчанию в логи попадают и сообщения сторонних библиотек (`httpx2`, `urllib3`,
 `playwright`) — обычно в отчёте по упавшему тесту это как раз то, что нужно увидеть. Если
 такой шум не нужен, перечислите свои логгеры в `logging_context_loggers`.
 

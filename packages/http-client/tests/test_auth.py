@@ -1,74 +1,74 @@
 from collections.abc import Generator
 
-import httpx
+import httpx2
 from assertpy import assert_that
 from http_client.options import with_auth
-from pytest_httpx import HTTPXMock
+from pytest_httpx2 import HTTPXMock
 
 from .support.clients import AsyncClientFactory, SyncClientFactory
 
 
-class FalseyAuth(httpx.Auth):
+class FalseyAuth(httpx2.Auth):
     """Valid authentication mechanism that is falsey."""
 
     def __bool__(self) -> bool:
         return False
 
-    def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response]:
+    def auth_flow(self, request: httpx2.Request) -> Generator[httpx2.Request, httpx2.Response]:
         request.headers["X-Auth"] = "from-falsey"
         yield request
 
 
-def test_applies_falsey_auth_passed_to_call(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
+def test_applies_falsey_auth_passed_to_call(httpx2_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
     """Apply Auth supplied by the call even when it is falsey.
 
     Regression: `auth or self.client.auth` replaced such an object with client authentication.
     """
-    httpx_mock.add_response(status_code=200)
-    client = new_client("https://billing.example.com", with_auth(httpx.BasicAuth("ops", "s3cret")))
+    httpx2_mock.add_response(status_code=200)
+    client = new_client("https://billing.example.com", with_auth(httpx2.BasicAuth("ops", "s3cret")))
 
     client.get("/invoices", auth=FalseyAuth())
 
-    assert_that(httpx_mock.get_requests()[0].headers["X-Auth"]).is_equal_to("from-falsey")
+    assert_that(httpx2_mock.get_requests()[0].headers["X-Auth"]).is_equal_to("from-falsey")
 
 
-def test_falsey_auth_from_call_replaces_client_auth(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
+def test_falsey_auth_from_call_replaces_client_auth(httpx2_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
     """Client authentication is not applied when the call supplies a falsey Auth."""
-    httpx_mock.add_response(status_code=200)
-    client = new_client("https://billing.example.com", with_auth(httpx.BasicAuth("ops", "s3cret")))
+    httpx2_mock.add_response(status_code=200)
+    client = new_client("https://billing.example.com", with_auth(httpx2.BasicAuth("ops", "s3cret")))
 
     client.get("/invoices", auth=FalseyAuth())
 
-    assert_that(httpx_mock.get_requests()[0].headers).does_not_contain_key("authorization")
+    assert_that(httpx2_mock.get_requests()[0].headers).does_not_contain_key("authorization")
 
 
 async def test_async_applies_falsey_auth_passed_to_call(
-    httpx_mock: HTTPXMock, new_async_client: AsyncClientFactory
+    httpx2_mock: HTTPXMock, new_async_client: AsyncClientFactory
 ) -> None:
     """The asynchronous client also applies a falsey Auth supplied by the call."""
-    httpx_mock.add_response(status_code=200)
-    client = new_async_client("https://audit.example.com", with_auth(httpx.BasicAuth("sre", "letmein")))
+    httpx2_mock.add_response(status_code=200)
+    client = new_async_client("https://audit.example.com", with_auth(httpx2.BasicAuth("sre", "letmein")))
 
     await client.get("/events", auth=FalseyAuth())
 
-    assert_that(httpx_mock.get_requests()[0].headers["X-Auth"]).is_equal_to("from-falsey")
+    assert_that(httpx2_mock.get_requests()[0].headers["X-Auth"]).is_equal_to("from-falsey")
 
 
-def test_applies_client_auth_when_call_has_none(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
+def test_applies_client_auth_when_call_has_none(httpx2_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
     """Use client authentication when the call does not specify authentication."""
-    httpx_mock.add_response(status_code=200)
-    client = new_client("https://registry.example.com", with_auth(httpx.BasicAuth("bot", "p@ssw0rd")))
+    httpx2_mock.add_response(status_code=200)
+    client = new_client("https://registry.example.com", with_auth(httpx2.BasicAuth("bot", "p@ssw0rd")))
 
     client.get("/images")
 
-    assert_that(httpx_mock.get_requests()[0].headers).contains_key("authorization")
+    assert_that(httpx2_mock.get_requests()[0].headers).contains_key("authorization")
 
 
-def test_anonymous_call_drops_client_auth(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
+def test_anonymous_call_drops_client_auth(httpx2_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
     """anonymous=True disables client authentication."""
-    httpx_mock.add_response(status_code=200)
-    client = new_client("https://status.example.com", with_auth(httpx.BasicAuth("admin", "qwerty")))
+    httpx2_mock.add_response(status_code=200)
+    client = new_client("https://status.example.com", with_auth(httpx2.BasicAuth("admin", "qwerty")))
 
     client.get("/health", anonymous=True)
 
-    assert_that(httpx_mock.get_requests()[0].headers).does_not_contain_key("authorization")
+    assert_that(httpx2_mock.get_requests()[0].headers).does_not_contain_key("authorization")

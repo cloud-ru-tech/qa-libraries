@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager, contextmanager
 from functools import wraps
 from typing import Unpack, cast
 
-import httpx
+import httpx2
 from assertpy import assert_that
 from http_client.options import with_send_decorator, with_stream_decorator
 from http_client.types import (
@@ -18,80 +18,80 @@ from http_client.types import (
     SyncStreamRequestDecorator,
     SyncStreamRequestMethod,
 )
-from pytest_httpx import HTTPXMock
+from pytest_httpx2 import HTTPXMock
 
 from .support.clients import AsyncClientFactory, SyncClientFactory
 
 
-def test_send_decorator_sees_sent_request(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
+def test_send_decorator_sees_sent_request(httpx2_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
     """The send decorator receives the outgoing request."""
-    seen: list[httpx.Request] = []
+    seen: list[httpx2.Request] = []
 
     def decorator(send: SyncSendMethod) -> SyncSendMethod:
         @wraps(send)
-        def wrapper(request: httpx.Request, **kwargs: Unpack[SendOptions]) -> httpx.Response:
+        def wrapper(request: httpx2.Request, **kwargs: Unpack[SendOptions]) -> httpx2.Response:
             seen.append(request)
             return send(request, **kwargs)
 
         return wrapper
 
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client("https://example.com", with_send_decorator(decorator))
-    request = httpx.Request("GET", "https://example.com/orders")
+    request = httpx2.Request("GET", "https://example.com/orders")
 
     client.send(request)
 
     assert_that(seen).is_equal_to([request])
 
 
-def test_send_decorator_sees_received_response(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
+def test_send_decorator_sees_received_response(httpx2_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
     """The send decorator receives the incoming response."""
     seen: list[int] = []
 
     def decorator(send: SyncSendMethod) -> SyncSendMethod:
         @wraps(send)
-        def wrapper(request: httpx.Request, **kwargs: Unpack[SendOptions]) -> httpx.Response:
+        def wrapper(request: httpx2.Request, **kwargs: Unpack[SendOptions]) -> httpx2.Response:
             response = send(request, **kwargs)
             seen.append(response.status_code)
             return response
 
         return wrapper
 
-    httpx_mock.add_response(status_code=202)
+    httpx2_mock.add_response(status_code=202)
     client = new_client("https://example.com", with_send_decorator(decorator))
 
-    client.send(httpx.Request("GET", "https://example.com/jobs"))
+    client.send(httpx2.Request("GET", "https://example.com/jobs"))
 
     assert_that(seen).is_equal_to([202])
 
 
-def test_send_returns_response_through_decorator(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
+def test_send_returns_response_through_decorator(httpx2_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
     """The response reaches the caller through the decorator."""
     payload: dict[str, bool] = {"queued": True}
 
     def decorator(send: SyncSendMethod) -> SyncSendMethod:
         @wraps(send)
-        def wrapper(request: httpx.Request, **kwargs: Unpack[SendOptions]) -> httpx.Response:
+        def wrapper(request: httpx2.Request, **kwargs: Unpack[SendOptions]) -> httpx2.Response:
             return send(request, **kwargs)
 
         return wrapper
 
-    httpx_mock.add_response(status_code=200, json=payload)
+    httpx2_mock.add_response(status_code=200, json=payload)
     client = new_client("https://example.com", with_send_decorator(decorator))
 
-    response = client.send(httpx.Request("GET", "https://example.com/jobs"))
+    response = client.send(httpx2.Request("GET", "https://example.com/jobs"))
 
     assert_that(cast("object", response.json())).is_equal_to(payload)
 
 
-def test_last_registered_send_decorator_wraps_the_others(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
+def test_last_registered_send_decorator_wraps_the_others(httpx2_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
     """The decorator added last becomes the outermost decorator."""
     calls: list[str] = []
 
     def recording_decorator(name: str) -> SyncSendDecorator:
         def decorator(send: SyncSendMethod) -> SyncSendMethod:
             @wraps(send)
-            def wrapper(request: httpx.Request, **kwargs: Unpack[SendOptions]) -> httpx.Response:
+            def wrapper(request: httpx2.Request, **kwargs: Unpack[SendOptions]) -> httpx2.Response:
                 calls.append(f"{name}_before")
                 response = send(request, **kwargs)
                 calls.append(f"{name}_after")
@@ -101,36 +101,36 @@ def test_last_registered_send_decorator_wraps_the_others(httpx_mock: HTTPXMock, 
 
         return decorator
 
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_client(
         "https://example.com",
         with_send_decorator(recording_decorator("inner")),
         with_send_decorator(recording_decorator("outer")),
     )
 
-    client.send(httpx.Request("GET", "https://example.com/jobs"))
+    client.send(httpx2.Request("GET", "https://example.com/jobs"))
 
     assert_that(calls).is_equal_to(["outer_before", "inner_before", "inner_after", "outer_after"])
 
 
 async def test_async_send_decorator_sees_sent_request(
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
 ) -> None:
     """The asynchronous client send decorator receives the outgoing request."""
-    seen: list[httpx.Request] = []
+    seen: list[httpx2.Request] = []
 
     def decorator(send: AsyncSendMethod) -> AsyncSendMethod:
         @wraps(send)
-        async def wrapper(request: httpx.Request, **kwargs: Unpack[SendOptions]) -> httpx.Response:
+        async def wrapper(request: httpx2.Request, **kwargs: Unpack[SendOptions]) -> httpx2.Response:
             seen.append(request)
             return await send(request, **kwargs)
 
         return wrapper
 
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_async_client("https://example.com", with_send_decorator(decorator))
-    request = httpx.Request("GET", "https://example.com/orders")
+    request = httpx2.Request("GET", "https://example.com/orders")
 
     await client.send(request)
 
@@ -138,7 +138,7 @@ async def test_async_send_decorator_sees_sent_request(
 
 
 async def test_async_send_returns_response_through_decorator(
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
 ) -> None:
     """The asynchronous client response reaches the caller through the decorator."""
@@ -146,21 +146,21 @@ async def test_async_send_returns_response_through_decorator(
 
     def decorator(send: AsyncSendMethod) -> AsyncSendMethod:
         @wraps(send)
-        async def wrapper(request: httpx.Request, **kwargs: Unpack[SendOptions]) -> httpx.Response:
+        async def wrapper(request: httpx2.Request, **kwargs: Unpack[SendOptions]) -> httpx2.Response:
             return await send(request, **kwargs)
 
         return wrapper
 
-    httpx_mock.add_response(status_code=200, json=payload)
+    httpx2_mock.add_response(status_code=200, json=payload)
     client = new_async_client("https://example.com", with_send_decorator(decorator))
 
-    response = await client.send(httpx.Request("GET", "https://example.com/orders"))
+    response = await client.send(httpx2.Request("GET", "https://example.com/orders"))
 
     assert_that(cast("object", response.json())).is_equal_to(payload)
 
 
 async def test_async_send_decorator_runs_in_registration_order(
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
 ) -> None:
     """The asynchronous send decorator added last becomes the outermost decorator."""
@@ -169,7 +169,7 @@ async def test_async_send_decorator_runs_in_registration_order(
     def recording_decorator(name: str) -> AsyncSendDecorator:
         def decorator(send: AsyncSendMethod) -> AsyncSendMethod:
             @wraps(send)
-            async def wrapper(request: httpx.Request, **kwargs: Unpack[SendOptions]) -> httpx.Response:
+            async def wrapper(request: httpx2.Request, **kwargs: Unpack[SendOptions]) -> httpx2.Response:
                 calls.append(f"{name}_before")
                 response = await send(request, **kwargs)
                 calls.append(f"{name}_after")
@@ -179,35 +179,35 @@ async def test_async_send_decorator_runs_in_registration_order(
 
         return decorator
 
-    httpx_mock.add_response(status_code=200)
+    httpx2_mock.add_response(status_code=200)
     client = new_async_client(
         "https://example.com",
         with_send_decorator(recording_decorator("inner")),
         with_send_decorator(recording_decorator("outer")),
     )
 
-    await client.send(httpx.Request("GET", "https://example.com/batches"))
+    await client.send(httpx2.Request("GET", "https://example.com/batches"))
 
     assert_that(calls).is_equal_to(["outer_before", "inner_before", "inner_after", "outer_after"])
 
 
-def test_stream_decorator_sees_sent_request(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
+def test_stream_decorator_sees_sent_request(httpx2_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
     """The stream_request decorator receives the outgoing request."""
-    seen: list[httpx.Request] = []
+    seen: list[httpx2.Request] = []
 
     def decorator(stream: SyncStreamRequestMethod) -> SyncStreamRequestMethod:
         @wraps(stream)
         @contextmanager
-        def wrapper(request: httpx.Request, **kwargs: Unpack[StreamOptions]) -> Iterator[httpx.Response]:
+        def wrapper(request: httpx2.Request, **kwargs: Unpack[StreamOptions]) -> Iterator[httpx2.Response]:
             seen.append(request)
             with stream(request, **kwargs) as response:
                 yield response
 
         return wrapper
 
-    httpx_mock.add_response(status_code=200, content=b"chunk")
+    httpx2_mock.add_response(status_code=200, content=b"chunk")
     client = new_client("https://example.com", with_stream_decorator(decorator))
-    request = httpx.Request("GET", "https://example.com/feed")
+    request = httpx2.Request("GET", "https://example.com/feed")
 
     with client.stream_request(request) as response:
         response.read()
@@ -215,14 +215,14 @@ def test_stream_decorator_sees_sent_request(httpx_mock: HTTPXMock, new_client: S
     assert_that(seen).is_equal_to([request])
 
 
-def test_stream_decorator_wraps_the_whole_context(httpx_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
+def test_stream_decorator_wraps_the_whole_context(httpx2_mock: HTTPXMock, new_client: SyncClientFactory) -> None:
     """The stream_request decorator covers the entire stream lifetime."""
     calls: list[str] = []
 
     def decorator(stream: SyncStreamRequestMethod) -> SyncStreamRequestMethod:
         @wraps(stream)
         @contextmanager
-        def wrapper(request: httpx.Request, **kwargs: Unpack[StreamOptions]) -> Iterator[httpx.Response]:
+        def wrapper(request: httpx2.Request, **kwargs: Unpack[StreamOptions]) -> Iterator[httpx2.Response]:
             calls.append("before")
             with stream(request, **kwargs) as response:
                 calls.append("inside")
@@ -231,10 +231,10 @@ def test_stream_decorator_wraps_the_whole_context(httpx_mock: HTTPXMock, new_cli
 
         return wrapper
 
-    httpx_mock.add_response(status_code=200, content=b"chunk")
+    httpx2_mock.add_response(status_code=200, content=b"chunk")
     client = new_client("https://example.com", with_stream_decorator(decorator))
 
-    with client.stream_request(httpx.Request("GET", "https://example.com/feed")) as response:
+    with client.stream_request(httpx2.Request("GET", "https://example.com/feed")) as response:
         calls.append("reading")
         response.read()
 
@@ -242,7 +242,7 @@ def test_stream_decorator_wraps_the_whole_context(httpx_mock: HTTPXMock, new_cli
 
 
 def test_last_registered_stream_decorator_wraps_the_others(
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_client: SyncClientFactory,
 ) -> None:
     """The stream decorator added last becomes the outermost decorator."""
@@ -252,7 +252,7 @@ def test_last_registered_stream_decorator_wraps_the_others(
         def decorator(stream: SyncStreamRequestMethod) -> SyncStreamRequestMethod:
             @wraps(stream)
             @contextmanager
-            def wrapper(request: httpx.Request, **kwargs: Unpack[StreamOptions]) -> Iterator[httpx.Response]:
+            def wrapper(request: httpx2.Request, **kwargs: Unpack[StreamOptions]) -> Iterator[httpx2.Response]:
                 calls.append(f"{name}_before")
                 with stream(request, **kwargs) as response:
                     yield response
@@ -262,39 +262,39 @@ def test_last_registered_stream_decorator_wraps_the_others(
 
         return decorator
 
-    httpx_mock.add_response(status_code=200, content=b"chunk")
+    httpx2_mock.add_response(status_code=200, content=b"chunk")
     client = new_client(
         "https://example.com",
         with_stream_decorator(recording_decorator("inner")),
         with_stream_decorator(recording_decorator("outer")),
     )
 
-    with client.stream_request(httpx.Request("GET", "https://example.com/feed")) as response:
+    with client.stream_request(httpx2.Request("GET", "https://example.com/feed")) as response:
         response.read()
 
     assert_that(calls).is_equal_to(["outer_before", "inner_before", "inner_after", "outer_after"])
 
 
 async def test_async_stream_decorator_sees_sent_request(
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
 ) -> None:
     """The asynchronous client stream_request decorator receives the outgoing request."""
-    seen: list[httpx.Request] = []
+    seen: list[httpx2.Request] = []
 
     def decorator(stream: AsyncStreamRequestMethod) -> AsyncStreamRequestMethod:
         @wraps(stream)
         @asynccontextmanager
-        async def wrapper(request: httpx.Request, **kwargs: Unpack[StreamOptions]) -> AsyncIterator[httpx.Response]:
+        async def wrapper(request: httpx2.Request, **kwargs: Unpack[StreamOptions]) -> AsyncIterator[httpx2.Response]:
             seen.append(request)
             async with stream(request, **kwargs) as response:
                 yield response
 
         return wrapper
 
-    httpx_mock.add_response(status_code=200, content=b"chunk")
+    httpx2_mock.add_response(status_code=200, content=b"chunk")
     client = new_async_client("https://example.com", with_stream_decorator(decorator))
-    request = httpx.Request("GET", "https://example.com/feed")
+    request = httpx2.Request("GET", "https://example.com/feed")
 
     async with client.stream_request(request) as response:
         await response.aread()
@@ -303,7 +303,7 @@ async def test_async_stream_decorator_sees_sent_request(
 
 
 async def test_last_registered_async_stream_decorator_wraps_the_others(
-    httpx_mock: HTTPXMock,
+    httpx2_mock: HTTPXMock,
     new_async_client: AsyncClientFactory,
 ) -> None:
     """The asynchronous client stream decorator added last becomes the outermost decorator."""
@@ -314,9 +314,9 @@ async def test_last_registered_async_stream_decorator_wraps_the_others(
             @wraps(stream)
             @asynccontextmanager
             async def wrapper(
-                request: httpx.Request,
+                request: httpx2.Request,
                 **kwargs: Unpack[StreamOptions],
-            ) -> AsyncIterator[httpx.Response]:
+            ) -> AsyncIterator[httpx2.Response]:
                 calls.append(f"{name}_before")
                 async with stream(request, **kwargs) as response:
                     yield response
@@ -326,14 +326,14 @@ async def test_last_registered_async_stream_decorator_wraps_the_others(
 
         return decorator
 
-    httpx_mock.add_response(status_code=200, content=b"chunk")
+    httpx2_mock.add_response(status_code=200, content=b"chunk")
     client = new_async_client(
         "https://example.com",
         with_stream_decorator(recording_decorator("inner")),
         with_stream_decorator(recording_decorator("outer")),
     )
 
-    async with client.stream_request(httpx.Request("GET", "https://example.com/feed")) as response:
+    async with client.stream_request(httpx2.Request("GET", "https://example.com/feed")) as response:
         await response.aread()
 
     assert_that(calls).is_equal_to(["outer_before", "inner_before", "inner_after", "outer_after"])

@@ -4,12 +4,12 @@ import json
 from typing import TYPE_CHECKING, Self, cast
 
 from assertpy.assertpy import AssertionBuilder
-from pytest_httpx import HTTPXMock
+from pytest_httpx2 import HTTPXMock
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    import httpx
+    import httpx2
 
     _Assertions = AssertionBuilder[object]
 else:
@@ -17,7 +17,7 @@ else:
 
 
 class HttpxMockAssertions(_Assertions):
-    """Assertions for requests captured by pytest-httpx."""
+    """Assertions for requests captured by httpx2-pytest."""
 
     def sent_json_to(self, path: str, expected: Mapping[str, object]) -> Self:
         """Check that a request to the path has the expected JSON body.
@@ -38,7 +38,7 @@ class HttpxMockAssertions(_Assertions):
         :param expected: Expected access token value
         :return: Assertion builder for continuing the chain
         """
-        tokens = [cast("str | None", request.headers.get("Authorization")) for request in self._requests_to(path)]
+        tokens = [request.headers.get("Authorization") for request in self._requests_to(path)]
         if f"Bearer {expected}" not in tokens:
             self.error(f"Ожидался запрос на <{path}> с токеном <{expected}>, а отправлены были <{tokens}>")
         return self
@@ -55,7 +55,7 @@ class HttpxMockAssertions(_Assertions):
             self.error(f"Ожидалось запросов на <{path}>: <{expected_count}>, а отправлено было <{actual_count}>")
         return self
 
-    def _requests_to(self, path: str) -> list[httpx.Request]:
+    def _requests_to(self, path: str) -> list[httpx2.Request]:
         if not isinstance(self.val, HTTPXMock):
             message = "Утверждение применимо только к HTTPXMock"
             raise TypeError(message)

@@ -61,7 +61,13 @@ uvx library-skills
 
 #### streamable_http_connection_handler
 
-Создает обработчик соединения через HTTP (Streamable HTTP transport) для подключения к удалённому серверу MCP.
+Подключает клиент к удалённому серверу MCP по протоколу Streamable HTTP. Можно передать `httpx2.AsyncClient`
+или `AsyncHttpClient` из этого проекта. Закройте переданный клиент после завершения соединения MCP.
+
+MCP SDK 2 следует перенаправлениям даже при `follow_redirects=False`, если схема, хост, порт и HTTP-метод сохраняются.
+Например, сервер может вернуть 307 и перенаправить запрос с `/mcp/` на `/mcp`.
+SDK также допускает переход с HTTP на HTTPS на том же хосте, если оба URL используют стандартные порты и метод сохраняется.
+Чтобы отключить перенаправления, задайте `max_redirects=0` в `httpx2.AsyncClient` или передайте `with_follow_redirects(0)` в `AsyncHttpClient`.
 
 Пример использования:
 ```python
@@ -85,7 +91,7 @@ http_client = AsyncHttpClient(
 connection_handler = streamable_http_connection_handler("http://localhost:8000/mcp", http_client)
 
 client = BaseAsyncMCPClient(connection_handler)
-async with client:
+async with http_client, client:
     tools = await client.list_tools()
 ```
 
@@ -213,7 +219,9 @@ client = BaseAsyncMCPClient(
 
 ## Использование
 
-Пример использования клиентской библиотеки MCP:
+Первый вызов метода открывает соединение. Чтобы использовать один клиент в нескольких задачах,
+войдите в `async with client` и выполните `await client.get_server_capabilities()` до запуска задач.
+Дождитесь завершения всех задач перед выходом из блока. Тогда одна и та же задача откроет и закроет соединение.
 
 ```python
 from mcp_client import BaseAsyncMCPClient

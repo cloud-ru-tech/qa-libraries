@@ -1,4 +1,4 @@
-from pytest_httpx import HTTPXMock
+from pytest_httpx2 import HTTPXMock
 
 from .assertions import assert_that
 from .client import AsyncExampleClient
@@ -7,17 +7,17 @@ from .endpoints import details_url, users_url
 from .models import ExampleRequest
 
 
-async def test_parses_body_into_schema_model(async_client: AsyncExampleClient, httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=users_url(15), json=users_payload(user("Margaret Hamilton")))
+async def test_parses_body_into_schema_model(async_client: AsyncExampleClient, httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(url=users_url(15), json=users_payload(user("Margaret Hamilton")))
 
     response = await async_client.get_users(ExampleRequest(limit=15))
 
     assert_that(response.model()).has_user_names(["Margaret Hamilton"])
 
 
-async def test_parses_body_with_custom_parser(async_client: AsyncExampleClient, httpx_mock: HTTPXMock) -> None:
+async def test_parses_body_with_custom_parser(async_client: AsyncExampleClient, httpx2_mock: HTTPXMock) -> None:
     expected_role = "astronaut"
-    httpx_mock.add_response(url=details_url(12), content=details_body(role=expected_role))
+    httpx2_mock.add_response(url=details_url(12), content=details_body(role=expected_role))
 
     response = await async_client.download_details(user_id=12)
 

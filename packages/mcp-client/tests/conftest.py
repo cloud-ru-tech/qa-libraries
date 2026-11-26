@@ -9,7 +9,7 @@ from io import StringIO
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-import httpx
+import httpx2
 import pytest
 from mcp_client.connection_handlers import stdio_connection_handler, streamable_http_connection_handler
 
@@ -66,13 +66,13 @@ def http_server(http_server_port: int, mcp_endpoint_url: str) -> Iterator[BasePr
 
 def _wait_until_ready(process: BaseProcess, endpoint: str) -> None:
     deadline = time.monotonic() + 15
-    with httpx.Client() as client:
+    with httpx2.Client() as client:
         while time.monotonic() < deadline:
             if not process.is_alive():
                 raise ServerStartupError
             try:
                 client.get(endpoint, timeout=0.5)
-            except httpx.ConnectError:
+            except httpx2.ConnectError:
                 time.sleep(0.1)
             else:
                 return

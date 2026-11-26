@@ -1,12 +1,12 @@
 import asyncio
 from typing import TYPE_CHECKING
 
-import httpx
+import httpx2
 import pytest
 from assertpy import assert_that
 from http_client import AsyncHttpClient
 from http_client_allure import wrap_requests_and_responses_in_steps
-from pytest_httpx import HTTPXMock
+from pytest_httpx2 import HTTPXMock
 
 from .allure_recorder import Report
 from .assertions import assert_attachment
@@ -20,13 +20,13 @@ DELAYS = {"/fast": 0.01, "/medium": 0.03, "/slow": 0.05}
 
 
 @pytest.fixture()
-def delayed_responses(httpx_mock: HTTPXMock) -> None:
-    async def respond(request: httpx.Request) -> httpx.Response:
+def delayed_responses(httpx2_mock: HTTPXMock) -> None:
+    async def respond(request: httpx2.Request) -> httpx2.Response:
         await asyncio.sleep(DELAYS[request.url.path])
         json_payload_1: dict[str, JsonValue] = {"path": request.url.path}
-        return httpx.Response(200, json=json_payload_1)
+        return httpx2.Response(200, json=json_payload_1)
 
-    httpx_mock.add_callback(respond, is_reusable=True)
+    httpx2_mock.add_callback(respond, is_reusable=True)
 
 
 @pytest.mark.usefixtures("delayed_responses")

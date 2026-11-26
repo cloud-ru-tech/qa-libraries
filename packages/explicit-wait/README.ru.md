@@ -204,8 +204,10 @@ wait_until(predicate, options=WaitOptions(expected_exceptions=(ConnectionError, 
 wait_until(
     predicate,
     options=WaitOptions(
-        expected_exceptions=httpx.HTTPStatusError,
-        retry_on_exception=lambda error: isinstance(error, httpx.HTTPStatusError) and error.response.status_code >= 500,
+        expected_exceptions=httpx2.HTTPStatusError,
+        retry_on_exception=lambda error: (
+            isinstance(error, httpx2.HTTPStatusError) and error.response.status_code >= 500
+        ),
     ),
 )
 ```
@@ -363,12 +365,12 @@ WaitError
 несериализуем сам `last_result` или `last_exception`.
 
 `TimeoutExpiredError` наследуется от встроенного `TimeoutError`, поэтому таймауты этой
-библиотеки и `asyncio` ловятся одним `except TimeoutError`. Таймауты httpx в эту иерархию
-не входят — `httpx.TimeoutException` наследуется от `httpx.TransportError`, и его нужно
+библиотеки и `asyncio` ловятся одним `except TimeoutError`. Таймауты httpx2 в эту иерархию
+не входят — `httpx2.TimeoutException` наследуется от `httpx2.TransportError`, и его нужно
 перехватывать отдельно:
 
 ```python
-except (TimeoutError, httpx.TimeoutException):
+except (TimeoutError, httpx2.TimeoutException):
     ...
 ```
 

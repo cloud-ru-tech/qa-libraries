@@ -12,7 +12,7 @@ from contextlib import (
 from functools import wraps
 from typing import Literal, Protocol, cast, overload
 
-from httpx import Response
+from httpx2 import Response
 from tenacity import AsyncRetrying, RetryCallState, Retrying
 
 from ._types import is_http_response

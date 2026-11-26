@@ -3,7 +3,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-import httpx
+import httpx2
 from http_client import HttpClient, options
 from http_client_allure.options import wrap_requests_in_steps
 
@@ -13,12 +13,15 @@ if TYPE_CHECKING:
     from .json_types import JsonValue
 
 
+SNAPSHOT_HEADERS = {"Accept-Encoding": "gzip, deflate", "Connection": "keep-alive", "User-Agent": "qa-client/1.0"}
+
+
 @dataclass(slots=True)
 class Scenario:
     """Client, request and expected step title for one case."""
 
     client: HttpClient
-    request: httpx.Request
+    request: httpx2.Request
     step_message: str
     prepare_snapshot: Callable[[str], str] = lambda x: x
 
@@ -41,6 +44,7 @@ def case_get_request_with_params_in_step_message() -> Scenario:
         request=client.client.build_request(
             method="GET",
             url="/api/v2/get",
+            headers=SNAPSHOT_HEADERS,
             params={"name": "Alexandr", "is_active": True, "age": 30},
         ),
     )
@@ -118,7 +122,7 @@ def case_urlencoded_curl_request() -> Scenario:
 def case_json_request_with_sanitize_keys() -> Scenario:
     client = HttpClient(
         BASE_URL,
-        options.with_auth(httpx.BasicAuth("admin", "123123")),
+        options.with_auth(httpx2.BasicAuth("admin", "123123")),
         wrap_requests_in_steps(
             sanitize_keys=["data.password", "authorization"],
         ),
@@ -129,7 +133,7 @@ def case_json_request_with_sanitize_keys() -> Scenario:
 def case_json_curl_request_with_sanitize_keys() -> Scenario:
     client = HttpClient(
         BASE_URL,
-        options.with_auth(httpx.BasicAuth("admin", "123123")),
+        options.with_auth(httpx2.BasicAuth("admin", "123123")),
         wrap_requests_in_steps(
             sanitize_keys=["data.password", "authorization"],
             serialize_request_to_curl=True,
@@ -145,6 +149,7 @@ def _create_simple_get_request_case(client: HttpClient) -> Scenario:
         request=client.client.build_request(
             method="GET",
             url="/api/v2/get",
+            headers=SNAPSHOT_HEADERS,
             params={"name": "Alexandr", "is_active": True, "age": 30},
         ),
     )
@@ -171,6 +176,7 @@ def _create_json_request_case(client: HttpClient) -> Scenario:
         request=client.client.build_request(
             method="POST",
             url="/api/v2/users",
+            headers=SNAPSHOT_HEADERS,
             json=json_payload_1,
         ),
     )
@@ -183,6 +189,7 @@ def _create_multipart_text_request_case(client: HttpClient) -> Scenario:
         request=client.client.build_request(
             method="POST",
             url="/api/v1/upload",
+            headers=SNAPSHOT_HEADERS,
             files={
                 "file": (
                     "poem.txt",
@@ -201,6 +208,7 @@ def _create_multipart_binary_request_case(client: HttpClient) -> Scenario:
         request=client.client.build_request(
             method="POST",
             url="/api/v1/upload",
+            headers=SNAPSHOT_HEADERS,
             files={
                 "file": (
                     "file.bin",
@@ -220,6 +228,7 @@ def _create_urlencoded_request_case(client: HttpClient) -> Scenario:
         request=client.client.build_request(
             method="PATCH",
             url="/api/v3/patch",
+            headers=SNAPSHOT_HEADERS,
             data=form_fields,
         ),
     )
@@ -238,6 +247,7 @@ def _create_json_request_with_sensitive_data(client: HttpClient) -> Scenario:
         request=client.client.build_request(
             method="GET",
             url="/api/users/me",
+            headers=SNAPSHOT_HEADERS,
             json=json_payload_2,
         ),
     )

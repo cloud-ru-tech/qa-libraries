@@ -11,7 +11,7 @@ import asyncio
 from time import perf_counter
 from typing import TYPE_CHECKING, TypedDict, cast
 
-import httpx
+import httpx2
 
 from . import settings
 from .async_client import build_async_echo_client, build_async_httpbin_client
@@ -116,7 +116,7 @@ def scenario_redirects(client: HttpbinClient, log: Logger) -> None:
         followed.url.path,
         len(followed.history),
     )
-    log.info("Декоратор send при этом сработал один раз: цепочку httpx проходит внутри одного вызова")
+    log.info("Декоратор send при этом сработал один раз: цепочку httpx2 проходит внутри одного вызова")
 
 
 def scenario_timeout(client: HttpbinClient, log: Logger) -> None:
@@ -127,7 +127,7 @@ def scenario_timeout(client: HttpbinClient, log: Logger) -> None:
 
     try:
         client.delay(3, timeout_seconds=1.0)
-    except httpx.TimeoutException as error:
+    except httpx2.TimeoutException as error:
         log.info("Задержка 3 с при таймауте 1 с — ожидаемое исключение %s", type(error).__name__)
 
 
@@ -137,7 +137,7 @@ def scenario_errors(client: HttpbinClient, log: Logger) -> None:
     response = client.status(500)
     try:
         response.raise_for_status()
-    except httpx.HTTPStatusError as error:
+    except httpx2.HTTPStatusError as error:
         log.info("raise_for_status поднял %s на статусе %s", type(error).__name__, error.response.status_code)
 
 
@@ -218,7 +218,7 @@ async def async_scenario_errors(client: AsyncHttpbinClient, log: Logger) -> None
     banner(log, "асинхронно: таймаут и ошибка сервера")
     try:
         await client.delay(3, timeout_seconds=1.0)
-    except httpx.TimeoutException as error:
+    except httpx2.TimeoutException as error:
         log.info("Ожидаемое исключение %s", type(error).__name__)
 
     response = await client.status(503)

@@ -2,7 +2,7 @@ import json
 from typing import cast
 
 import allure
-import httpx
+import httpx2
 from http_client.utils import sanitizer
 from httpx_curlify import to_curl
 
@@ -13,7 +13,7 @@ from .body import JSON_CONTENT_TYPE, STREAMED_CONTENT, encode_query_params, rend
 
 
 def parse_request_for_attach(
-    request: httpx.Request,
+    request: httpx2.Request,
     body: bytes | None,
     settings: StepSettings,
 ) -> Attachment:
@@ -31,7 +31,7 @@ def parse_request_for_attach(
 
 
 def _build_curl_attachment(
-    request: httpx.Request,
+    request: httpx2.Request,
     body: bytes | None,
     settings: StepSettings,
 ) -> Attachment:
@@ -47,17 +47,17 @@ def _build_curl_attachment(
 
 
 def _build_curl_request(
-    request: httpx.Request,
+    request: httpx2.Request,
     body: bytes | None,
     settings: StepSettings,
-) -> httpx.Request:
+) -> httpx2.Request:
     """Rebuild a request for to_curl with a masked URL and a prepared body.
 
     Do not pass the original request: to_curl prints the URL unchanged, exposing query
     secrets in the report, and reads the body itself, consuming an unread upload stream
     before sending and causing the request to fail with StreamClosed.
     """
-    return httpx.Request(
+    return httpx2.Request(
         request.method,
         _sanitized_url(request, settings),
         headers=request.headers,
@@ -65,7 +65,7 @@ def _build_curl_request(
     )
 
 
-def _streamed_placeholder(request: httpx.Request) -> bytes:
+def _streamed_placeholder(request: httpx2.Request) -> bytes:
     """Create a placeholder for an unread streaming upload body.
 
     For a JSON request, the placeholder must be valid JSON: to_curl parses
@@ -78,7 +78,7 @@ def _streamed_placeholder(request: httpx.Request) -> bytes:
 
 
 def _build_json_attachment(
-    request: httpx.Request,
+    request: httpx2.Request,
     body: bytes | None,
     settings: StepSettings,
 ) -> Attachment:
@@ -104,7 +104,7 @@ def _build_json_attachment(
     )
 
 
-def _sanitized_url(request: httpx.Request, settings: StepSettings) -> httpx.URL:
+def _sanitized_url(request: httpx2.Request, settings: StepSettings) -> httpx2.URL:
     if not request.url.query:
         return request.url
 

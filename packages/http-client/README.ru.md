@@ -20,6 +20,8 @@
     - [Декорирование метода send](#декорирование-метода-send)
     - [Потоковые запросы (Streaming)](#потоковые-запросы-streaming)
       - [Метод `stream`](#метод-stream)
+      - [Серверные события (SSE)](#серверные-события-sse)
+      - [WebSocket](#websocket)
       - [Метод `stream_request`](#метод-stream_request)
       - [Декорирование метода stream\_request](#декорирование-метода-stream_request)
     - [Метод request](#метод-request)
@@ -69,7 +71,7 @@ uvx library-skills install --skill http-client-usage --yes
 import logging
 
 from http_client import HttpClient, options
-from httpx import BasicAuth
+from httpx2 import BasicAuth
 
 with HttpClient(
     "https://api.example.com",
@@ -86,7 +88,7 @@ with HttpClient(
 import logging
 
 from http_client import HttpClient, options
-from httpx import Response
+from httpx2 import Response
 
 
 class CustomHttpClient(HttpClient):
@@ -133,7 +135,7 @@ async with AsyncHttpClient(
 
 ```python
 from http_client import BaseHttpClient, ClientOption
-from httpx import Request
+from httpx2 import Request
 
 
 def with_region(region: str) -> ClientOption:
@@ -172,7 +174,7 @@ def with_region(region: str) -> ClientOption:
 ```python
 import logging
 
-from httpx import Request, Response
+from httpx2 import Request, Response
 
 from http_client import HttpClient, options
 
@@ -198,7 +200,7 @@ client = HttpClient(
 
 ```python
 from http_client import AsyncHttpClient, options
-from httpx import Request
+from httpx2 import Request
 
 
 async def my_async_request_hook(request: Request) -> None:
@@ -211,7 +213,7 @@ client = AsyncHttpClient(
 )
 ```
 
-Подробнее о хуках можно почитать [в документации `httpx`](https://www.python-httpx.org/advanced/event-hooks/).
+Подробнее о хуках можно почитать [в документации `httpx2`](https://pydantic.dev/docs/httpx2/advanced/event-hooks/).
 
 ### Декорирование метода send
 
@@ -230,12 +232,12 @@ from http_client import HttpClient, options
 from http_client.types import SendOptions, SyncSendMethod
 from typing import Unpack
 import logging
-import httpx
+import httpx2
 
 
 def logging_decorator(func: SyncSendMethod) -> SyncSendMethod:
     @wraps(func)
-    def wrapper(request: httpx.Request, **kwargs: Unpack[SendOptions]) -> httpx.Response:
+    def wrapper(request: httpx2.Request, **kwargs: Unpack[SendOptions]) -> httpx2.Response:
         logging.getLogger(__name__).info("Отправка запроса: %s %s", request.method, request.url)
         response = func(request, **kwargs)
         logging.getLogger(__name__).info("Получен ответ: %s", response.status_code)
@@ -255,12 +257,12 @@ from http_client import AsyncHttpClient, options
 from http_client.types import AsyncSendMethod, SendOptions
 from typing import Unpack
 import logging
-import httpx
+import httpx2
 
 
 def async_logging_decorator(func: AsyncSendMethod) -> AsyncSendMethod:
     @wraps(func)
-    async def wrapper(request: httpx.Request, **kwargs: Unpack[SendOptions]) -> httpx.Response:
+    async def wrapper(request: httpx2.Request, **kwargs: Unpack[SendOptions]) -> httpx2.Response:
         logging.getLogger(__name__).info("Отправка запроса: %s %s", request.method, request.url)
         response = await func(request, **kwargs)
         logging.getLogger(__name__).info("Получен ответ: %s", response.status_code)
@@ -290,7 +292,7 @@ HTTP-клиент поддерживает потоковые запросы д�
 
 #### Метод `stream`
 
-Метод `stream(method, url, **kwargs)` полностью совместим с API `httpx`. Принимает HTTP-метод и URL, строит запрос и возвращает контекстный менеджер:
+Метод `stream(method, url, **kwargs)` полностью совместим с API `httpx2`. Принимает HTTP-метод и URL, строит запрос и возвращает контекстный менеджер:
 
 ```python
 from http_client import HttpClient, options
@@ -301,7 +303,7 @@ client = HttpClient(
     options.with_logger(logger),
 )
 
-# Потоковая загрузка (контракт httpx)
+# Потоковая загрузка (контракт httpx2)
 with client.stream("GET", "/large-file.zip") as response:
     response.raise_for_status()
 
@@ -328,9 +330,71 @@ async with client.stream("GET", "/stream-data") as response:
         process_line(line)
 ```
 
+#### Серверные события (SSE)
+
+Метод `sse(url, method="GET", max_event_size=..., **options)` открывает поток `httpx2.EventSource`.
+Можно передать параметры запроса, например `headers`, `params` или `json`.
+Параметр `max_event_size` задаёт предельный размер одного события в байтах.
+Читайте события внутри контекста. При выходе из него клиент закрывает ответ.
+
+```python
+from http_client import HttpClient
+
+with HttpClient("https://example.com") as client, client.sse("/events") as events:
+    events.response.raise_for_status()
+    for event in events:
+        print(event.data)
+```
+
+```python
+from http_client import AsyncHttpClient
+
+async with AsyncHttpClient("https://example.com") as client:
+    async with client.sse("/events", method="POST", json={"topic": "builds"}, max_event_size=65_536) as events:
+        events.response.raise_for_status()
+        async for event in events:
+            print(event.data)
+```
+
+#### WebSocket
+
+Для WebSocket установите дополнительные зависимости командой `pip install "cloudru-qa-http-client[ws]"`.
+Для HTTP и SSE достаточно обычной установки.
+
+Метод `websocket(url, **options)` открывает `WebSocketSession` у `HttpClient` и `AsyncWebSocketSession` у
+`AsyncHttpClient`. Начальный HTTP-запрос использует настройки аутентификации клиента. Чтобы заменить их для одного
+подключения, передайте `auth=`. Если у клиента настроена аутентификация, передайте `anonymous=True` вместе
+со своим заголовком `Authorization`. После установления соединения кадры WebSocket отправляет и
+принимает сессия. Используйте её внутри контекста. При выходе из него сессия закрывается.
+
+Передайте `subprotocols=["events"]`, чтобы предложить протокол для этого подключения, или `subprotocols=[]`, чтобы
+отключить согласование протокола. Если опустить `subprotocols` или передать `None`, клиент использует заголовок
+`Sec-WebSocket-Protocol`, если он задан.
+
+```python
+import os
+
+from http_client import HttpClient
+
+auth = (os.environ["API_USER"], os.environ["API_PASSWORD"])
+with HttpClient("https://example.com") as client:
+    with client.websocket("wss://example.com/echo", auth=auth) as session:
+        session.send_text("hello")
+        print(session.receive_text())
+```
+
+```python
+from http_client import AsyncHttpClient
+
+async with AsyncHttpClient("https://example.com") as client:
+    async with client.websocket("wss://example.com/echo") as session:
+        await session.send_text("hello")
+        print(await session.receive_text())
+```
+
 #### Метод `stream_request`
 
-Метод `stream_request(request, **kwargs)` принимает готовый объект `httpx.Request` и поддерживает все опции клиента, включая декораторы:
+Метод `stream_request(request, **kwargs)` принимает готовый объект `httpx2.Request` и поддерживает все опции клиента, включая декораторы:
 
 ```python
 request = client.client.build_request("GET", "/large-file.zip")
@@ -351,14 +415,14 @@ from http_client import HttpClient, options
 from http_client.types import StreamOptions, SyncStreamRequestMethod
 from collections.abc import Iterator
 from typing import Unpack
-import httpx
+import httpx2
 import logging
 
 
 def stream_logging_decorator(func: SyncStreamRequestMethod) -> SyncStreamRequestMethod:
     @wraps(func)
     @contextmanager
-    def wrapper(request: httpx.Request, **kwargs: Unpack[StreamOptions]) -> Iterator[httpx.Response]:
+    def wrapper(request: httpx2.Request, **kwargs: Unpack[StreamOptions]) -> Iterator[httpx2.Response]:
         logging.getLogger(__name__).info("Начало потока: %s %s", request.method, request.url)
         with func(request, **kwargs) as response:
             logging.getLogger(__name__).info("Статус потока: %s", response.status_code)
@@ -386,7 +450,7 @@ response = client.request("PATCH", "/api/resource", json={"field": "value"})
 Опция `with_timeout` позволяет устанавливать различные типы таймаутов для HTTP-запросов:
 
 ```python
-from httpx import Timeout
+from httpx2 import Timeout
 from http_client import HttpClient, options
 
 # Установка разных типов таймаутов
@@ -402,10 +466,10 @@ client = HttpClient("https://example.com", options.with_timeout(timeout))
 
 ### Авторизация
 
-Опция `with_auth` настраивает механизм авторизации для HTTP-запросов. Поддерживаются все механизмы авторизации, доступные в `httpx`. Также можно реализовать собственные механизмы, подробнее в [документации `httpx`](https://www.python-httpx.org/advanced/authentication/#custom-authentication-schemes)
+Опция `with_auth` настраивает механизм авторизации для HTTP-запросов. Поддерживаются все механизмы авторизации, доступные в `httpx2`. Также можно реализовать собственные механизмы, подробнее в [документации `httpx2`](https://pydantic.dev/docs/httpx2/advanced/authentication/#custom-authentication-schemes)
 
 ```python
-from httpx import BasicAuth, DigestAuth
+from httpx2 import BasicAuth, DigestAuth
 from http_client import HttpClient, options
 
 # Базовая авторизация
@@ -485,7 +549,7 @@ client = HttpClient(
 options.with_logger(logger, use_default_sanitize_keys=False)
 ```
 
-⚠️ Маскирование действует только на записи access-лога, которые пишет эта библиотека. Исключения `httpx` могут содержать полный URL вместе с query-параметрами, поэтому секреты в URL передавать не следует.
+⚠️ Маскирование действует только на записи access-лога, которые пишет эта библиотека. Исключения `httpx2` могут содержать полный URL вместе с query-параметрами, поэтому секреты в URL передавать не следует.
 
 ### Закрытие соединений
 
@@ -506,13 +570,13 @@ client.close()  # HttpClient
 await client.aclose()  # AsyncHttpClient
 ```
 
-Повторно открыть закрытый клиент нельзя — как и в `httpx`, это приводит к `RuntimeError`.
+Повторно открыть закрытый клиент нельзя — как и в `httpx2`, это приводит к `RuntimeError`.
 
 ### TLS-соединение
 
-Библиотека предоставляет две опции для настройки TLS-соединения. Обе применяются одинаково к `HttpClient` и `AsyncHttpClient`.
-
-1. `with_verify_context` - устанавливает контекст верификации TLS соединения:
+По умолчанию HTTPX2 проверяет сертификаты через системное хранилище.
+Переменные `SSL_CERT_FILE` и `SSL_CERT_DIR` задают свой путь к доверенным сертификатам.
+В `HttpClient` и `AsyncHttpClient` можно передать свой контекст TLS через `with_verify_context`.
 
 ```python
 import ssl
@@ -524,20 +588,6 @@ ssl_context.load_verify_locations("/path/to/ca-certificates.crt")
 
 # Установка SSL контекста
 client = HttpClient("https://example.com", options.with_verify_context(verify=ssl_context))
-```
-
-2. `use_truststore` - использует системное хранилище сертификатов для верификации:
-
-```python
-from http_client import HttpClient, options
-
-# Использование системного хранилища сертификатов
-client = HttpClient("https://example.com", options.use_truststore())
-```
-
-Для использования опции `use_truststore` необходимо установить дополнительную зависимость:
-```
-pip install "cloudru-qa-http-client[truststore]"
 ```
 
 ### Заголовки по умолчанию

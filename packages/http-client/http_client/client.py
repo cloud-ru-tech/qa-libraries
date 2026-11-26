@@ -10,11 +10,14 @@ if TYPE_CHECKING:
     import ssl
     from types import TracebackType
 
-    from httpx._types import (
+    from httpcore2 import AsyncNetworkStream, NetworkStream
+    from httpx2._types import (
         AuthTypes,
+        HeaderTypes,
         TimeoutTypes,
         URLTypes,
     )
+    from httpx2.websockets import AsyncWebSocketSession, WebSocketSession
 
     from .types import (
         AsyncSendDecorator,
@@ -31,12 +34,23 @@ if TYPE_CHECKING:
         SyncStreamRequestMethod,
     )
 
-import httpx
-from httpx._client import USE_CLIENT_DEFAULT
-from httpx._config import DEFAULT_MAX_REDIRECTS
+import httpx2
+from httpx2._client import USE_CLIENT_DEFAULT
+from httpx2._config import DEFAULT_MAX_EVENT_SIZE_BYTES, DEFAULT_MAX_REDIRECTS
 
 from .config import HttpClientConfig
-from .types import QueryOptions, RequestOptions, SendOptions, StreamOptions
+from .types import QueryOptions, RequestOptions, SendOptions, StreamOptions, WebSocketOptions, WebSocketSessionOptions
+
+try:
+    from httpx2 import websockets
+
+    from ._websocket import get_upgraded_stream, prepare_upgrade_request
+except ModuleNotFoundError as exc:
+    if exc.name != "wsproto":
+        raise
+    _ws_available = False
+else:
+    _ws_available = True
 
 ClientOption = Callable[["BaseHttpClient"], None]
 
@@ -48,7 +62,14 @@ def _reject_unknown_options(options: Mapping[str, object], allowed: frozenset[st
         raise TypeError(message)
 
 
-def _mark_streaming(request: httpx.Request) -> None:
+def _build_sse_headers(headers: HeaderTypes | None) -> httpx2.Headers:
+    result = httpx2.Headers(headers)
+    result.setdefault("Accept", "text/event-stream")
+    result.setdefault("Cache-Control", "no-store")
+    return result
+
+
+def _mark_streaming(request: httpx2.Request) -> None:
     extensions = cast("dict[str, object]", request.extensions)
     extensions["is_streaming"] = True
 
@@ -76,7 +97,7 @@ class BaseHttpClient(metaclass=ABCMeta):
     """Base HTTP client class."""
 
     DEFAULT_URL_SUFFIX = ""
-    DEFAULT_TIMEOUT = httpx.Timeout(60)
+    DEFAULT_TIMEOUT = httpx2.Timeout(60)
 
     def __init__(
         self,
@@ -188,13 +209,13 @@ class BaseHttpClient(metaclass=ABCMeta):
         self._config.max_redirects = max_redirects
 
     @property
-    def base_url(self) -> httpx.URL:
+    def base_url(self) -> httpx2.URL:
         """Return the transport base URL."""
         return self.client.base_url
 
     @property
     @abstractmethod
-    def client(self) -> httpx._client.BaseClient:
+    def client(self) -> httpx2._client.BaseClient:
         """Return the synchronous or asynchronous HTTP transport."""
         ...
 
@@ -225,7 +246,7 @@ class BaseHttpClient(metaclass=ABCMeta):
 
     def _prepare_request(
         self, method: str, url: URLTypes, options: RequestOptions
-    ) -> tuple[httpx.Request, StreamOptions]:
+    ) -> tuple[httpx2.Request, StreamOptions]:
         _reject_unknown_options(options, RequestOptions.__optional_keys__)
         request = self.client.build_request(
             method,
@@ -247,6 +268,27 @@ class BaseHttpClient(metaclass=ABCMeta):
         }
         return request, send_options
 
+    def _prepare_websocket(
+        self,
+        url: URLTypes,
+        options: WebSocketOptions,
+    ) -> tuple[httpx2.Request, StreamOptions, WebSocketSessionOptions]:
+        if not _ws_available:
+            message = "Для WebSocket установите cloudru-qa-http-client[ws]"
+            raise ImportError(message)
+        _reject_unknown_options(options, WebSocketOptions.__optional_keys__)
+        request_options = cast(
+            "RequestOptions",
+            {key: value for key, value in options.items() if key in QueryOptions.__optional_keys__},
+        )
+        session_options = cast(
+            "WebSocketSessionOptions",
+            {key: value for key, value in options.items() if key in WebSocketSessionOptions.__optional_keys__},
+        )
+        request, stream_options = self._prepare_request("GET", url, request_options)
+        prepare_upgrade_request(request, options.get("subprotocols"))
+        return request, stream_options, session_options
+
     def _assert_configuring(self) -> None:
         if not self._configuration_open:
             message = "Register client configuration through constructor options"
@@ -267,7 +309,7 @@ class HttpClient(BaseHttpClient, metaclass=ABCMeta):
         :param options: Built-in and custom options
         """
         super().__init__(base_url, *options)
-        self._client = httpx.Client(
+        self._client = httpx2.Client(
             base_url=self._config.base_url,
             auth=self.auth,
             timeout=self.timeout,
@@ -283,7 +325,7 @@ class HttpClient(BaseHttpClient, metaclass=ABCMeta):
         self._decorated_stream_request = self._apply_stream_request_decorators(self._stream_request)
 
     @property
-    def client(self) -> httpx.Client:
+    def client(self) -> httpx2.Client:
         """Return the synchronous HTTP transport."""
         return self._client
 
@@ -310,40 +352,40 @@ class HttpClient(BaseHttpClient, metaclass=ABCMeta):
         """Close the connection pool."""
         self.client.close()
 
-    def get(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx.Response:
+    def get(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx2.Response:
         """Send a GET request."""
         return self.request("GET", url, **options)
 
-    def post(self, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx.Response:
+    def post(self, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx2.Response:
         """Send a POST request."""
         return self.request("POST", url, **options)
 
-    def put(self, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx.Response:
+    def put(self, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx2.Response:
         """Send a PUT request."""
         return self.request("PUT", url, **options)
 
-    def patch(self, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx.Response:
+    def patch(self, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx2.Response:
         """Send a PATCH request."""
         return self.request("PATCH", url, **options)
 
-    def delete(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx.Response:
+    def delete(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx2.Response:
         """Send a DELETE request."""
         return self.request("DELETE", url, **options)
 
-    def head(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx.Response:
+    def head(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx2.Response:
         """Send a HEAD request."""
         return self.request("HEAD", url, **options)
 
-    def options(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx.Response:
+    def options(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx2.Response:
         """Send an OPTIONS request."""
         return self.request("OPTIONS", url, **options)
 
-    def request(self, method: str, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx.Response:
+    def request(self, method: str, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx2.Response:
         """Send an HTTP request with an arbitrary method."""
         request, send_options = self._prepare_request(method, url, options)
         return self.send(request, **send_options)
 
-    def send(self, request: httpx.Request, **options: Unpack[SendOptions]) -> httpx.Response:
+    def send(self, request: httpx2.Request, **options: Unpack[SendOptions]) -> httpx2.Response:
         """Send an HTTP request."""
         _reject_unknown_options(options, SendOptions.__optional_keys__)
         if options.get("stream", False):
@@ -352,13 +394,13 @@ class HttpClient(BaseHttpClient, metaclass=ABCMeta):
 
     def _send(
         self,
-        request: httpx.Request,
+        request: httpx2.Request,
         *,
         stream: bool = False,
         auth: AuthTypes | None = None,
         follow_redirects: bool | None = None,
         anonymous: bool = False,
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         follow = follow_redirects if follow_redirects is not None else self.client.follow_redirects
 
         if anonymous:
@@ -372,14 +414,55 @@ class HttpClient(BaseHttpClient, metaclass=ABCMeta):
 
     def stream(
         self, method: str, url: URLTypes, **options: Unpack[RequestOptions]
-    ) -> AbstractContextManager[httpx.Response]:
-        """Send a streaming HTTP request using the httpx contract."""
+    ) -> AbstractContextManager[httpx2.Response]:
+        """Send a streaming HTTP request using the httpx2 contract."""
         request, send_options = self._prepare_request(method, url, options)
         return self.stream_request(request, **send_options)
 
+    @contextmanager
+    def sse(
+        self,
+        url: URLTypes,
+        *,
+        method: str = "GET",
+        max_event_size: int | None = DEFAULT_MAX_EVENT_SIZE_BYTES,
+        **options: Unpack[RequestOptions],
+    ) -> Iterator[httpx2.EventSource]:
+        """Open a server-sent event stream.
+
+        :param url: Event stream endpoint.
+        :param method: HTTP request method.
+        :param max_event_size: Maximum bytes per event, or ``None`` for no limit.
+        :param options: Options accepted by the streaming request.
+        :yields: An event source valid within the context manager.
+        """
+        options["headers"] = _build_sse_headers(options.get("headers"))
+        with self.stream(method, url, **options) as response:
+            yield httpx2.EventSource(response, max_event_size=max_event_size)
+
+    @contextmanager
+    def websocket(
+        self,
+        url: URLTypes,
+        **options: Unpack[WebSocketOptions],
+    ) -> Iterator[WebSocketSession]:
+        """Open a WebSocket session through the client's streaming request decorators.
+
+        :param url: WebSocket endpoint.
+        :param options: HTTP handshake options, subprotocols, message limits and keepalive settings.
+        :yields: A session valid within the context manager.
+        :raises ImportError: If WebSocket support is not installed.
+        :raises httpx2.websockets.WebSocketUpgradeError: If the server refuses the upgrade.
+        """
+        request, stream_options, session_options = self._prepare_websocket(url, options)
+        with self.stream_request(request, **stream_options) as response:
+            stream = cast("NetworkStream", get_upgraded_stream(response))
+            with websockets.WebSocketSession(stream, response=response, **session_options) as session:
+                yield session
+
     def stream_request(
-        self, request: httpx.Request, **options: Unpack[StreamOptions]
-    ) -> AbstractContextManager[httpx.Response]:
+        self, request: httpx2.Request, **options: Unpack[StreamOptions]
+    ) -> AbstractContextManager[httpx2.Response]:
         """Send a streaming HTTP request.
 
         Return a context manager for accessing the streaming response.
@@ -395,12 +478,12 @@ class HttpClient(BaseHttpClient, metaclass=ABCMeta):
     @contextmanager
     def _stream_request(
         self,
-        request: httpx.Request,
+        request: httpx2.Request,
         *,
         anonymous: bool = False,
         auth: AuthTypes | None = None,
         follow_redirects: bool | None = None,
-    ) -> Iterator[httpx.Response]:
+    ) -> Iterator[httpx2.Response]:
         auth_to_use = None if anonymous else _resolve_auth(auth, self.client.auth)
         follow = follow_redirects if follow_redirects is not None else self.client.follow_redirects
 
@@ -443,7 +526,7 @@ class AsyncHttpClient(BaseHttpClient, metaclass=ABCMeta):
         super().__init__(base_url, *options)
         self._config.request_hooks = [_ensure_async_hook(h) for h in self._config.request_hooks]
         self._config.response_hooks = [_ensure_async_hook(h) for h in self._config.response_hooks]
-        self._client = httpx.AsyncClient(
+        self._client = httpx2.AsyncClient(
             base_url=self._config.base_url,
             auth=self.auth,
             timeout=self.timeout,
@@ -459,7 +542,7 @@ class AsyncHttpClient(BaseHttpClient, metaclass=ABCMeta):
         self._decorated_stream_request = self._apply_stream_request_decorators(self._stream_request)
 
     @property
-    def client(self) -> httpx.AsyncClient:
+    def client(self) -> httpx2.AsyncClient:
         """Return the asynchronous HTTP transport."""
         return self._client
 
@@ -486,40 +569,40 @@ class AsyncHttpClient(BaseHttpClient, metaclass=ABCMeta):
         """Close the connection pool."""
         await self.client.aclose()
 
-    async def get(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx.Response:
+    async def get(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx2.Response:
         """Send a GET request asynchronously."""
         return await self.request("GET", url, **options)
 
-    async def post(self, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx.Response:
+    async def post(self, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx2.Response:
         """Send a POST request asynchronously."""
         return await self.request("POST", url, **options)
 
-    async def put(self, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx.Response:
+    async def put(self, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx2.Response:
         """Send a PUT request asynchronously."""
         return await self.request("PUT", url, **options)
 
-    async def patch(self, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx.Response:
+    async def patch(self, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx2.Response:
         """Send a PATCH request asynchronously."""
         return await self.request("PATCH", url, **options)
 
-    async def delete(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx.Response:
+    async def delete(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx2.Response:
         """Send a DELETE request asynchronously."""
         return await self.request("DELETE", url, **options)
 
-    async def head(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx.Response:
+    async def head(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx2.Response:
         """Send a HEAD request asynchronously."""
         return await self.request("HEAD", url, **options)
 
-    async def options(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx.Response:
+    async def options(self, url: URLTypes, **options: Unpack[QueryOptions]) -> httpx2.Response:
         """Send an OPTIONS request asynchronously."""
         return await self.request("OPTIONS", url, **options)
 
-    async def request(self, method: str, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx.Response:
+    async def request(self, method: str, url: URLTypes, **options: Unpack[RequestOptions]) -> httpx2.Response:
         """Send an HTTP request with an arbitrary method asynchronously."""
         request, send_options = self._prepare_request(method, url, options)
         return await self.send(request, **send_options)
 
-    async def send(self, request: httpx.Request, **options: Unpack[SendOptions]) -> httpx.Response:
+    async def send(self, request: httpx2.Request, **options: Unpack[SendOptions]) -> httpx2.Response:
         """Send an HTTP request asynchronously."""
         _reject_unknown_options(options, SendOptions.__optional_keys__)
         if options.get("stream", False):
@@ -528,13 +611,13 @@ class AsyncHttpClient(BaseHttpClient, metaclass=ABCMeta):
 
     async def _send(
         self,
-        request: httpx.Request,
+        request: httpx2.Request,
         *,
         stream: bool = False,
         auth: AuthTypes | None = None,
         follow_redirects: bool | None = None,
         anonymous: bool = False,
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         follow = follow_redirects if follow_redirects is not None else self.client.follow_redirects
 
         if anonymous:
@@ -548,14 +631,55 @@ class AsyncHttpClient(BaseHttpClient, metaclass=ABCMeta):
 
     def stream(
         self, method: str, url: URLTypes, **options: Unpack[RequestOptions]
-    ) -> AbstractAsyncContextManager[httpx.Response]:
-        """Send a streaming HTTP request asynchronously using the httpx contract."""
+    ) -> AbstractAsyncContextManager[httpx2.Response]:
+        """Send a streaming HTTP request asynchronously using the httpx2 contract."""
         request, send_options = self._prepare_request(method, url, options)
         return self.stream_request(request, **send_options)
 
+    @asynccontextmanager
+    async def sse(
+        self,
+        url: URLTypes,
+        *,
+        method: str = "GET",
+        max_event_size: int | None = DEFAULT_MAX_EVENT_SIZE_BYTES,
+        **options: Unpack[RequestOptions],
+    ) -> AsyncIterator[httpx2.EventSource]:
+        """Open a server-sent event stream.
+
+        :param url: Event stream endpoint.
+        :param method: HTTP request method.
+        :param max_event_size: Maximum bytes per event, or ``None`` for no limit.
+        :param options: Options accepted by the streaming request.
+        :yields: An event source valid within the context manager.
+        """
+        options["headers"] = _build_sse_headers(options.get("headers"))
+        async with self.stream(method, url, **options) as response:
+            yield httpx2.EventSource(response, max_event_size=max_event_size)
+
+    @asynccontextmanager
+    async def websocket(
+        self,
+        url: URLTypes,
+        **options: Unpack[WebSocketOptions],
+    ) -> AsyncIterator[AsyncWebSocketSession]:
+        """Open a WebSocket session through the client's streaming request decorators.
+
+        :param url: WebSocket endpoint.
+        :param options: HTTP handshake options, subprotocols, message limits and keepalive settings.
+        :yields: A session valid within the context manager.
+        :raises ImportError: If WebSocket support is not installed.
+        :raises httpx2.websockets.WebSocketUpgradeError: If the server refuses the upgrade.
+        """
+        request, stream_options, session_options = self._prepare_websocket(url, options)
+        async with self.stream_request(request, **stream_options) as response:
+            stream = cast("AsyncNetworkStream", get_upgraded_stream(response))
+            async with websockets.AsyncWebSocketSession(stream, response=response, **session_options) as session:
+                yield session
+
     def stream_request(
-        self, request: httpx.Request, **options: Unpack[StreamOptions]
-    ) -> AbstractAsyncContextManager[httpx.Response]:
+        self, request: httpx2.Request, **options: Unpack[StreamOptions]
+    ) -> AbstractAsyncContextManager[httpx2.Response]:
         """Send a streaming HTTP request asynchronously.
 
         Return an asynchronous context manager for accessing the streaming response.
@@ -571,12 +695,12 @@ class AsyncHttpClient(BaseHttpClient, metaclass=ABCMeta):
     @asynccontextmanager
     async def _stream_request(
         self,
-        request: httpx.Request,
+        request: httpx2.Request,
         *,
         anonymous: bool = False,
         auth: AuthTypes | None = None,
         follow_redirects: bool | None = None,
-    ) -> AsyncIterator[httpx.Response]:
+    ) -> AsyncIterator[httpx2.Response]:
         auth_to_use = None if anonymous else _resolve_auth(auth, self.client.auth)
         follow = follow_redirects if follow_redirects is not None else self.client.follow_redirects
 

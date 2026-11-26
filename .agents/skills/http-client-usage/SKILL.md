@@ -1,26 +1,26 @@
 ---
 name: http-client-usage
-description: Building HTTP clients on the http_client library — an httpx wrapper providing constructor options, event hooks, send/stream decorators, request logging with secret masking, and streaming requests. Use when creating a client for an external API, adding an endpoint to an existing client, or configuring authentication, timeouts, retries, TLS, default headers, tracing, or streaming in a project that imports http_client. Key names are HttpClient, AsyncHttpClient, ClientOption, options.with_*, send_decorator, stream_request.
+description: Building HTTP clients on the http_client library — an httpx2 wrapper providing constructor options, event hooks, send/stream decorators, request logging with secret masking, and streaming requests. Use when creating a client for an external API, adding an endpoint to an existing client, or configuring authentication, timeouts, retries, TLS, default headers, tracing, or streaming in a project that imports http_client. Key names are HttpClient, AsyncHttpClient, ClientOption, options.with_*, send_decorator, stream_request.
 license: Apache-2.0
 metadata:
-  library-version: "1.0.0"
+  library-version: "2.0.0"
   source: packages/http-client
 ---
 
 # Building clients on http_client
 
-`http_client` is a thin wrapper around `httpx`. It adds exactly three things:
+`http_client` is a thin wrapper around `httpx2`. It adds exactly three things:
 
 1. **Constructor options** (`ClientOption`) — configuration is passed as positional arguments to the constructor instead of a dozen keyword parameters.
 2. **Transport decorators** — wrappers around `send` and `stream_request` for cross-cutting concerns: metrics, caching, plugging in an existing retry library.
 3. **Request/response logging** with field masking by glom paths.
 
-Everything else (`Request`, `Response`, `Auth`, `Timeout`, status codes) is plain `httpx`. Do not invent your own wrappers around what `httpx` already provides.
+Everything else (`Request`, `Response`, `Auth`, `Timeout`, status codes) is plain `httpx2`. Do not invent your own wrappers around what `httpx2` already provides.
 
 ## Hard rules
 
 1. Subclass `HttpClient` or `AsyncHttpClient`. `BaseHttpClient` is abstract and has no transport; never subclass it directly.
-2. Configure only through constructor options. Do not assign `client.timeout`, `client.auth`, etc. after construction — `httpx.Client` is already built and the change will not apply.
+2. Configure only through constructor options. Do not assign `client.timeout`, `client.auth`, etc. after construction — `httpx2.Client` is already built and the change will not apply.
 3. Inside endpoint methods call `self.send(request)`, **not** `self.client.send(request)`. The direct call bypasses every decorator.
 4. Do not add dependencies to the library itself — it must stay lightweight.
 5. Never write a retry loop, backoff, or circuit breaker by hand. Take the project's existing retry library and mount it via `with_send_decorator`.
@@ -30,23 +30,23 @@ Before claiming an option cannot do something, check `references/pitfalls.md` �
 ## Canonical client (sync)
 
 ```python
-import httpx
+import httpx2
 from http_client import HttpClient
 
 
 class OrdersClient(HttpClient):
     """Client for the orders service."""
 
-    def get_order(self, order_id: str) -> httpx.Response:
+    def get_order(self, order_id: str) -> httpx2.Response:
         request = self.client.build_request("GET", f"/orders/{order_id}")
         return self.send(request)
 
-    def create_order(self, payload: dict[str, object]) -> httpx.Response:
+    def create_order(self, payload: dict[str, object]) -> httpx2.Response:
         request = self.client.build_request("POST", "/orders", json=payload)
         return self.send(request)
 ```
 
-Paths are relative to the `base_url` passed to the constructor — `httpx` joins them.
+Paths are relative to the `base_url` passed to the constructor — `httpx2` joins them.
 
 Assembly:
 
@@ -54,7 +54,7 @@ Assembly:
 import logging
 
 from http_client import options
-from httpx import BasicAuth
+from httpx2 import BasicAuth
 
 client = OrdersClient(
     "https://api.example.com",
@@ -71,7 +71,7 @@ Exactly two differences: the base class and `await`. The options are identical, 
 
 ```python
 class AsyncOrdersClient(AsyncHttpClient):
-    async def get_order(self, order_id: str) -> httpx.Response:
+    async def get_order(self, order_id: str) -> httpx2.Response:
         request = self.client.build_request("GET", f"/orders/{order_id}")
         return await self.send(request)
 ```
@@ -85,7 +85,7 @@ One exception: `send`/`stream_request` decorators for an async client must thems
 | Endpoint method in your own client | `self.client.build_request(...)` → `self.send(request)` |
 | One-off call without a custom client | `client.get(...)`, `client.post(...)`, `client.request(method, url, ...)` |
 | Streaming download/upload, method and URL known | `client.stream(method, url, ...)` |
-| Stream from a prepared `httpx.Request` | `client.stream_request(request)` |
+| Stream from a prepared `httpx2.Request` | `client.stream_request(request)` |
 
 `send` and `stream_request` are the only points decorators pass through. The `get`/`post`/... shortcuts call `send` internally, so decorators apply to them as well.
 
@@ -109,7 +109,7 @@ The full catalog with exact signatures and behaviour is in `references/options.m
 
 | Option | Purpose |
 |---|---|
-| `with_auth(auth)` | any httpx authentication mechanism |
+| `with_auth(auth)` | any httpx2 authentication mechanism |
 | `with_timeout(timeout)` | client timeout; defaults to 60 s on every phase |
 | `with_logger(logger, sanitize_keys=..., ...)` | request and response logging |
 | `with_default_headers(headers)` | headers applied to every request |
@@ -118,23 +118,23 @@ The full catalog with exact signatures and behaviour is in `references/options.m
 | `with_autogenerated_traceparent()` | `Traceparent` header (W3C Trace Context) |
 | `with_send_decorator(dec)` / `with_stream_decorator(dec)` | transport wrappers |
 | `with_follow_redirects(max_redirects=20)` | follow redirects |
-| `with_verify_context(verify=...)` / `use_truststore()` | TLS configuration |
+| `with_verify_context(verify=...)` | TLS configuration |
 
 ### Writing your own option
 
 `ClientOption` is `Callable[[BaseHttpClient], None]`. Options receive the actual client inside
-`BaseHttpClient.__init__`, before the httpx transport exists. Use the public configuration properties
+`BaseHttpClient.__init__`, before the httpx2 transport exists. Use the public configuration properties
 (`timeout`, `auth`, `verify`, `url_suffix`) and registration methods. Accessing `client.client` inside
 an option raises `AttributeError`.
 
 ```python
-import httpx
+import httpx2
 from http_client import ClientOption
 from http_client.client import BaseHttpClient
 
 
 def with_api_key(key: str) -> ClientOption:
-    def add_key(request: httpx.Request) -> None:
+    def add_key(request: httpx2.Request) -> None:
         request.headers["X-Api-Key"] = key
 
     def option(client: BaseHttpClient) -> None:
@@ -155,14 +155,14 @@ A decorator wraps `send`, so it sees the request on the way out and the response
 from collections.abc import Callable
 from functools import wraps
 
-import httpx
+import httpx2
 from http_client.types import SyncSendMethod
 
 
 def with_call_recorder(calls: list[str]) -> Callable[[SyncSendMethod], SyncSendMethod]:
     def decorator(func: SyncSendMethod) -> SyncSendMethod:
         @wraps(func)
-        def wrapper(request: httpx.Request, **kwargs: object) -> httpx.Response:
+        def wrapper(request: httpx2.Request, **kwargs: object) -> httpx2.Response:
             calls.append(f"-> {request.method} {request.url}")
             response = func(request, **kwargs)
             calls.append(f"<- {response.status_code}")
@@ -211,7 +211,7 @@ A streamed response body shows up in logs as `<streamed content>` — at the tim
 
 Common secrets — `authorization`, `cookie`, `x-api-key`, `password`, `token` and friends — are masked out of the box. `sanitize_keys` adds project-specific paths on top; it does not replace the defaults.
 
-Masking is driven by glom paths applied to the body, headers, and query parameters. httpx lowercases header names, so write `"authorization"`, not `"Authorization"`.
+Masking is driven by glom paths applied to the body, headers, and query parameters. httpx2 lowercases header names, so write `"authorization"`, not `"Authorization"`.
 
 ```python
 options.with_logger(

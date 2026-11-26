@@ -6,7 +6,7 @@
 
 English | [Русский](README.ru.md)
 
-Wrappers around `httpx.Response` that know how to parse the response body.
+Wrappers around `httpx2.Response` that know how to parse the response body.
 
 A client method returns an object typed for the expected data instead of a plain `Response` from which you extract JSON manually. The type is visible in the method signature, parsing takes one line, and your IDE and mypy know the model fields.
 
@@ -49,7 +49,7 @@ For Claude Code, add `--claude`. The instructions are shipped with the library v
 
 ```python
 from http_client import HttpClient
-from httpx import Response
+from httpx2 import Response
 from pydantic import BaseModel
 from http_client_responses import GenericResponse, JsonResponse
 
@@ -124,16 +124,16 @@ users = client.get_users(ExampleRequest()).raise_for_status().model()
 |---|---|---|
 | `status_code` | `int` | |
 | `reason_phrase` | `str` | |
-| `headers` | `httpx.Headers` | `get_list()` returns all values for a repeated header |
+| `headers` | `httpx2.Headers` | `get_list()` returns all values for a repeated header |
 | `raw_headers` | `dict[str, str]` | one value per header |
-| `cookies` | `httpx.Cookies` | |
+| `cookies` | `httpx2.Cookies` | |
 | `content` / `text` | `bytes` / `str` | |
 | `url` | `str` | |
-| `request` | `httpx.Request` | |
+| `request` | `httpx2.Request` | |
 | `elapsed` | `timedelta` | |
 | `is_success` / `is_error` | `bool` | |
 | `is_client_error` / `is_server_error` | `bool` | 4xx / 5xx |
-| `raise_for_status()` | `Self` | raises `httpx.HTTPStatusError` for any non-2xx status |
+| `raise_for_status()` | `Self` | raises `httpx2.HTTPStatusError` for any non-2xx status |
 | `json()` | `Any` | parse the body as JSON without schema validation |
 
 For `Set-Cookie` and other repeated headers, use `headers.get_list("set-cookie")`.

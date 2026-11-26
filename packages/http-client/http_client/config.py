@@ -5,13 +5,13 @@ import os
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-import httpx
-from httpx._config import DEFAULT_MAX_REDIRECTS
+import httpx2
+from httpx2._config import DEFAULT_MAX_REDIRECTS
 
 if TYPE_CHECKING:
     import ssl
 
-    from httpx._types import AuthTypes, TimeoutTypes, URLTypes
+    from httpx2._types import AuthTypes, TimeoutTypes, URLTypes
 
     from .types import RequestHook, ResponseHook, SendDecorator, StreamRequestDecorator
 
@@ -25,7 +25,7 @@ class HttpClientConfig:
     base_url: URLTypes
     verify: ssl.SSLContext | str | bool = True
     auth: AuthTypes | None = None
-    timeout: TimeoutTypes = field(default_factory=lambda: httpx.Timeout(60))
+    timeout: TimeoutTypes = field(default_factory=lambda: httpx2.Timeout(60))
     url_suffix: str = ""
     request_hooks: list[RequestHook] = field(default_factory=list)
     response_hooks: list[ResponseHook] = field(default_factory=list)

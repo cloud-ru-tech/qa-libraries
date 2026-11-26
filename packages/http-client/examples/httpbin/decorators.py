@@ -1,7 +1,7 @@
 """Transport decorators: send metrics and stream_request tracing.
 
 Decorators wrap send/stream_request, so they see the outgoing request
-and incoming response. One send call is one transport attempt: httpx follows
+and incoming response. One send call is one transport attempt: httpx2 follows
 redirects within it, so the counter shows one call while the log shows every
 request in the chain.
 
@@ -18,7 +18,7 @@ from functools import wraps
 from time import perf_counter
 from typing import TYPE_CHECKING
 
-import httpx
+import httpx2
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterator
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
         SyncStreamRequestDecorator,
         SyncStreamRequestMethod,
     )
-    from httpx._types import AuthTypes
+    from httpx2._types import AuthTypes
 
 
 @dataclass
@@ -84,13 +84,13 @@ def metrics_decorator(metrics: TransportMetrics, logger: Logger) -> SyncSendDeco
     def decorator(func: SyncSendMethod) -> SyncSendMethod:
         @wraps(func)
         def wrapper(
-            request: httpx.Request,
+            request: httpx2.Request,
             *,
             stream: bool = False,
             auth: AuthTypes | None = None,
             follow_redirects: bool | None = None,
             anonymous: bool = False,
-        ) -> httpx.Response:
+        ) -> httpx2.Response:
             started_at = perf_counter()
             try:
                 response = func(
@@ -100,7 +100,7 @@ def metrics_decorator(metrics: TransportMetrics, logger: Logger) -> SyncSendDeco
                     follow_redirects=follow_redirects,
                     anonymous=anonymous,
                 )
-            except httpx.HTTPError as error:
+            except httpx2.HTTPError as error:
                 metrics.record_failure(request.method)
                 logger.warning(
                     "Метрика: %s %s -> %s",
@@ -137,13 +137,13 @@ def async_metrics_decorator(metrics: TransportMetrics, logger: Logger) -> AsyncS
     def decorator(func: AsyncSendMethod) -> AsyncSendMethod:
         @wraps(func)
         async def wrapper(
-            request: httpx.Request,
+            request: httpx2.Request,
             *,
             stream: bool = False,
             auth: AuthTypes | None = None,
             follow_redirects: bool | None = None,
             anonymous: bool = False,
-        ) -> httpx.Response:
+        ) -> httpx2.Response:
             started_at = perf_counter()
             try:
                 response = await func(
@@ -153,7 +153,7 @@ def async_metrics_decorator(metrics: TransportMetrics, logger: Logger) -> AsyncS
                     follow_redirects=follow_redirects,
                     anonymous=anonymous,
                 )
-            except httpx.HTTPError as error:
+            except httpx2.HTTPError as error:
                 metrics.record_failure(request.method)
                 logger.warning(
                     "Метрика: %s %s -> %s",
@@ -195,12 +195,12 @@ def stream_trace_decorator(logger: Logger) -> SyncStreamRequestDecorator:
         @wraps(func)
         @contextmanager
         def wrapper(
-            request: httpx.Request,
+            request: httpx2.Request,
             *,
             anonymous: bool = False,
             auth: AuthTypes | None = None,
             follow_redirects: bool | None = None,
-        ) -> Iterator[httpx.Response]:
+        ) -> Iterator[httpx2.Response]:
             started_at = perf_counter()
             logger.info("Поток открывается: %s %s", request.method, request.url.path)
             with func(request, anonymous=anonymous, auth=auth, follow_redirects=follow_redirects) as response:
@@ -231,12 +231,12 @@ def async_stream_trace_decorator(logger: Logger) -> AsyncStreamRequestDecorator:
         @wraps(func)
         @asynccontextmanager
         async def wrapper(
-            request: httpx.Request,
+            request: httpx2.Request,
             *,
             anonymous: bool = False,
             auth: AuthTypes | None = None,
             follow_redirects: bool | None = None,
-        ) -> AsyncIterator[httpx.Response]:
+        ) -> AsyncIterator[httpx2.Response]:
             started_at = perf_counter()
             logger.info("Поток открывается: %s %s", request.method, request.url.path)
             async with func(request, anonymous=anonymous, auth=auth, follow_redirects=follow_redirects) as response:

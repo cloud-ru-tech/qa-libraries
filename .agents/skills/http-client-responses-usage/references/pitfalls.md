@@ -8,13 +8,13 @@ The name suggests "errors", but the check is `2xx or raise`. Informational and r
 
 | Status | Result |
 |---|---|
-| 100, 301, 302, 304 | `httpx.HTTPStatusError` |
+| 100, 301, 302, 304 | `httpx2.HTTPStatusError` |
 | 200, 204 | passes |
-| 404, 500 | `httpx.HTTPStatusError` |
+| 404, 500 | `httpx2.HTTPStatusError` |
 
-This is plain `httpx` behaviour, not something the wrapper adds. A client that does not follow redirects and chains `raise_for_status()` will blow up on a perfectly normal 302. Check `is_success` / `status_code` when you need finer control.
+This is plain `httpx2` behaviour, not something the wrapper adds. A client that does not follow redirects and chains `raise_for_status()` will blow up on a perfectly normal 302. Check `is_success` / `status_code` when you need finer control.
 
-A response built by hand without a request raises `RuntimeError` from `raise_for_status()` — httpx needs the request to build the error message.
+A response built by hand without a request raises `RuntimeError` from `raise_for_status()` — httpx2 needs the request to build the error message.
 
 ## Parsing is deferred, so failures surface at the call site
 
@@ -30,9 +30,9 @@ The sentinel for "not parsed yet" is a private `_UNSET` object, not `None`, beca
 
 ## Streamed bodies are not readable by these wrappers
 
-`JsonResponse` validates from `response.content`. On a response whose body has not been read, `.content` raises `httpx.ResponseNotRead`, which is caught and re-raised as `ResponseParseError` with `Body: <streamed content>` in the message and `ResponseNotRead` in `cause`.
+`JsonResponse` validates from `response.content`. On a response whose body has not been read, `.content` raises `httpx2.ResponseNotRead`, which is caught and re-raised as `ResponseParseError` with `Body: <streamed content>` in the message and `ResponseNotRead` in `cause`.
 
-Call `response.read()` (or `await response.aread()`) before wrapping, or work with the raw `httpx` response for streaming endpoints. `elapsed` raises `RuntimeError` for the same reason — httpx only sets it once the body is fully read.
+Call `response.read()` (or `await response.aread()`) before wrapping, or work with the raw `httpx2` response for streaming endpoints. `elapsed` raises `RuntimeError` for the same reason — httpx2 only sets it once the body is fully read.
 
 ## `raw_headers` collapses repeated headers
 

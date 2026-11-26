@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pytest
 from assertpy import assert_that
-from mcp import McpError
+from mcp import MCPError
 from mcp_client.client import BaseAsyncMCPClient
 from mcp_client.options import with_default_metadata, with_read_timeout
 
@@ -28,7 +28,7 @@ async def test_overrides_default_metadata_with_call_values(connection_handler: C
 
 async def test_applies_default_read_timeout(connection_handler: ConnectionHandlerFactory) -> None:
     async with BaseAsyncMCPClient(connection_handler, with_read_timeout(0.04)) as client:
-        with pytest.raises(McpError, match="Timed out"):
+        with pytest.raises(cast("type[Exception]", MCPError), match="timed out"):
             await client.call_tool("slow_tool", {"duration_seconds": 0.3})
 
 

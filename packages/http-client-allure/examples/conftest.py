@@ -2,7 +2,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Protocol
 
-import httpx
+import httpx2
 import pytest
 
 
@@ -42,7 +42,7 @@ def httpbin_url(docker_services: DockerServices, docker_ip: str) -> str:
 
 def _is_ready(base_url: str) -> bool:
     try:
-        with httpx.Client(base_url=base_url, timeout=2) as client:
-            return client.get("/status/200").status_code == httpx.codes.OK
-    except httpx.HTTPError:
+        with httpx2.Client(base_url=base_url, timeout=2) as client:
+            return client.get("/status/200").status_code == httpx2.codes.OK
+    except httpx2.HTTPError:
         return False

@@ -3,7 +3,7 @@
 A retry reuses the same `Request`. An in-memory body can be read repeatedly,
 while a one-shot stream is exhausted after the first attempt:
 
-- a generator raises `httpx.StreamConsumed` on the second attempt;
+- a generator raises `httpx2.StreamConsumed` on the second attempt;
 - a file object silently sends an empty body and the server returns 200: silent data loss.
 
 Therefore rewind the body before a retry or disable retries entirely.
@@ -14,17 +14,17 @@ as non-replayable: skipping a retry is preferable to sending truncated data.
 from collections.abc import Callable, Mapping, Sequence
 from typing import Protocol, TypeGuard, cast
 
-from httpx import Request, RequestNotRead
+from httpx2 import Request, RequestNotRead
 
 from ._types import is_http_request
 
-try:  # Private httpx classes are needed to distinguish one-shot streams from replayable streams
-    from httpx._content import AsyncIteratorByteStream, IteratorByteStream
-    from httpx._multipart import MultipartStream
+try:  # Private httpx2 classes are needed to distinguish one-shot streams from replayable streams
+    from httpx2._content import AsyncIteratorByteStream, IteratorByteStream
+    from httpx2._multipart import MultipartStream
 
     ITERATOR_STREAMS: tuple[type[object], ...] = (IteratorByteStream, AsyncIteratorByteStream)
     MULTIPART_STREAMS: tuple[type[object], ...] = (MultipartStream,)
-except ImportError:  # pragma: no cover - httpx internals have changed
+except ImportError:  # pragma: no cover - httpx2 internals have changed
     ITERATOR_STREAMS = ()
     MULTIPART_STREAMS = ()
 
@@ -89,7 +89,7 @@ def _rewinder_for(source: object) -> Rewinder | None:
 
 
 def _multipart_rewinder(stream: _Multipart) -> Rewinder | None:
-    """Let httpx reread multipart bodies, provided every part is replayable.
+    """Let httpx2 reread multipart bodies, provided every part is replayable.
 
     A non-seekable file produces a retry body with only part headers and no file contents.
     """

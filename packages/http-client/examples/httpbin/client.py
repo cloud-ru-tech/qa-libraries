@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from http_client import HttpClient, options
-from httpx import BasicAuth, Timeout
+from httpx2 import BasicAuth, Timeout
 
 from . import settings
 from .decorators import metrics_decorator, stream_trace_decorator
@@ -15,7 +15,7 @@ from .logging_setup import demo_logger, http_logger
 if TYPE_CHECKING:
     from contextlib import AbstractContextManager
 
-    import httpx
+    import httpx2
 
     from .decorators import TransportMetrics
 
@@ -23,41 +23,41 @@ if TYPE_CHECKING:
 class HttpbinClient(HttpClient):
     """Client for httpbin.
 
-    Paths are relative: httpx joins them to base_url. httpbin has no prefix,
+    Paths are relative: httpx2 joins them to base_url. httpbin has no prefix,
     so endpoint() is not needed here; EchoApiClient demonstrates how it works.
     """
 
-    def get_echo(self, **params: str) -> httpx.Response:
+    def get_echo(self, **params: str) -> httpx2.Response:
         """GET /get: echo the query string."""
         request = self.client.build_request("GET", "/get", params=params)
         return self.send(request)
 
-    def post_json(self, payload: object) -> httpx.Response:
+    def post_json(self, payload: object) -> httpx2.Response:
         """POST /post: echo the request body."""
         request = self.client.build_request("POST", "/post", json=payload)
         return self.send(request)
 
-    def put_json(self, payload: object) -> httpx.Response:
+    def put_json(self, payload: object) -> httpx2.Response:
         """PUT /put: echo the request body."""
         request = self.client.build_request("PUT", "/put", json=payload)
         return self.send(request)
 
-    def patch_json(self, payload: object) -> httpx.Response:
+    def patch_json(self, payload: object) -> httpx2.Response:
         """PATCH /patch: echo the request body."""
         request = self.client.build_request("PATCH", "/patch", json=payload)
         return self.send(request)
 
-    def delete_resource(self) -> httpx.Response:
+    def delete_resource(self) -> httpx2.Response:
         """DELETE /delete."""
         request = self.client.build_request("DELETE", "/delete")
         return self.send(request)
 
-    def get_request_headers(self) -> httpx.Response:
+    def get_request_headers(self) -> httpx2.Response:
         """GET /headers: headers received by the service from the client."""
         request = self.client.build_request("GET", "/headers")
         return self.send(request)
 
-    def basic_auth(self, user: str, password: str, *, anonymous: bool = False) -> httpx.Response:
+    def basic_auth(self, user: str, password: str, *, anonymous: bool = False) -> httpx2.Response:
         """GET /basic-auth/{user}/{password}: check Basic authentication.
 
         :param user: Username expected by the service
@@ -67,7 +67,7 @@ class HttpbinClient(HttpClient):
         request = self.client.build_request("GET", f"/basic-auth/{user}/{password}")
         return self.send(request, anonymous=anonymous)
 
-    def delay(self, seconds: float, *, timeout_seconds: float) -> httpx.Response:
+    def delay(self, seconds: float, *, timeout_seconds: float) -> httpx2.Response:
         """GET /delay/{seconds}: delayed response.
 
         :param seconds: Service-side delay
@@ -76,7 +76,7 @@ class HttpbinClient(HttpClient):
         request = self.client.build_request("GET", f"/delay/{seconds}", timeout=timeout_seconds)
         return self.send(request)
 
-    def redirect(self, times: int, *, follow_redirects: bool | None = None) -> httpx.Response:
+    def redirect(self, times: int, *, follow_redirects: bool | None = None) -> httpx2.Response:
         """GET /redirect/{times}: redirect chain ending at /get.
 
         :param times: Chain length
@@ -85,17 +85,17 @@ class HttpbinClient(HttpClient):
         request = self.client.build_request("GET", f"/redirect/{times}")
         return self.send(request, follow_redirects=follow_redirects)
 
-    def status(self, code: int) -> httpx.Response:
+    def status(self, code: int) -> httpx2.Response:
         """GET /status/{code}: response with the specified status."""
         request = self.client.build_request("GET", f"/status/{code}")
         return self.send(request)
 
-    def get_bytes(self, size: int) -> httpx.Response:
+    def get_bytes(self, size: int) -> httpx2.Response:
         """GET /bytes/{size}: random bytes in one chunk (application/octet-stream)."""
         request = self.client.build_request("GET", f"/bytes/{size}")
         return self.send(request)
 
-    def stream_lines(self, count: int) -> AbstractContextManager[httpx.Response]:
+    def stream_lines(self, count: int) -> AbstractContextManager[httpx2.Response]:
         """GET /stream/{count}: stream of JSON lines.
 
         Return a context manager: read the body inside it.
@@ -103,7 +103,7 @@ class HttpbinClient(HttpClient):
         request = self.client.build_request("GET", f"/stream/{count}")
         return self.stream_request(request)
 
-    def stream_bytes(self, size: int) -> AbstractContextManager[httpx.Response]:
+    def stream_bytes(self, size: int) -> AbstractContextManager[httpx2.Response]:
         """GET /stream-bytes/{size}: stream of random bytes (application/octet-stream)."""
         request = self.client.build_request("GET", f"/stream-bytes/{size}")
         return self.stream_request(request)
@@ -117,7 +117,7 @@ class EchoApiClient(HttpClient):
 
     DEFAULT_URL_SUFFIX = "/anything/api/v1"
 
-    def ping(self) -> httpx.Response:
+    def ping(self) -> httpx2.Response:
         """GET {suffix}/ping."""
         request = self.client.build_request("GET", self.endpoint("ping"))
         return self.send(request)

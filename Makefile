@@ -11,7 +11,7 @@ RUN := PYTHONWARNINGS=error $(UV) run --no-sync
 # Prevent even nested pytest runs from sending notifications using the developer's .env.
 export PYTEST_NOTIFIER_DESTINATIONS := 1
 export PYTEST_DISABLE_PLUGIN_AUTOLOAD := 1
-PYTEST_PLUGINS := -p pytest_asyncio.plugin -p pytest_httpx -p pytest_mock -p pytest_timeout \
+PYTEST_PLUGINS := -p pytest_asyncio.plugin -p pytest_httpx2 -p pytest_mock -p pytest_timeout \
 	-p faker.contrib.pytest.plugin -p pytest_cases.plugin -p syrupy -p _hypothesis_pytestplugin \
 	-p xdist.plugin -p pytest_rerunfailures -p allure_pytest.plugin -p anyio.pytest_plugin \
 	-p pytest_docker

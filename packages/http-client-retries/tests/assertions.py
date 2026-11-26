@@ -16,8 +16,8 @@ if TYPE_CHECKING:
     import logging
     from collections.abc import Sequence
 
-    import httpx
-    from pytest_httpx import HTTPXMock
+    import httpx2
+    from pytest_httpx2 import HTTPXMock
 
     _Assertions = AssertionBuilder[object]
 else:
@@ -78,7 +78,7 @@ class RetryAssertions(_Assertions):
 
         result = cast("object", cast("RetryError", error).last_attempt.result())
         if not is_http_response(result):
-            self.error(f"Expected RetryError to keep an <httpx.Response>, but kept <{type(result).__name__}>")
+            self.error(f"Expected RetryError to keep an <httpx2.Response>, but kept <{type(result).__name__}>")
 
         return self
 
@@ -97,7 +97,7 @@ class RetryAssertions(_Assertions):
 
         return self
 
-    def _requests(self) -> list[httpx.Request]:
+    def _requests(self) -> list[httpx2.Request]:
         return list(cast("HTTPXMock", self.val).get_requests())
 
     def _messages(self) -> list[str]:

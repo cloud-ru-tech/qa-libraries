@@ -91,7 +91,7 @@ class TimeoutExpiredError(WaitStoppedError, TimeoutError):
     """The wait stopped because of its time limit.
 
     Inherits from built-in ``TimeoutError``, allowing timeouts from this library and
-    ``asyncio`` to be caught with one ``except``. Note that ``httpx.TimeoutException``
+    ``asyncio`` to be caught with one ``except``. Note that ``httpx2.TimeoutException``
     is outside this hierarchy and must be caught separately.
 
     ``deadline_reached`` distinguishes between a deadline that actually passed and

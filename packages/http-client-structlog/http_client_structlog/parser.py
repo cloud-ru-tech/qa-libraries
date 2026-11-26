@@ -4,7 +4,7 @@ from contextlib import suppress
 from typing import cast
 from uuid import uuid4
 
-import httpx
+import httpx2
 from http_client.config import LOGGING_CONFIG as CFG
 from http_client.utils.logutils import decode, is_buffered, is_streamed, parse_error, to_json, trim
 
@@ -16,7 +16,7 @@ _logger = logging.getLogger(__name__)
 
 
 def parse_request(
-    request: httpx.Request,
+    request: httpx2.Request,
     sanitizer: Sanitizer,
     json_indent: int | None = None,
 ) -> dict[str, object]:
@@ -43,14 +43,15 @@ def parse_request(
     if request.url.params:
         properties["query_params"] = _parse_query_params(request, sanitizer, json_indent)
 
-    if (body := _parse_body(request, sanitizer, json_indent)) is not None:
+    body = _parse_body(request, sanitizer, json_indent, streamed=not is_buffered(request))
+    if body is not None:
         properties["body"] = body
 
     return properties
 
 
 def parse_response(
-    response: httpx.Response,
+    response: httpx2.Response,
     sanitizer: Sanitizer,
     json_indent: int | None = None,
 ) -> dict[str, object]:
@@ -67,20 +68,21 @@ def parse_response(
         "trace_id": cast("dict[str, object]", response.request.extensions).get("trace_id", UNKNOWN_TRACE_ID),
     }
 
-    if (body := _parse_body(response, sanitizer, json_indent)) is not None:
+    body = _parse_body(response, sanitizer, json_indent, streamed=is_streamed(response))
+    if body is not None:
         properties["body"] = body
 
     return properties
 
 
 async def parse_response_async(
-    response: httpx.Response,
+    response: httpx2.Response,
     sanitizer: Sanitizer,
     json_indent: int | None = None,
 ) -> dict[str, object]:
     """Parse fields for a structured asynchronous client response log.
 
-    The httpx response hook runs before the client finishes reading the body, so
+    The httpx2 response hook runs before the client finishes reading the body, so
     an asynchronous response still has an asynchronous stream that cannot use synchronous read().
 
     :return: Structured response log fields
@@ -89,7 +91,7 @@ async def parse_response_async(
     return parse_response(response, sanitizer, json_indent)
 
 
-async def _aread_buffered(response: httpx.Response) -> None:
+async def _aread_buffered(response: httpx2.Response) -> None:
     """Finish reading a non-streaming response body."""
     if is_streamed(response):
         return
@@ -100,7 +102,7 @@ async def _aread_buffered(response: httpx.Response) -> None:
 
 
 def _parse_headers(
-    r: httpx.Request | httpx.Response,
+    r: httpx2.Request | httpx2.Response,
     sanitizer: Sanitizer,
     json_indent: int | None,
 ) -> str:
@@ -116,7 +118,7 @@ def _parse_headers(
 
 
 def _parse_query_params(
-    request: httpx.Request,
+    request: httpx2.Request,
     sanitizer: Sanitizer,
     json_indent: int | None,
 ) -> str:
@@ -132,14 +134,12 @@ def _parse_query_params(
 
 
 def _parse_body(
-    value: httpx.Request | httpx.Response,
+    value: httpx2.Request | httpx2.Response,
     sanitizer: Sanitizer,
-    json_indent: int | None = None,
+    json_indent: int | None,
+    *,
+    streamed: bool,
 ) -> str | None:
-    if isinstance(value, cast("type[object]", httpx.Response)):
-        streamed = is_streamed(cast("httpx.Response", value))
-    else:
-        streamed = not is_buffered(cast("httpx.Request", value))
     if streamed:
         return STREAMED_CONTENT
 
@@ -159,7 +159,7 @@ def _parse_body(
 def _render_content(
     content: bytes,
     content_type: str,
-    value: httpx.Request | httpx.Response,
+    value: httpx2.Request | httpx2.Response,
     sanitizer: Sanitizer,
     json_indent: int | None,
 ) -> str | None:

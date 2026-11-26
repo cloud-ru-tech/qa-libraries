@@ -1,10 +1,9 @@
-import importlib
 import ssl
 from logging import Logger
-from typing import TYPE_CHECKING, Unpack, cast
+from typing import Unpack
 
-from httpx._config import DEFAULT_MAX_REDIRECTS
-from httpx._types import AuthTypes, TimeoutTypes
+from httpx2._config import DEFAULT_MAX_REDIRECTS
+from httpx2._types import AuthTypes, TimeoutTypes
 
 from .client import AsyncHttpClient, BaseHttpClient, ClientOption, _reject_unknown_options
 from .event_hooks import (
@@ -17,9 +16,6 @@ from .event_hooks import (
     traceparent_hook,
 )
 from .types import LoggingOptions, RequestHook, ResponseHook, SendDecorator, StreamRequestDecorator
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
 
 def with_timeout(timeout: TimeoutTypes) -> ClientOption:
@@ -44,30 +40,13 @@ def with_verify_context(*, verify: ssl.SSLContext | str | bool) -> ClientOption:
     :param verify: SSL context, CA certificate path, or False to disable verification
     :returns: Option that sets the HTTP client certificate verification context
     """
-    # httpx deprecated string verify values in 0.28, so convert paths to contexts here.
+    # Convert CA paths into contexts to avoid the deprecated string verify option.
     context = ssl.create_default_context(cafile=verify) if isinstance(verify, str) else verify
 
     def option(client: BaseHttpClient) -> None:
         client.verify = context
 
     return option
-
-
-def use_truststore() -> ClientOption:
-    """Use the system SSL certificate store to verify HTTPS connections.
-
-    :raises ImportError: If the truststore module is not installed
-    :return: Option that sets the certificate verification context using the system store.
-    """
-    try:
-        truststore = importlib.import_module("truststore")
-
-        context_factory = cast("Callable[[int], ssl.SSLContext]", truststore.SSLContext)
-        ctx = context_factory(ssl.PROTOCOL_TLS_CLIENT)
-        return with_verify_context(verify=ctx)
-    except ImportError:
-        message = "Для использования truststore установите cloudru-qa-http-client[truststore]"
-        raise ImportError(message) from None
 
 
 def with_auth(auth: AuthTypes) -> ClientOption:

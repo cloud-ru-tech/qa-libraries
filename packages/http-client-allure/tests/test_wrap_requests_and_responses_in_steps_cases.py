@@ -4,7 +4,7 @@ from typing import TypedDict
 
 from http_client import HttpClient
 from http_client_allure import wrap_requests_and_responses_in_steps
-from httpx import codes
+from httpx2 import codes
 
 from .config import BASE_URL, SRC_ROOT
 

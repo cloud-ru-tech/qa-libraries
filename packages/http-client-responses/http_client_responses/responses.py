@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from datetime import timedelta
 
-    from httpx import Cookies, Headers, Request, Response
+    from httpx2 import Cookies, Headers, Request, Response
 
 RT = TypeVar("RT")  # Response Type
 RS = TypeVar("RS", bound=BaseModel)  # Response Schema
@@ -53,7 +53,7 @@ class ResponseWrapper:
     def headers(self) -> Headers:
         """Response headers.
 
-        Use `httpx.Headers`, rather than `dict`: key lookup is case-insensitive and `get_list()` returns
+        Use `httpx2.Headers`, rather than `dict`: key lookup is case-insensitive and `get_list()` returns
         all values of a header sent more than once by the server (such as `Set-Cookie`).
         """
         return self.response.headers
@@ -76,7 +76,7 @@ class ResponseWrapper:
     def content(self) -> bytes:
         """Response body as bytes.
 
-        :raises httpx.ResponseNotRead: If the response is streaming and its body has not been read
+        :raises httpx2.ResponseNotRead: If the response is streaming and its body has not been read
         """
         return self.response.content
 
@@ -84,7 +84,7 @@ class ResponseWrapper:
     def text(self) -> str:
         """Response body as a string.
 
-        :raises httpx.ResponseNotRead: If the response is streaming and its body has not been read
+        :raises httpx2.ResponseNotRead: If the response is streaming and its body has not been read
         """
         return self.response.text
 
@@ -138,7 +138,7 @@ class ResponseWrapper:
         Return the wrapper itself to allow chained calls:
         `response.raise_for_status().model()`.
 
-        :raises httpx.HTTPStatusError: If the response status is not 2xx, including 1xx and redirects
+        :raises httpx2.HTTPStatusError: If the response status is not 2xx, including 1xx and redirects
         :raises RuntimeError: If the response was created manually without a request
         :returns: The same object
         """

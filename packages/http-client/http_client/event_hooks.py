@@ -1,8 +1,9 @@
 import logging
 from collections.abc import Sequence
+from typing import cast
 from uuid import uuid4
 
-from httpx import Request, Response
+from httpx2 import Request, Response
 
 from .config import LOGGING_CONFIG as CFG
 from .types import RequestHook, ResponseHook
@@ -10,6 +11,7 @@ from .utils import logutils, traceparent
 
 REQUEST_ID_HEADER = "X-Request-ID"
 TRACEPARENT_HEADER = "Traceparent"
+OMITTED_DEFAULT_HEADER = "http_client.omitted_default_header"
 
 # Always mask these: leaking a single secret in logs is far worse
 # than an unnecessary asterisk.
@@ -140,8 +142,9 @@ def add_default_headers_hook(headers: dict[str, str]) -> RequestHook:
     defaults = dict(headers)
 
     def add_default_headers(request: Request) -> None:
+        omitted = cast("dict[str, object]", request.extensions).get(OMITTED_DEFAULT_HEADER)
         for name, value in defaults.items():
-            if name not in request.headers:
+            if name not in request.headers and name.lower() != omitted:
                 request.headers[name] = value
 
     return add_default_headers

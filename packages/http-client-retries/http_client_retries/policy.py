@@ -4,9 +4,9 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import cast
 
-import httpcore
-import httpx
-from httpx import Response
+import httpcore2
+import httpx2
+from httpx2 import Response
 from tenacity import RetryCallState, retry_if_result, retry_never
 from tenacity.retry import retry_base
 
@@ -14,15 +14,15 @@ from ._types import is_http_response
 from .config import NO_OVERRIDES, Config, RetryOverrides, get_config
 
 #: Network errors for which retrying the request makes sense.
-RETRYABLE_EXCEPTIONS = (httpx.RequestError, httpcore.NetworkError, httpcore.PoolTimeout)
+RETRYABLE_EXCEPTIONS = (httpx2.RequestError, httpcore2.NetworkError, httpcore2.PoolTimeout)
 
 #: Exceptions excluded from :data:`RETRYABLE_EXCEPTIONS`: these are `RequestError`, but retrying the same
 #: request yields exactly the same result while consuming the entire attempt and delay budget.
 NON_RETRYABLE_EXCEPTIONS = (
-    httpx.TooManyRedirects,
-    httpx.UnsupportedProtocol,
-    httpx.DecodingError,
-    httpx.LocalProtocolError,
+    httpx2.TooManyRedirects,
+    httpx2.UnsupportedProtocol,
+    httpx2.DecodingError,
+    httpx2.LocalProtocolError,
 )
 
 

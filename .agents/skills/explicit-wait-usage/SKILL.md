@@ -148,8 +148,10 @@ wait_until(service_responds, options=WaitOptions(expected_exceptions=(Connection
 wait_until(
     fetch_order,
     options=WaitOptions(
-        expected_exceptions=httpx.HTTPStatusError,
-        retry_on_exception=lambda error: isinstance(error, httpx.HTTPStatusError) and error.response.status_code >= 500,
+        expected_exceptions=httpx2.HTTPStatusError,
+        retry_on_exception=lambda error: (
+            isinstance(error, httpx2.HTTPStatusError) and error.response.status_code >= 500
+        ),
     ),
 )
 ```
@@ -198,7 +200,7 @@ WaitError
 
 Catch `WaitStoppedError` to cover both stop reasons at once. `TimeoutExpiredError` is a built-in
 `TimeoutError`, so it is caught alongside `asyncio` timeouts — but **not** alongside
-`httpx.TimeoutException`, which sits in a different hierarchy and needs its own `except`.
+`httpx2.TimeoutException`, which sits in a different hierarchy and needs its own `except`.
 
 ## Combining predicates
 

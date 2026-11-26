@@ -2,7 +2,7 @@ import logging
 from collections.abc import Callable
 from typing import cast
 
-from httpx import Request
+from httpx2 import Request
 from tenacity import RetryCallState
 
 from ._types import is_http_request, is_http_response

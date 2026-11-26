@@ -61,7 +61,14 @@ Create a standard input/output connection handler to start an MCP server.
 
 #### streamable_http_connection_handler
 
-Create an HTTP connection handler (Streamable HTTP transport) for a remote MCP server.
+Connect to a remote MCP server over Streamable HTTP. You can pass an `httpx2.AsyncClient` or a workspace
+`AsyncHttpClient`. Close the supplied client after the MCP connection ends.
+
+MCP SDK 2 follows same-origin redirects that preserve the HTTP method even when `follow_redirects=False`.
+For example, it can follow a 307 redirect from `/mcp/` to `/mcp`. It also allows an upgrade
+from HTTP to HTTPS on the same host when both URLs use their default ports and the method stays the same.
+Set `max_redirects=0` on a raw client
+or pass `with_follow_redirects(0)` to `AsyncHttpClient` to disable redirects.
 
 Example:
 ```python
@@ -85,7 +92,7 @@ http_client = AsyncHttpClient(
 connection_handler = streamable_http_connection_handler("http://localhost:8000/mcp", http_client)
 
 client = BaseAsyncMCPClient(connection_handler)
-async with client:
+async with http_client, client:
     tools = await client.list_tools()
 ```
 
@@ -213,7 +220,9 @@ client = BaseAsyncMCPClient(
 
 ## Usage
 
-Example of using the MCP client library:
+The first method call opens the connection. To share a client between tasks, enter `async with client`
+and await `client.get_server_capabilities()` before starting the tasks. Wait for all tasks to finish
+before leaving the context. This way the same task opens and closes the connection.
 
 ```python
 from mcp_client import BaseAsyncMCPClient

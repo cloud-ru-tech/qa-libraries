@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 
-import httpx
+import httpx2
 import pytest
 from http_client_retries import configure
 from http_client_retries.config import Config
@@ -75,14 +75,14 @@ def test_rejects_negative_max_retry_after_in_configuration() -> None:
 
 def test_waits_as_long_as_server_asked() -> None:
     strategy = wait_retry_after(fallback=wait_fixed(7), maximum=300)
-    throttled = httpx.Response(429, headers={"Retry-After": "12"})
+    throttled = httpx2.Response(429, headers={"Retry-After": "12"})
 
     assert_that(strategy(retry_state_after(throttled))).is_equal_to(12.0)
 
 
 def test_caps_delay_requested_by_server() -> None:
     strategy = wait_retry_after(fallback=wait_fixed(7), maximum=30)
-    throttled = httpx.Response(503, headers={"Retry-After": "3600"})
+    throttled = httpx2.Response(503, headers={"Retry-After": "3600"})
 
     assert_that(strategy(retry_state_after(throttled))).is_equal_to(30.0)
 
@@ -90,18 +90,18 @@ def test_caps_delay_requested_by_server() -> None:
 def test_falls_back_when_server_stays_silent() -> None:
     strategy = wait_retry_after(fallback=wait_fixed(9), maximum=300)
 
-    assert_that(strategy(retry_state_after(httpx.Response(500)))).is_equal_to(9.0)
+    assert_that(strategy(retry_state_after(httpx2.Response(500)))).is_equal_to(9.0)
 
 
 def test_falls_back_when_header_is_unreadable() -> None:
     strategy = wait_retry_after(fallback=wait_fixed(4), maximum=300)
-    confused = httpx.Response(503, headers={"Retry-After": "tomorrow-ish"})
+    confused = httpx2.Response(503, headers={"Retry-After": "tomorrow-ish"})
 
     assert_that(strategy(retry_state_after(confused))).is_equal_to(4.0)
 
 
 def test_falls_back_when_attempt_raised() -> None:
     strategy = wait_retry_after(fallback=wait_fixed(3), maximum=300)
-    broken = httpx.ConnectError("no route", request=httpx.Request("GET", "https://quotas.test/limit"))
+    broken = httpx2.ConnectError("no route", request=httpx2.Request("GET", "https://quotas.test/limit"))
 
     assert_that(strategy(retry_state_after_error(broken))).is_equal_to(3.0)

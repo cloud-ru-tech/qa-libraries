@@ -10,6 +10,8 @@ from http_client.client import AsyncHttpClient, ClientOption, HttpClient
 from .support.clients import AsyncClientFactory, SyncClientFactory
 from .support.logs import RecordedLog, RecordingHandler
 
+pytest_plugins = ["pytester"]
+
 
 @pytest.fixture(autouse=True)
 def restore_logging_config() -> Iterator[None]:

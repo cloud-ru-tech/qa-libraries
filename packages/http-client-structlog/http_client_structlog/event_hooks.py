@@ -1,4 +1,4 @@
-import httpx
+import httpx2
 from http_client.config import LOGGING_CONFIG as CFG
 from http_client.types import RequestHook, ResponseHook
 from structlog.stdlib import BoundLogger
@@ -18,7 +18,7 @@ def request_logger_hook(
 ) -> RequestHook:
     """Build a structured HTTP request logging hook."""
 
-    def log_request_hook(request: httpx.Request) -> None:
+    def log_request_hook(request: httpx2.Request) -> None:
         request_params = parse_request(
             request=request,
             sanitizer=sanitizer,
@@ -37,7 +37,7 @@ def response_logger_hook(
 ) -> ResponseHook:
     """Build a structured HTTP response logging hook."""
 
-    def log_response_hook(response: httpx.Response) -> None:
+    def log_response_hook(response: httpx2.Response) -> None:
         response_params = parse_response(
             response=response,
             sanitizer=sanitizer,
@@ -60,7 +60,7 @@ def async_response_logger_hook(
     response body has not been read and its stream is only accessible through await.
     """
 
-    async def log_response_hook(response: httpx.Response) -> None:
+    async def log_response_hook(response: httpx2.Response) -> None:
         response_params = await parse_response_async(
             response=response,
             sanitizer=sanitizer,

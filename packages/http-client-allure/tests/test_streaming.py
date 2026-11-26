@@ -1,12 +1,13 @@
 from typing import TYPE_CHECKING
 
-import httpx
+import httpx2
 import pytest
 from assertpy import assert_that
 from http_client import AsyncHttpClient, HttpClient
 from http_client_allure import wrap_requests_and_responses_in_steps
-from httpx import codes
-from pytest_httpx import HTTPXMock
+from httpx2 import codes
+from httpx2.websockets import WebSocketUpgradeError
+from pytest_httpx2 import HTTPXMock
 
 from .allure_recorder import Report
 from .assertions import assert_attachment, assert_report
@@ -15,8 +16,8 @@ if TYPE_CHECKING:
     from .json_types import JsonValue
 
 
-def test_wraps_stream_in_step(report: Report, httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(status_code=codes.OK, content=b"log line\n")
+def test_wraps_stream_in_step(report: Report, httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(status_code=codes.OK, content=b"log line\n")
 
     with (
         HttpClient("https://logs.test", wrap_requests_and_responses_in_steps()) as client,
@@ -28,8 +29,8 @@ def test_wraps_stream_in_step(report: Report, httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.usefixtures("report")
-def test_does_not_consume_streamed_response(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(status_code=codes.OK, content=b"z" * 2048)
+def test_does_not_consume_streamed_response(httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(status_code=codes.OK, content=b"z" * 2048)
 
     with (
         HttpClient("https://cdn.test", wrap_requests_and_responses_in_steps()) as client,
@@ -40,8 +41,8 @@ def test_does_not_consume_streamed_response(httpx_mock: HTTPXMock) -> None:
     assert_that(consumed_before_caller_read, "вложение не должно вычитывать поток за вызывающий код").is_false()
 
 
-def test_attaches_placeholder_for_streamed_response(report: Report, httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(status_code=codes.OK, content=b"z" * 2048)
+def test_attaches_placeholder_for_streamed_response(report: Report, httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(status_code=codes.OK, content=b"z" * 2048)
 
     with (
         HttpClient("https://cdn.test", wrap_requests_and_responses_in_steps()) as client,
@@ -53,9 +54,9 @@ def test_attaches_placeholder_for_streamed_response(report: Report, httpx_mock: 
 
 
 @pytest.mark.usefixtures("report")
-def test_delivers_full_streamed_body_to_caller(httpx_mock: HTTPXMock) -> None:
+def test_delivers_full_streamed_body_to_caller(httpx2_mock: HTTPXMock) -> None:
     payload = b"z" * 2048
-    httpx_mock.add_response(status_code=codes.OK, content=payload)
+    httpx2_mock.add_response(status_code=codes.OK, content=payload)
 
     with (
         HttpClient("https://cdn.test", wrap_requests_and_responses_in_steps()) as client,
@@ -66,9 +67,9 @@ def test_delivers_full_streamed_body_to_caller(httpx_mock: HTTPXMock) -> None:
     assert_that(received, "обертка в шаги не должна терять байты потока").is_equal_to(payload)
 
 
-def test_attaches_streamed_body_read_by_caller(report: Report, httpx_mock: HTTPXMock) -> None:
+def test_attaches_streamed_body_read_by_caller(report: Report, httpx2_mock: HTTPXMock) -> None:
     json_payload_1: dict[str, JsonValue] = {"cursor": "abc"}
-    httpx_mock.add_response(status_code=codes.OK, json=json_payload_1)
+    httpx2_mock.add_response(status_code=codes.OK, json=json_payload_1)
 
     with (
         HttpClient("https://logs.test", wrap_requests_and_responses_in_steps()) as client,
@@ -79,8 +80,59 @@ def test_attaches_streamed_body_read_by_caller(report: Report, httpx_mock: HTTPX
     assert_attachment(report.response_attachment).has_json_body({"cursor": "abc"})
 
 
-def test_attaches_placeholder_when_sent_with_stream_flag(report: Report, httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(status_code=codes.OK, content=b"q" * 512)
+def test_reports_sse_without_consuming_events(report: Report, httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(headers={"Content-Type": "text/event-stream"}, content=b"data: ready\n\n")
+
+    with (
+        HttpClient("https://events.test", wrap_requests_and_responses_in_steps()) as client,
+        client.sse("/events") as source,
+    ):
+        assert_that(source.response.is_stream_consumed).is_false()
+
+    assert_attachment(report.response_attachment).has_body("<streamed content>")
+
+
+async def test_reports_async_sse_without_consuming_events(report: Report, httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(headers={"Content-Type": "text/event-stream"}, content=b"data: ready\n\n")
+
+    async with (
+        AsyncHttpClient("https://events.test", wrap_requests_and_responses_in_steps()) as client,
+        client.sse("/events") as source,
+    ):
+        assert_that(source.response.is_stream_consumed).is_false()
+
+    assert_attachment(report.response_attachment).has_body("<streamed content>")
+
+
+def test_records_rejected_websocket_handshake(report: Report, httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(method="GET", url="https://events.test/chat", status_code=403)
+
+    with (
+        HttpClient("https://events.test", wrap_requests_and_responses_in_steps()) as client,
+        pytest.raises(WebSocketUpgradeError),
+        client.websocket("/chat"),
+    ):
+        pass
+
+    assert_attachment(report.response_headers_attachment).has_name("Response headers: status = 403 [Forbidden]")
+
+
+async def test_records_rejected_async_websocket_handshake(
+    report: Report,
+    httpx2_mock: HTTPXMock,
+) -> None:
+    httpx2_mock.add_response(method="GET", url="https://events.test/chat", status_code=403)
+
+    async with AsyncHttpClient("https://events.test", wrap_requests_and_responses_in_steps()) as client:
+        with pytest.raises(WebSocketUpgradeError):
+            async with client.websocket("/chat"):
+                pass
+
+    assert_attachment(report.response_headers_attachment).has_name("Response headers: status = 403 [Forbidden]")
+
+
+def test_attaches_placeholder_when_sent_with_stream_flag(report: Report, httpx2_mock: HTTPXMock) -> None:
+    httpx2_mock.add_response(status_code=codes.OK, content=b"q" * 512)
 
     with HttpClient("https://cdn.test", wrap_requests_and_responses_in_steps()) as client:
         request = client.client.build_request("GET", "/blob")
@@ -103,25 +155,25 @@ async def araise_for_status_inside_stream(client: AsyncHttpClient) -> None:
         response.raise_for_status()
 
 
-def test_attaches_response_when_caller_raises_inside_stream(report: Report, httpx_mock: HTTPXMock) -> None:
+def test_attaches_response_when_caller_raises_inside_stream(report: Report, httpx2_mock: HTTPXMock) -> None:
     json_payload_2: dict[str, JsonValue] = {"error": "boom"}
-    httpx_mock.add_response(status_code=codes.INTERNAL_SERVER_ERROR, json=json_payload_2)
+    httpx2_mock.add_response(status_code=codes.INTERNAL_SERVER_ERROR, json=json_payload_2)
 
     with (
         HttpClient("https://logs.test", wrap_requests_and_responses_in_steps()) as client,
-        pytest.raises(httpx.HTTPStatusError),
+        pytest.raises(httpx2.HTTPStatusError),
     ):
         raise_for_status_inside_stream(client)
 
     assert_attachment(report.response_attachment).has_json_value("error", "boom")
 
 
-async def test_attaches_response_when_caller_raises_inside_async_stream(report: Report, httpx_mock: HTTPXMock) -> None:
+async def test_attaches_response_when_caller_raises_inside_async_stream(report: Report, httpx2_mock: HTTPXMock) -> None:
     json_payload_3: dict[str, JsonValue] = {"error": "boom"}
-    httpx_mock.add_response(status_code=codes.INTERNAL_SERVER_ERROR, json=json_payload_3)
+    httpx2_mock.add_response(status_code=codes.INTERNAL_SERVER_ERROR, json=json_payload_3)
 
     async with AsyncHttpClient("https://logs.test", wrap_requests_and_responses_in_steps()) as client:
-        with pytest.raises(httpx.HTTPStatusError):
+        with pytest.raises(httpx2.HTTPStatusError):
             await araise_for_status_inside_stream(client)
 
     assert_attachment(report.response_attachment).has_json_value("error", "boom")

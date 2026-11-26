@@ -195,7 +195,7 @@ logging_context_loggers = ["test-logger", "api-client"]
 logging_context_level = "INFO"
 ```
 
-By default, logs include third-party libraries (`httpx`, `urllib3`,
+By default, logs include third-party libraries (`httpx2`, `urllib3`,
 `playwright`), which often help explain test failures. To exclude this noise,
 list your own loggers in `logging_context_loggers`.
 

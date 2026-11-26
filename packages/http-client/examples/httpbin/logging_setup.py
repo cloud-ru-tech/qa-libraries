@@ -23,8 +23,8 @@ def setup_logging(level: int = logging.INFO) -> None:
     handler.setFormatter(logging.Formatter(_LOG_FORMAT))
     logging.basicConfig(level=level, handlers=[handler], force=True)
 
-    # httpx logging would duplicate the request line alongside the detailed http_client log
-    logging.getLogger("httpx").setLevel(logging.WARNING)
+    # httpx2 logging would duplicate the request line alongside the detailed http_client log
+    logging.getLogger("httpx2").setLevel(logging.WARNING)
 
     configure_logging(
         options=LoggingConfig(log_level=level, json_indent=2, use_line_breaks=True, octet_stream_log_maxlength=128)

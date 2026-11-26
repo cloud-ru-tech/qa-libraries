@@ -6,7 +6,7 @@
 
 English | [Русский](README.ru.md)
 
-Convert HTTP requests from `httpx.Request` to curl commands. Useful for debugging, logging, and documenting API requests.
+Convert HTTP requests from `httpx2.Request` to curl commands. Useful for debugging, logging, and documenting API requests.
 
 - [httpx-curlify](#httpx-curlify)
   - [Installation](#installation)
@@ -46,10 +46,10 @@ For Claude Code, add `--claude`.
 Convert a GET request:
 
 ```python
-import httpx
+import httpx2
 from httpx_curlify import to_curl
 
-request = httpx.Request("GET", "https://example.com/api/users")
+request = httpx2.Request("GET", "https://example.com/api/users")
 curl_command = to_curl(request)
 print(curl_command)
 ```
@@ -64,7 +64,7 @@ curl -X GET \
 A POST request with JSON:
 
 ```python
-request = httpx.Request(
+request = httpx2.Request(
     "POST",
     "https://example.com/api/users",
     json={"name": "John", "age": 30},
@@ -86,7 +86,7 @@ curl -X POST \
 A request with headers:
 
 ```python
-request = httpx.Request(
+request = httpx2.Request(
     "GET",
     "https://example.com/api/data",
     headers={
@@ -105,7 +105,7 @@ Mask sensitive data in headers and JSON request bodies using [glom](https://glom
 Mask headers:
 
 ```python
-request = httpx.Request(
+request = httpx2.Request(
     "GET",
     "https://example.com/api/data",
     headers={
@@ -129,7 +129,7 @@ curl -X GET \
 Mask JSON data:
 
 ```python
-request = httpx.Request(
+request = httpx2.Request(
     "POST",
     "https://example.com/api/login",
     json={"username": "john", "password": "secret123"},
@@ -150,7 +150,7 @@ curl -X POST \
 Mask nested data:
 
 ```python
-request = httpx.Request(
+request = httpx2.Request(
     "POST",
     "https://example.com/api/data",
     json={"user": {"name": "John", "password": "secret"}},
@@ -173,7 +173,7 @@ curl -X POST \
 Pass additional options to `json.dumps`:
 
 ```python
-request = httpx.Request(
+request = httpx2.Request(
     "POST",
     "https://example.com/api/data",
     json={"name": "John", "age": 30},

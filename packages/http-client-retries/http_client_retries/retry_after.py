@@ -100,6 +100,6 @@ class wait_retry_after(wait_base):  # noqa: N801 - tenacity strategy naming conv
         if not is_http_response(response):
             return None
 
-        header = cast("str | None", response.headers.get(RETRY_AFTER_HEADER))
+        header = response.headers.get(RETRY_AFTER_HEADER)
 
         return parse_retry_after(header) if header else None
