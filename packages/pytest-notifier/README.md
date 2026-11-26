@@ -13,7 +13,7 @@ A pytest plugin that sends notifications about failed tests to different channel
 - Notifications when tests fail.
 - Support for multiple channels at once.
 - Flexible configuration through environment variables or `.env` files.
-- Detailed error information, including tracebacks.
+- Chat notifications include the test ID and short failure message by default. Enable full tracebacks separately for each channel.
 - Custom messages appended to notifications (for Telegram and Mattermost).
 
 ## Installation
@@ -81,7 +81,7 @@ Add the flags for the required channels:
 | `PYTEST_NOTIFIER_MATTERMOST__CHANNEL` | Channel to send messages to. |
 | `PYTEST_NOTIFIER_MATTERMOST__ICON_EMOJI` | Bot icon emoji (optional, for example `:ghost:`). |
 | `PYTEST_NOTIFIER_MATTERMOST__TIMEOUT_SECONDS` | Request timeout in seconds. Default: 10 seconds. |
-| `PYTEST_NOTIFIER_MATTERMOST__SEND_TRACEBACK` | Whether to send the error traceback: `true` or `false`. Default: `true`. |
+| `PYTEST_NOTIFIER_MATTERMOST__SEND_TRACEBACK` | Set to `true` to include the full traceback. Defaults to `false`. |
 | `PYTEST_NOTIFIER_MATTERMOST__ADDITIONAL_MESSAGE` | Extra message appended to the notification. |
 
 ### Telegram
@@ -91,7 +91,7 @@ Add the flags for the required channels:
 | `PYTEST_NOTIFIER_TELEGRAM__BOT_TOKEN` | Your bot's token. |
 | `PYTEST_NOTIFIER_TELEGRAM__CHAT_ID` | Chat or channel ID to send messages to. |
 | `PYTEST_NOTIFIER_TELEGRAM__TIMEOUT_SECONDS` | Request timeout in seconds. Default: 10.0. |
-| `PYTEST_NOTIFIER_TELEGRAM__SEND_TRACEBACK` | Whether to send the error traceback: `true` or `false`. Default: `true`. |
+| `PYTEST_NOTIFIER_TELEGRAM__SEND_TRACEBACK` | Set to `true` to include the full traceback. Defaults to `false`. |
 | `PYTEST_NOTIFIER_TELEGRAM__ADDITIONAL_MESSAGE` | Extra message appended to the notification. |
 
 ### Example `.env` file
@@ -109,7 +109,8 @@ PYTEST_NOTIFIER_MATTERMOST__ADDITIONAL_MESSAGE="Documentation: https://docs.exam
 # Telegram
 PYTEST_NOTIFIER_TELEGRAM__BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
 PYTEST_NOTIFIER_TELEGRAM__CHAT_ID=-1001234567890
-PYTEST_NOTIFIER_TELEGRAM__SEND_TRACEBACK=false
+# Uncomment to include the full traceback in Telegram.
+# PYTEST_NOTIFIER_TELEGRAM__SEND_TRACEBACK=true
 PYTEST_NOTIFIER_TELEGRAM__ADDITIONAL_MESSAGE="Contact the QA team for details"
 ```
 

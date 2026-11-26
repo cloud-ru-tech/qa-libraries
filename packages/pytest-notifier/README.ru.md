@@ -13,7 +13,7 @@
 - Отправка уведомлений при падении тестов.
 - Поддержка нескольких каналов одновременно.
 - Гибкая конфигурация через переменные окружения или `.env` файлы.
-- Детальная информация об ошибках, включая traceback.
+- По умолчанию в чат приходят идентификатор теста и краткое сообщение об ошибке. Полную трассировку можно включить отдельно для каждого канала.
 - Возможность добавлять произвольные сообщения в конец нотификаций (для Telegram и Mattermost).
 
 ## Установка
@@ -81,7 +81,7 @@ uvx library-skills
 | `PYTEST_NOTIFIER_MATTERMOST__CHANNEL`           | Канал, куда будут отправляться сообщения                                   |
 | `PYTEST_NOTIFIER_MATTERMOST__ICON_EMOJI`        | Emoji для иконки бота (опционально, например `:ghost:`).                   |
 | `PYTEST_NOTIFIER_MATTERMOST__TIMEOUT_SECONDS`   | Таймаут запроса в секундах. (По умолчанию: 10 сек.)                        |
-| `PYTEST_NOTIFIER_MATTERMOST__SEND_TRACEBACK`    | Отправлять ли traceback ошибки. `true` или `false`. (По умолчанию: `true`) |
+| `PYTEST_NOTIFIER_MATTERMOST__SEND_TRACEBACK`    | Укажите `true`, чтобы отправлять полную трассировку. По умолчанию `false`. |
 | `PYTEST_NOTIFIER_MATTERMOST__ADDITIONAL_MESSAGE`| Дополнительное сообщение, которое будет добавлено в конец нотификации.     |
 
 ### Telegram
@@ -91,7 +91,7 @@ uvx library-skills
 | `PYTEST_NOTIFIER_TELEGRAM__BOT_TOKEN`         | Токен вашего бота.                                                         |
 | `PYTEST_NOTIFIER_TELEGRAM__CHAT_ID`           | ID чата (или канала), куда отправлять сообщения.                           |
 | `PYTEST_NOTIFIER_TELEGRAM__TIMEOUT_SECONDS`   | Таймаут запроса в секундах. (По умолчанию: 10.0)                           |
-| `PYTEST_NOTIFIER_TELEGRAM__SEND_TRACEBACK`    | Отправлять ли traceback ошибки. `true` или `false`. (По умолчанию: `true`) |
+| `PYTEST_NOTIFIER_TELEGRAM__SEND_TRACEBACK`    | Укажите `true`, чтобы отправлять полную трассировку. По умолчанию `false`. |
 | `PYTEST_NOTIFIER_TELEGRAM__ADDITIONAL_MESSAGE`| Дополнительное сообщение, которое будет добавлено в конец нотификации.     |
 
 ### Пример `.env` файла
@@ -109,7 +109,8 @@ PYTEST_NOTIFIER_MATTERMOST__ADDITIONAL_MESSAGE="Документация: https:
 # Telegram
 PYTEST_NOTIFIER_TELEGRAM__BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
 PYTEST_NOTIFIER_TELEGRAM__CHAT_ID=-1001234567890
-PYTEST_NOTIFIER_TELEGRAM__SEND_TRACEBACK=false
+# Раскомментируйте, чтобы отправлять полную трассировку в Telegram.
+# PYTEST_NOTIFIER_TELEGRAM__SEND_TRACEBACK=true
 PYTEST_NOTIFIER_TELEGRAM__ADDITIONAL_MESSAGE="Свяжитесь с командой QA для подробностей"
 ```
 

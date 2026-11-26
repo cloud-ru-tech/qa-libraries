@@ -25,7 +25,7 @@ class MattermostSettings(BaseModel):
     username: str | None = None
     channel: str | None = None
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS
-    send_traceback: bool = True
+    send_traceback: bool = False
     additional_message: str | None = None
 
 
@@ -35,7 +35,7 @@ class TelegramSettings(BaseModel):
     bot_token: SecretStr | None = None
     chat_id: str | None = None
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS
-    send_traceback: bool = True
+    send_traceback: bool = False
     additional_message: str | None = None
 
 

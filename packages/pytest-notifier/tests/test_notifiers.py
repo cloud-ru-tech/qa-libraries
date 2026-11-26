@@ -51,37 +51,43 @@ def test_skips_remote_channels_without_credentials() -> None:
     assert_that(get_active_notifiers(settings)).is_empty()
 
 
-def test_mattermost_posts_failure_details(requests: list[httpx2.Request], failure_results: Results) -> None:
+def test_mattermost_posts_summary_by_default(requests: list[httpx2.Request], failure_results: Results) -> None:
     settings = Settings(mattermost=MattermostSettings(webhook_url=AnyUrl("https://notifications.example/hook")))
 
     MattermostNotifier(settings).send(failure_results)
 
-    assert_that(requests[0].content.decode()).contains("test_cart", "stock exhausted", "trace details")
+    assert_that(requests[0].content.decode()).contains("test.py::test_cart", "stock exhausted").does_not_contain(
+        "trace details"
+    )
 
 
-def test_mattermost_omits_disabled_traceback(requests: list[httpx2.Request], failure_results: Results) -> None:
+def test_mattermost_includes_enabled_traceback(requests: list[httpx2.Request], failure_results: Results) -> None:
     settings = Settings(
-        mattermost=MattermostSettings(webhook_url=AnyUrl("https://hooks.example/results"), send_traceback=False)
+        mattermost=MattermostSettings(webhook_url=AnyUrl("https://hooks.example/results"), send_traceback=True)
     )
 
     MattermostNotifier(settings).send(failure_results)
 
-    assert_that(requests[0].content.decode()).does_not_contain("trace details")
+    assert_that(requests[0].content.decode()).contains("trace details")
 
 
-def test_telegram_posts_to_configured_chat(requests: list[httpx2.Request], failure_results: Results) -> None:
+def test_telegram_posts_summary_to_configured_chat_by_default(
+    requests: list[httpx2.Request], failure_results: Results
+) -> None:
     settings = Settings(telegram=TelegramSettings(bot_token=SecretStr("fake-token"), chat_id="case-chat"))
 
     TelegramNotifier(settings).send(failure_results)
 
-    assert_that(requests[0].content.decode()).contains("case-chat", "stock exhausted", "trace details")
+    assert_that(requests[0].content.decode()).contains(
+        "case-chat", "test.py::test_cart", "stock exhausted"
+    ).does_not_contain("trace details")
 
 
-def test_telegram_omits_disabled_traceback(requests: list[httpx2.Request], failure_results: Results) -> None:
+def test_telegram_includes_enabled_traceback(requests: list[httpx2.Request], failure_results: Results) -> None:
     settings = Settings(
-        telegram=TelegramSettings(bot_token=SecretStr("fake-other"), chat_id="other-chat", send_traceback=False)
+        telegram=TelegramSettings(bot_token=SecretStr("fake-other"), chat_id="other-chat", send_traceback=True)
     )
 
     TelegramNotifier(settings).send(failure_results)
 
-    assert_that(requests[0].content.decode()).does_not_contain("trace details")
+    assert_that(requests[0].content.decode()).contains("trace details")
