@@ -539,7 +539,7 @@ client = HttpClient(
 
 `sanitize_keys` hides sensitive information in logs, such as authorization tokens and passwords.
 
-Common secrets are masked **by default**, even without `sanitize_keys`: `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-api-key`, `api-key`, `api_key`, `access_token`, `refresh_token`, `password`, `secret`, `token`. Keys from `sanitize_keys` extend this list.
+Common secrets are masked **by default**, even without `sanitize_keys`: `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-api-key`, `api-key`, `api_key`, `access_token`, `refresh_token`, `id_token`, `client_secret`, `password`, `secret`, `token`. Keys from `sanitize_keys` extend this list.
 
 Disable the default protection with an explicit flag, for example when debugging in a private environment:
 

@@ -541,7 +541,7 @@ client = HttpClient(
 
 Опция `sanitize_keys` позволяет скрывать чувствительную информацию в логах, такую как токены авторизации или пароли.
 
-Типовые секреты маскируются **по умолчанию**, даже если `sanitize_keys` не задан: `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-api-key`, `api-key`, `api_key`, `access_token`, `refresh_token`, `password`, `secret`, `token`. Ключи из `sanitize_keys` добавляются к этому списку.
+Типовые секреты маскируются **по умолчанию**, даже если `sanitize_keys` не задан: `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-api-key`, `api-key`, `api_key`, `access_token`, `refresh_token`, `id_token`, `client_secret`, `password`, `secret`, `token`. Ключи из `sanitize_keys` добавляются к этому списку.
 
 Отключить защиту по умолчанию можно явным флагом — например, при отладке в закрытом контуре:
 

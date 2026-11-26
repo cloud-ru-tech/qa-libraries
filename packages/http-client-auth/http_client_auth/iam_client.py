@@ -10,7 +10,7 @@ from .exceptions import IAM_AuthError, IAM_InvalidJsonResponseError
 PUBLIC_API_AUTHORIZE_ROUTE = "/api/v1/auth/token"
 OPEN_ID_AUTHORIZE_ROUTE = "/auth/system/openid/token"
 
-# These IAM fields are not masked by http-client by default.
+# OpenID fields for callers that configure an explicit masking policy.
 IAM_SANITIZE_KEYS = ("client_secret", "id_token")
 
 

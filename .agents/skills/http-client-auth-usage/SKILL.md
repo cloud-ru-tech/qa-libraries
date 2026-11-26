@@ -24,7 +24,7 @@ The auth object is a plain `httpx2.Auth`, so it works with `httpx2.Client`, `htt
 2. The auth object does **not** own the IAM client. Close the IAM client yourself, ideally with a context manager.
 3. Never build the `Authorization` header by hand next to this auth. It sets the header itself on every request, including the retry.
 4. Never write your own token cache, expiry check, or refresh-on-401 loop around it. That is exactly what the library already does, under a lock.
-5. When you attach a logger to the IAM client, pass `IAM_SANITIZE_KEYS` — the `http_client` default mask list does not cover `client_secret` and `id_token`.
+5. The IAM HTTP logger masks `client_secret` and `id_token` by default.
 6. Do not read or write the token store directly from application code to "warm it up". Getting and issuing the token is serialized under the auth object's lock; a side write is not.
 
 ## Canonical setup (sync)
@@ -147,21 +147,21 @@ Store implementations must not raise on a cache miss — return `None`. An excep
 
 ## Logging IAM traffic
 
-The IAM request carries the secret key and the response carries a JWT. Neither key is in the `http_client` default mask list, so pass `IAM_SANITIZE_KEYS` explicitly:
+The HTTP logger masks `client_secret` in the OpenID request and `id_token` in the response by default.
 
 ```python
 import logging
 
 from http_client import options
-from http_client_auth import IAM_SANITIZE_KEYS, IAM_OpenID_HttpClient
+from http_client_auth import IAM_OpenID_HttpClient
 
 iam_client = IAM_OpenID_HttpClient(
     "https://iam.example.com",
-    options.with_logger(logging.getLogger("iam"), sanitize_keys=IAM_SANITIZE_KEYS),
+    options.with_logger(logging.getLogger("iam")),
 )
 ```
 
-To add your own paths, concatenate rather than replace: `sanitize_keys=[*IAM_SANITIZE_KEYS, "meta.tenant"]`.
+To mask additional fields, pass their paths in `sanitize_keys`, for example `sanitize_keys=["meta.tenant"]`.
 
 The business client is unaffected — `authorization` is masked by `http_client` out of the box.
 

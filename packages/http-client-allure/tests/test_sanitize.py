@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 import httpx2
+import pytest
 from assertpy import assert_that
 from http_client import HttpClient, options
 from http_client_allure import wrap_requests_and_responses_in_steps, wrap_requests_in_steps
@@ -114,6 +115,24 @@ def test_masks_secret_in_response_body(report: Report, httpx2_mock: HTTPXMock) -
         client.post("/oauth/token")
 
     assert_attachment(report.response_attachment).has_json_value("access_token", MASK)
+
+
+@pytest.mark.parametrize("serialize_to_curl", [False, True], ids=["json", "curl"])
+def test_masks_openid_credentials_in_attachments(
+    report: Report,
+    httpx2_mock: HTTPXMock,
+    *,
+    serialize_to_curl: bool,
+) -> None:
+    response: dict[str, JsonValue] = {"id_token": "synthetic-id-token"}
+    httpx2_mock.add_response(json=response)
+    with HttpClient(
+        "https://iam.test", wrap_requests_and_responses_in_steps(serialize_request_to_curl=serialize_to_curl)
+    ) as client:
+        client.post("/auth/system/openid/token", json={"client_secret": "synthetic-client-secret"})
+
+    assert_attachment(report.request_attachment).shows("client_secret").hides("synthetic-client-secret")
+    assert_attachment(report.response_attachment).has_json_value("id_token", MASK)
 
 
 def test_keeps_ordinary_field_in_response_body(report: Report, httpx2_mock: HTTPXMock) -> None:

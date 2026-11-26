@@ -90,7 +90,7 @@ Both replace the value with `****`. Name matching is case-insensitive; glom path
 lowercases header names before the hook runs, so paths that point at headers must be lowercase too.
 
 Default names: `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-api-key`, `api-key`,
-`api_key`, `access_token`, `refresh_token`, `password`, `secret`, `token`.
+`api_key`, `access_token`, `refresh_token`, `id_token`, `client_secret`, `password`, `secret`, `token`.
 
 Name-based masking replaces the whole value, so a nested object under a key named `token` disappears
 entirely rather than being walked into.

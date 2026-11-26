@@ -134,7 +134,7 @@ A parsing failure in any part never breaks the request — the log gets `<Error 
 
 ### Masking
 
-A built-in list of common secrets is masked by default — `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-api-key`, `api-key`, `api_key`, `access_token`, `refresh_token`, `password`, `secret`, `token` (`event_hooks.DEFAULT_SANITIZE_KEYS`). Anything in `sanitize_keys` is added on top. Turn the defaults off only with `use_default_sanitize_keys=False`.
+A built-in list of common secrets is masked by default — `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-api-key`, `api-key`, `api_key`, `access_token`, `refresh_token`, `id_token`, `client_secret`, `password`, `secret`, `token` (`event_hooks.DEFAULT_SANITIZE_KEYS`). Anything in `sanitize_keys` is added on top. Turn the defaults off only with `use_default_sanitize_keys=False`.
 
 Masking covers the access-log records this library writes — not `httpx2` exceptions, which may carry the full URL including query. Do not put secrets in URLs.
 

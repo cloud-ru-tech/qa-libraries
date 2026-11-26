@@ -97,6 +97,21 @@ def test_preserves_nested_values_when_default_masking_is_disabled(
     assert_that(recorded_log.request).has_body('{"nested": {"password": "explicitly-visible"}}')
 
 
+def test_masks_openid_credentials_in_logs(
+    recorded_log: RecordedLog,
+    httpx2_mock: HTTPXMock,
+    new_client: SyncClientFactory,
+) -> None:
+    response: dict[str, str | int] = {"id_token": "synthetic-id-token", "expires_in": 60}
+    httpx2_mock.add_response(json=response)
+    client = new_client("https://iam.test", with_logger(recorded_log.logger))
+
+    client.post("/auth/system/openid/token", json={"client_id": "qa", "client_secret": "synthetic-client-secret"})
+
+    assert_that(recorded_log.request).has_body('{"client_id": "qa", "client_secret": "****"}')
+    assert_that(recorded_log.response).has_body('{"id_token": "****", "expires_in": 60}')
+
+
 def test_logs_request_trace_id(
     recorded_log: RecordedLog, httpx2_mock: HTTPXMock, new_client: SyncClientFactory
 ) -> None:

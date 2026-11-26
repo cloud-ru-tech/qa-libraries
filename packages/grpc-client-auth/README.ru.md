@@ -138,15 +138,15 @@ auth = IAM_GrpcAuth("my_key_id", "my_key_secret", iam_client, store=RedisAuthSto
 
 ### Маскирование секретов в логах
 
-Если HTTP-клиент IAM логирует запросы, добавьте в маскирование ключи, специфичные для IAM, — иначе секретный ключ из запроса OpenID и JWT из ответа попадут в лог целиком:
+HTTP-логгер по умолчанию маскирует поле `client_secret` в запросе OpenID и поле `id_token` в ответе.
 
 ```python
 from http_client import options as http_options
-from grpc_client_auth import IAM_SANITIZE_KEYS, IAM_HttpClient
+from grpc_client_auth import IAM_HttpClient
 
 iam_client = IAM_HttpClient(
     "https://iam.example.com",
-    http_options.with_logger(logger, sanitize_keys=IAM_SANITIZE_KEYS),
+    http_options.with_logger(logger),
 )
 ```
 

@@ -162,17 +162,17 @@ class RedisAsyncAuthStore(AsyncAuthStore):
 
 ### Логирование
 
-Если навешиваете на клиент IAM логирование, передайте `IAM_SANITIZE_KEYS` — иначе секретный ключ из запроса OpenID и JWT из ответа попадут в лог целиком: список маскирования http-client по умолчанию их не покрывает.
+HTTP-логгер по умолчанию маскирует поле `client_secret` в запросе OpenID и поле `id_token` в ответе.
 
 ```python
 import logging
 
 from http_client import options
-from http_client_auth import IAM_SANITIZE_KEYS, IAM_OpenID_HttpClient
+from http_client_auth import IAM_OpenID_HttpClient
 
 iam_client = IAM_OpenID_HttpClient(
     "https://iam.example.com",
-    options.with_logger(logging.getLogger("iam"), sanitize_keys=IAM_SANITIZE_KEYS),
+    options.with_logger(logging.getLogger("iam")),
 )
 ```
 

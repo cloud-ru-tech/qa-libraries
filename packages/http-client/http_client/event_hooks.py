@@ -25,6 +25,8 @@ DEFAULT_SANITIZE_KEYS: tuple[str, ...] = (
     "api_key",
     "access_token",
     "refresh_token",
+    "id_token",
+    "client_secret",
     "password",
     "secret",
     "token",
