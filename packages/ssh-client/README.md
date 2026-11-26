@@ -119,6 +119,20 @@ async def main():
 asyncio.run(main())
 ```
 
+### Passing dynamic arguments
+
+Both clients join list items with spaces before sending the command to the remote shell.
+Use lists for trusted shell fragments, such as a pipeline written in your code (`["ls", "|", "sort"]`).
+For a remote POSIX shell, use `shlex.join` to build a command from argument values.
+Here the filename reaches `cat` as one argument, including its space and apostrophe.
+
+```python
+import shlex
+
+filename = "team's report.txt"
+result = client.execute(shlex.join(["cat", "--", filename]))
+```
+
 ## Configuration
 
 Configure the client using `ClientOption` options. Built-in options are in the `options` module.
