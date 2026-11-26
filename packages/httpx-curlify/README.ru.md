@@ -100,72 +100,26 @@ print(curl_command)
 
 ### Скрытие чувствительных данных
 
-Библиотека поддерживает скрытие чувствительных данных в заголовках и JSON-теле запроса с использованием синтаксиса [glom](https://glom.readthedocs.io/en/latest/):
-
-Скрытие заголовков:
-
-```python
-request = httpx2.Request(
-    "GET",
-    "https://example.com/api/data",
-    headers={
-        "Authorization": "Bearer secret_token",
-        "X-Api-Key": "api_key_value",
-    },
-)
-curl_command = to_curl(request, sanitize_keys=["authorization", "x-api-key"])
-print(curl_command)
-```
-
-Результат:
-```bash
-curl -X GET \
-  -H 'host: example.com' \
-  -H 'authorization: ****' \
-  -H 'x-api-key: ****' \
-  https://example.com/api/data
-```
-
-Скрытие данных в JSON:
+По умолчанию `to_curl(request)` заменяет значения учётных данных на `****` в заголовках и JSON-объектах
+на любой глубине, включая объекты внутри массивов. Среди стандартных имён — `Authorization`, `Cookie`, `X-Api-Key`,
+`password`, `client_secret`, `access_token` и `id_token`. Регистр имени не важен.
+URL и тела запросов других форматов выводятся в исходном виде.
 
 ```python
 request = httpx2.Request(
     "POST",
-    "https://example.com/api/login",
-    json={"username": "john", "password": "secret123"},
+    "https://example.com/login",
+    headers={"Authorization": "Bearer example-token"},
+    json={"user": {"password": "example-password"}},
 )
-curl_command = to_curl(request, sanitize_keys=["password"])
-print(curl_command)
+command = to_curl(request)  # authorization: ****, "password": "****"
 ```
 
-Результат:
-```bash
-curl -X POST \
-  -H 'host: example.com' \
-  -H 'content-type: application/json' \
-  --json '{"username": "john", "password": "****"}' \
-  https://example.com/api/login
-```
-
-Скрытие вложенных данных:
+Для локального повтора запроса с исходными учётными данными передайте `sanitize_keys=()`.
+Непустой список заменяет стандартные правила вашими [путями glom](https://glom.readthedocs.io/en/latest/).
 
 ```python
-request = httpx2.Request(
-    "POST",
-    "https://example.com/api/data",
-    json={"user": {"name": "John", "password": "secret"}},
-)
-curl_command = to_curl(request, sanitize_keys=["user.password"])
-print(curl_command)
-```
-
-Результат:
-```bash
-curl -X POST \
-  -H 'host: example.com' \
-  -H 'content-type: application/json' \
-  --json '{"user": {"name": "John", "password": "****"}}' \
-  https://example.com/api/data
+command = to_curl(request, sanitize_keys=["authorization", "user.password"])
 ```
 
 ### Форматирование JSON

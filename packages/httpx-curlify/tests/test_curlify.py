@@ -1,4 +1,5 @@
 import httpx2
+import pytest
 from assertpy import assert_that
 from httpx_curlify import to_curl
 from syrupy.assertion import SnapshotAssertion
@@ -217,3 +218,50 @@ def test_hides_secrets_inside_json_arrays() -> None:
     command = to_curl(request, sanitize_keys=["users.*.token"])
 
     assert_that(command).contains("****").does_not_contain("array-secret")
+
+
+@pytest.mark.parametrize("media_type", ["application/json", "application/vnd.example+json; charset=utf-8"])
+def test_default_command_masks_credentials_in_headers_and_nested_json(media_type: str) -> None:
+    payload = [{"credentials": {"Password": "sample-password", "id_token": "sample-token"}, "name": "public"}]
+    request = httpx2.Request(
+        "POST",
+        "https://example.com/login",
+        headers={
+            "Content-Type": media_type,
+            "Authorization": "Bearer sample-auth",
+            "Cookie": "session=sample-cookie",
+            "Proxy-Authorization": "Bearer sample-proxy",
+            "X-Api-Key": "sample-api-key",
+        },
+        json=payload,
+    )
+
+    command = to_curl(request)
+
+    assert_that(command).does_not_contain("sample-").contains(
+        "authorization: ****",
+        "cookie: ****",
+        "proxy-authorization: ****",
+        "x-api-key: ****",
+        '"Password": "****"',
+        '"id_token": "****"',
+        '"name": "public"',
+    )
+
+
+def test_empty_sanitize_keys_retains_credentials_for_replay() -> None:
+    payload = '{"credentials":{"password":"sample-password"}}'
+    request = httpx2.Request(
+        "POST",
+        "https://example.com/login",
+        headers={
+            "Cookie": "session=sample-cookie",
+            "Authorization": "Bearer sample-auth",
+            "Content-Type": "application/json",
+        },
+        content=payload,
+    )
+
+    command = to_curl(request, sanitize_keys=())
+
+    assert_that(command).contains("cookie: session=sample-cookie", "authorization: Bearer sample-auth", payload)

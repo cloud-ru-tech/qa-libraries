@@ -7,6 +7,25 @@ import httpx2
 
 from .sanitaizer import sanitize
 
+_CREDENTIAL_NAMES = frozenset(
+    {
+        "authorization",
+        "proxy-authorization",
+        "cookie",
+        "set-cookie",
+        "x-api-key",
+        "api-key",
+        "api_key",
+        "access_token",
+        "refresh_token",
+        "id_token",
+        "client_secret",
+        "password",
+        "secret",
+        "token",
+    }
+)
+
 
 class JsonDumpsOptions(TypedDict, total=False):
     """JSON serialization options passed to ``json.dumps``."""
@@ -24,29 +43,27 @@ class JsonDumpsOptions(TypedDict, total=False):
 
 def to_curl(
     request: httpx2.Request,
-    sanitize_keys: Sequence[str] = (),
+    sanitize_keys: Sequence[str] | None = None,
     json_dumps_kwargs: JsonDumpsOptions | None = None,
 ) -> str:
     """Serialize an HTTP request to a curl command string.
 
     :param request: HTTP request
-    :param sanitize_keys: Keys for masking secrets in the request
-    :param json_dumps_kwargs: Options for json.dumps when the request has content-type = application/json
+    :param sanitize_keys: Custom glom paths replacing the default credential names.
+        Pass an empty sequence to include the original values.
+    :param json_dumps_kwargs: Formatting options for JSON bodies.
     :return: Curl command string
     """
     command = ["-X " + quote(request.method)]
 
-    content_type: str | None = None
-
-    headers = sanitize(dict(request.headers), sanitize_keys)
+    content_type = request.headers.get("content-type", "").partition(";")[0].strip().lower()
+    raw_headers = dict(request.headers)
+    headers = _mask_credentials(raw_headers) if sanitize_keys is None else sanitize(raw_headers, sanitize_keys)
     for key, value in headers.items():
         if value:
             command.append("-H " + quote(f"{key}: {value}"))
         else:
             command.append("-H " + quote(f"{key};"))
-
-        if key.lower() == "content-type":
-            content_type = value.lower()
 
     if content_type:
         request_body = request.read()
@@ -55,7 +72,7 @@ def to_curl(
         except UnicodeDecodeError:
             payload = f"<binary data {len(request_body)} bytes>"
 
-        if content_type.startswith("application/json"):
+        if content_type == "application/json" or content_type.endswith("+json"):
             if json_dumps_kwargs is None:
                 json_dumps_kwargs = {}
 
@@ -68,7 +85,11 @@ def to_curl(
     return "curl " + " \\\n  ".join(command)
 
 
-def _format_json(payload: str, sanitize_keys: Sequence[str], **kwargs: Unpack[JsonDumpsOptions]) -> str:
+def _mask_credentials[T](fields: dict[str, T]) -> dict[str, T | str]:
+    return {key: "****" if key.lower() in _CREDENTIAL_NAMES else value for key, value in fields.items()}
+
+
+def _format_json(payload: str, sanitize_keys: Sequence[str] | None, **kwargs: Unpack[JsonDumpsOptions]) -> str:
     """Format a JSON string for readable output in a curl command.
 
     :param payload: JSON string
@@ -76,7 +97,12 @@ def _format_json(payload: str, sanitize_keys: Sequence[str], **kwargs: Unpack[Js
     :param kwargs: Options for json.dumps
     :return: Formatted JSON string
     """
-    json_payload = sanitize(cast("object", json.loads(payload)), sanitize_keys)
+    if sanitize_keys is not None and not sanitize_keys and not kwargs:
+        return payload
+    if sanitize_keys is None:
+        json_payload = cast("object", json.loads(payload, object_hook=_mask_credentials))
+    else:
+        json_payload = sanitize(cast("object", json.loads(payload)), sanitize_keys)
 
     formatted_payload = json.dumps(json_payload, **kwargs)
 

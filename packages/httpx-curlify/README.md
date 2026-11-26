@@ -100,72 +100,25 @@ print(curl_command)
 
 ### Masking sensitive data
 
-Mask sensitive data in headers and JSON request bodies using [glom](https://glom.readthedocs.io/en/latest/) syntax:
-
-Mask headers:
-
-```python
-request = httpx2.Request(
-    "GET",
-    "https://example.com/api/data",
-    headers={
-        "Authorization": "Bearer secret_token",
-        "X-Api-Key": "api_key_value",
-    },
-)
-curl_command = to_curl(request, sanitize_keys=["authorization", "x-api-key"])
-print(curl_command)
-```
-
-Output:
-```bash
-curl -X GET \
-  -H 'host: example.com' \
-  -H 'authorization: ****' \
-  -H 'x-api-key: ****' \
-  https://example.com/api/data
-```
-
-Mask JSON data:
+By default, `to_curl(request)` replaces credential values with `****` in headers and JSON objects at every depth,
+including objects inside arrays. It masks common names such as `Authorization`, `Cookie`, `X-Api-Key`, `password`,
+`client_secret`, `access_token` and `id_token` without regard to case. URLs and non-JSON bodies are printed as supplied.
 
 ```python
 request = httpx2.Request(
     "POST",
-    "https://example.com/api/login",
-    json={"username": "john", "password": "secret123"},
+    "https://example.com/login",
+    headers={"Authorization": "Bearer example-token"},
+    json={"user": {"password": "example-password"}},
 )
-curl_command = to_curl(request, sanitize_keys=["password"])
-print(curl_command)
+command = to_curl(request)  # authorization: ****, "password": "****"
 ```
 
-Output:
-```bash
-curl -X POST \
-  -H 'host: example.com' \
-  -H 'content-type: application/json' \
-  --json '{"username": "john", "password": "****"}' \
-  https://example.com/api/login
-```
-
-Mask nested data:
+For a private replay with the original credentials, pass `sanitize_keys=()`.
+A nonempty list replaces the defaults with your own [glom paths](https://glom.readthedocs.io/en/latest/).
 
 ```python
-request = httpx2.Request(
-    "POST",
-    "https://example.com/api/data",
-    json={"user": {"name": "John", "password": "secret"}},
-)
-curl_command = to_curl(request, sanitize_keys=["user.password"])
-print(curl_command)
-```
-
-Output:
-```bash
-curl -X POST \
-  -H 'host: example.com' \
-  -H 'content-type: application/json' \
-  --json '{"user": {"name": "John", "password": "****"}}' \
-  https://example.com/api/data
+command = to_curl(request, sanitize_keys=["authorization", "user.password"])
 ```
 
 ### JSON formatting
